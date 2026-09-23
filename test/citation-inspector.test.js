@@ -51,7 +51,7 @@ const stripScripts = (html) => html.replace(/<script[\s\S]*?<\/script>/g, '');
         let page2 = stripScripts(r.text);
         assert.ok(page2.includes('<h1>Sources of Rye, revision 2</h1>'));
         assert.ok(page2.includes('This is the published revision.'));
-        assert.ok(page2.includes('href="https://flour.example/rye" rel="noopener nofollow">Rye flour</a>'));
+        assert.ok(page2.includes('href="https://flour.example/rye" rel="nofollow ugc noopener">Rye flour</a>'), 'a community space\'s links pass no ranking');
         assert.ok(page2.includes('<time datetime="2026-09-01T00:00:00.000Z">'), 'retrieval time of the kept source');
         assert.ok(page2.includes('<time datetime="2026-09-10T12:00:00.000Z">'), 'retrieval time of the new source');
         assert.ok(page2.includes('CC BY 4.0') && page2.includes('Rye has less gluten.'));

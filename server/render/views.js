@@ -14,6 +14,9 @@ const VIS_LABEL = { public: 'Public', members: 'Members (any signed-in OpenVibe 
 
 function wpath(space, page) { return `/w/${e(space.slug)}/${e(page.slug)}`; }
 
+/** rel for outbound links (citations, infobox URLs): community spaces add ugc (see service.linkRel). */
+function outRel(space) { return space && space.kind === 'official' ? 'noopener nofollow' : 'nofollow ugc noopener'; }
+
 function notice(kind, text) { return html`<p class="wk-notice wk-${kind}" role="status">${text}</p>`; }
 
 function crumbs(items) { return raw(ssr.breadcrumbsHtml(items)); }
@@ -51,11 +54,11 @@ ${proposals && proposals.length ? html`<p>${notice('info', `${proposals.length} 
 </section>`;
 }
 
-function infoboxHtml(entries, resolve) {
+function infoboxHtml(entries, resolve, rel = 'nofollow ugc noopener') {
     if (!entries.length) return '';
     const cell = (x) => {
         switch (x.type) {
-        case 'url': return html`<a href="${x.value}" rel="noopener nofollow">${x.value.replace(/^https?:\/\//, '')}</a>`;
+        case 'url': return html`<a href="${x.value}" rel="${rel}">${x.value.replace(/^https?:\/\//, '')}</a>`;
         case 'date': return raw(ssr.timeTag(x.value, { label: String(x.value).slice(0, 10) }) || ssr.escapeHtml(x.value));
         case 'boolean': return x.value ? 'Yes' : 'No';
         case 'number': return String(x.value);
@@ -67,10 +70,10 @@ function infoboxHtml(entries, resolve) {
     return html`<aside class="wk-infobox" aria-label="Infobox"><table><tbody>${entries.map((x) => html`<tr data-key="${x.key}" data-type="${x.type}"><th scope="row">${x.label}</th><td>${cell(x)}</td></tr>`)}</tbody></table></aside>`;
 }
 
-function citationsHtml(cites, inspectHref) {
+function citationsHtml(cites, inspectHref, rel = 'nofollow ugc noopener') {
     const inspect = inspectHref ? html`<p class="wk-muted"><a href="${inspectHref}">Inspect these sources</a> (retrieval times, where each was first cited, what changed between revisions)</p>` : '';
     if (!cites.length) return html`<section class="wk-sources"><h2>Sources</h2><p class="wk-muted">This revision cites no sources.</p>${inspect}</section>`;
-    return html`<section class="wk-sources"><h2>Sources</h2><ol>${cites.map((c) => html`<li id="cite-${String(c.id)}">${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <span class="wk-muted">(OpenVibe.Sources item <code>${c.sourceItemId}</code>)</span>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : html`, <span class="wk-muted">retrieval time unknown</span>`}${c.licenseNote ? html` (${c.licenseNote})` : ''}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</li>`)}</ol>${inspect}</section>`;
+    return html`<section class="wk-sources"><h2>Sources</h2><ol>${cites.map((c) => html`<li id="cite-${String(c.id)}">${c.url ? html`<a href="${c.url}" rel="${rel}">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <span class="wk-muted">(OpenVibe.Sources item <code>${c.sourceItemId}</code>)</span>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : html`, <span class="wk-muted">retrieval time unknown</span>`}${c.licenseNote ? html` (${c.licenseNote})` : ''}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</li>`)}</ol>${inspect}</section>`;
 }
 
 const CHANGE_LABEL = { kept: 'kept from revision', new: 'new in this revision', restored: 'restored from an older revision' };
@@ -80,8 +83,9 @@ function sourcesPage({ space, page, view: v, citations: cites, previous, dropped
     const base = wpath(space, page);
     const n = v.revision.number;
     const hostOf = (u) => { try { return new URL(u).host; } catch { return null; } };
+    const rel = outRel(space);
     const row = (c) => html`<tr id="cite-${String(c.id)}">
-<td>${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a><br><span class="wk-muted">${hostOf(c.url) || ''}</span>` : html`${c.title || 'Sources item'}`}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</td>
+<td>${c.url ? html`<a href="${c.url}" rel="${rel}">${c.title || c.url}</a><br><span class="wk-muted">${hostOf(c.url) || ''}</span>` : html`${c.title || 'Sources item'}`}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</td>
 <td>${c.sourceItemId ? html`OpenVibe.Sources item <code>${c.sourceItemId}</code><br><span class="wk-muted">URL, title, retrieval time and license from the item's provenance</span>` : 'URL given by the editor'}</td>
 <td>${c.retrievedAt ? t(c.retrievedAt) : html`<span class="wk-muted">unknown</span>`}</td>
 <td>${c.licenseNote || html`<span class="wk-muted">none recorded</span>`}</td>
@@ -92,7 +96,7 @@ function sourcesPage({ space, page, view: v, citations: cites, previous, dropped
 <p>${v.isPublishedRevision ? 'This is the published revision.' : html`This is not the published revision${page.published_revision && page.state === 'published' ? html` (<a href="${base}/sources">see the published one</a>)` : ''}.`} <a href="${base}?rev=${String(n)}">Read revision ${String(n)}</a> · <a href="${base}/history">history</a></p>
 <p class="wk-muted">Every citation belongs to the revision that used it and is never edited. A later revision keeps a source by carrying it forward; a dropped source stays on the older revision.</p>
 ${cites.length ? html`<table class="wk-citations"><thead><tr><th scope="col">Source</th><th scope="col">Kind</th><th scope="col">Retrieved</th><th scope="col">License</th><th scope="col">First cited in</th><th scope="col">In this revision</th></tr></thead><tbody>${cites.map(row)}</tbody></table>` : html`<p>Revision ${String(n)} cites no sources.</p>`}
-${previous ? html`<h2>Dropped since revision ${String(previous)}</h2>${dropped.length ? html`<ul>${dropped.map((c) => html`<li>${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <code>${c.sourceItemId}</code>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : ''}</li>`)}</ul>` : html`<p class="wk-muted">None.</p>`}` : ''}
+${previous ? html`<h2>Dropped since revision ${String(previous)}</h2>${dropped.length ? html`<ul>${dropped.map((c) => html`<li>${c.url ? html`<a href="${c.url}" rel="${rel}">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <code>${c.sourceItemId}</code>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : ''}</li>`)}</ul>` : html`<p class="wk-muted">None.</p>`}` : ''}
 <h2>Other revisions</h2>
 <ul class="wk-revisions">${revisions.map((r) => html`<li>${r.number === n ? html`<strong>Revision ${String(r.number)}</strong>` : html`<a href="${base}/sources?rev=${String(r.number)}">Revision ${String(r.number)}</a>`}${r.published ? ' (published)' : ''} · ${t(r.createdAt)} · ${String(r.citationCount)} source(s)</li>`)}</ul>
 </section>`;
@@ -142,10 +146,10 @@ function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolv
 <article class="wk-article" data-page-id="${page.id}" data-revision="${String(rev.number)}">
 <header><h1>${rev.fields.title || page.title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav></header>
 ${banners}
-${raw(infoboxHtml(v.infobox, resolve))}
+${raw(infoboxHtml(v.infobox, resolve, outRel(space)))}
 <div class="wk-content">${raw(contentHtml)}</div>
 ${raw(mediaHtml(v.attachments, mediaUrl))}
-${raw(citationsHtml(v.citations, `${base}/sources${v.isPublishedRevision ? '' : `?rev=${rev.number}`}`))}
+${raw(citationsHtml(v.citations, `${base}/sources${v.isPublishedRevision ? '' : `?rev=${rev.number}`}`, outRel(space)))}
 ${v.children.length ? html`<section><h2>Subpages</h2><ul>${v.children.map((c) => html`<li><a href="${wpath(space, c)}">${c.title}</a></li>`)}</ul></section>` : ''}
 ${v.backlinks.length ? html`<section><h2>What links here</h2><ul>${v.backlinks.map((b) => html`<li><a href="${wpath(b.space, b.page)}">${b.page.title}</a>${b.space.id !== space.id ? html` <span class="wk-muted">(${b.space.name})</span>` : ''}</li>`)}</ul></section>` : ''}
 <footer class="wk-meta"><p>Revision ${String(rev.number)}${rev.kind === 'revert' ? html` (a revert to revision ${String(rev.revertedTo)})` : ''}, saved ${t(rev.createdAt)}${page.published_at ? html` · first published ${t(page.published_at)}` : ''} · <a href="${base}/history">history</a> · <a href="${base}.json">JSON</a></p>

@@ -29,6 +29,7 @@ class WikiError extends Error {
 const SPACE_KINDS = ['official', 'user'];
 const MAX_BODY = 200000;
 const MAX_TITLE = 200;
+const MAX_SUMMARY = 300;
 const GATE_VIS = { public: 'public', members: 'gated', private: 'private' };
 const PAGE_ID_RE = /^pg_[0-9A-HJKMNP-TV-Z]{26}$/;
 
@@ -203,6 +204,15 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         if (!t) fail(422, 'page.invalid_title', 'A page needs a title');
         if (t.length > MAX_TITLE) fail(422, 'page.invalid_title', `A title is at most ${MAX_TITLE} characters`);
         return t;
+    }
+
+    /** A summary is one short sentence of text (it becomes the meta description, feeds and Search). */
+    function checkSummary(summary) {
+        if (summary == null || summary === '') return null;
+        if (typeof summary !== 'string') fail(422, 'page.invalid_summary', 'summary must be text');
+        const t = summary.replace(/\s+/g, ' ').trim();
+        if (t.length > MAX_SUMMARY) fail(422, 'page.invalid_summary', `A summary is at most ${MAX_SUMMARY} characters`);
+        return t || null;
     }
 
     function checkBody(body) {
@@ -401,6 +411,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
     function insertPage(space, { title, body, infobox = [], parentId = null, visibility = 'public', citations: cites = [], message = null, summary = null }, actor, rec) {
         const cleanTitle = checkTitle(title);
         const slug = wrapContentError(() => content.pageSlug(cleanTitle));
+        const cleanSummary = checkSummary(summary);
         const text = checkBody(body == null ? '' : body);
         const box = wrapContentError(() => content.normalizeInfobox(infobox));
         const vis = checkVisibility(visibility, 'public');
@@ -413,7 +424,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
             q.insertPage.run({ id, space_id: space.id, slug, title: cleanTitle, parent_id: parentId || null, position: 0, visibility: vis, created_by: actorId(actor), now: t });
             redirects.release(`/w/${space.slug}/${slug}`);
             const { revision } = wrapContentError(() => revisions.create({
-                entityId: id, expectedRevision: 0, content: text, fields: { title: cleanTitle, summary: summary || null, infobox: box },
+                entityId: id, expectedRevision: 0, content: text, fields: { title: cleanTitle, summary: cleanSummary, infobox: box },
                 meta: { authorship: rec }, author: actorId(actor), message,
             }));
             const page = q.pageById.get(id);
@@ -675,7 +686,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
                 if (!head) fail(404, 'revision.not_found', 'This page has no revision');
                 const text = body == null ? head.content : checkBody(body);
                 const box = infobox === undefined ? (head.fields.infobox || []) : wrapContentError(() => content.normalizeInfobox(infobox));
-                const fields = { title: title == null ? head.fields.title : checkTitle(title), summary: summary === undefined ? head.fields.summary || null : (summary || null), infobox: box };
+                const fields = { title: title == null ? head.fields.title : checkTitle(title), summary: summary === undefined ? head.fields.summary || null : checkSummary(summary), infobox: box };
                 const { revision, created } = wrapContentError(() => revisions.create({
                     entityId: page.id, expectedRevision, content: text, fields, meta: { authorship: rec }, author: actorId(actor), message,
                 }));
@@ -904,9 +915,16 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
             return { href: null, exists: false };
         },
 
+        /**
+         * Markdown → safe HTML. Outbound links in community (user) spaces carry rel="nofollow ugc":
+         * nobody vouches for them, so they pass no ranking (link spam gains nothing). Official spaces
+         * are edited by staff, who vouch for their links.
+         */
         renderRevision(space, rev, actor) {
-            return content.renderContent(rev.content, { currentSpace: space.slug, resolve: (t) => svc.resolveLink(t, actor) });
+            return content.renderContent(rev.content, { currentSpace: space.slug, resolve: (t) => svc.resolveLink(t, actor), rel: svc.linkRel(space) });
         },
+
+        linkRel(space) { return space && space.kind === 'official' ? 'noopener' : 'nofollow ugc noopener'; },
 
         history(page, { limit = 100, before: cursor, actor = { kind: 'system' } } = {}) {
             const props = new Map(q.proposalsOfPage.all(page.id).map((p) => [p.revision, p]));
@@ -1171,9 +1189,13 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
          * pageId null + title = propose a new page (created as a draft).
          */
         propose({ space: spaceIdOrSlug, pageId = null, title, body, infobox = [], summary = null, citations: cites = [], workflow, stubProvider = false, expectedRevision, note = null } = {}, actor) {
-            if (!actor || (actor.kind !== 'service' && actor.kind !== 'system')) fail(403, 'proposal.service_only', 'AI proposals come from a service principal');
+            // A proposal may target any space, private ones included, and never needs a person: only
+            // first-party services (svc:…, i.e. OpenVibe.AI) file them, never a developer app or module.
+            const firstParty = actor && actor.kind === 'service' && /^svc:/.test(String(actor.service)) && (!actor.claims || actor.claims.actor_type === 'service');
+            if (!actor || (actor.kind !== 'system' && !firstParty)) fail(403, 'proposal.service_only', 'AI proposals come from a first-party service principal');
             if (!workflow || !workflow.id || !workflow.runId) fail(400, 'authorship.workflow_required', 'An AI proposal names its OpenVibe.AI workflow (workflow.id) and run (workflow.run_id)');
             const rec = wrapContentError(() => authorship.record({ mode: 'ai', workflow, stubProvider: !!stubProvider }));
+            const cleanSummary = checkSummary(summary);
             const text = checkBody(body == null ? '' : body);
             const box = wrapContentError(() => content.normalizeInfobox(infobox));
             return tx(() => {
@@ -1194,7 +1216,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
                     if (expectedRevision != null && Number(expectedRevision) !== base) fail(412, 'revision.conflict', `Revision conflict: expected ${expectedRevision}, current is ${base}`, { expected: Number(expectedRevision), current: base });
                 }
                 const head = base ? revisions.head(page.id) : null;
-                const fields = { title: title ? checkTitle(title) : (head ? head.fields.title : page.title), summary, infobox: box };
+                const fields = { title: title ? checkTitle(title) : (head ? head.fields.title : page.title), summary: cleanSummary, infobox: box };
                 const { revision } = wrapContentError(() => revisions.create({
                     entityId: page.id, expectedRevision: base, content: text, fields, meta: { authorship: rec }, author: actorId(actor),
                     message: note ? `AI proposal: ${String(note).slice(0, 200)}` : 'AI proposal', allowUnchanged: true,

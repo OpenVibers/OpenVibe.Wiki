@@ -76,6 +76,9 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
 
     // Imports are the heaviest writes (up to 200 pages in one transaction): a few per hour.
     app.post(['/api/v1/spaces/:space/import', '/s/:space/import'], limiter(60 * 60000, 20));
+    // A word diff of two very different 200,000-character revisions costs a few hundred ms of CPU
+    // and tens of MB (openvibe-publishing/diff caps the search at 4000 edits): per address, not per crawl.
+    app.get(['/w/:space/:slug/diff/:a/:b', '/api/v1/pages/:id/diff'], limiter(60000, 30));
     app.use('/api/', limiter(60000, 300));
     app.use('/api/v1', createApi({ svc, viewers, platform, config, log }));
     app.use('/api', (req, res) => require('openvibe-contracts').http.sendProblem(res, 404, 'route.not_found', { detail: 'Not found' }));
@@ -87,6 +90,8 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     app.use(createMachine({ svc, config }));
 
     app.post(['/new-space', '/s/*', '/w/*', '/proposals/*'], limiter(10 * 60000, 120));
+    // Search scans the text of every published page (LIKE): a person's pace, not a crawler's.
+    app.get('/search', limiter(60000, 60));
     const pages = createPages({ svc, viewers, platform, config, log });
     app.use(pages.router);
 

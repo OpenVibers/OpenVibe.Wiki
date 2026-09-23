@@ -34,7 +34,7 @@ const quiet = { log() {}, warn() {}, error() {} };
  * A running Wiki. opts.env overrides env vars; opts.fetch is the stub for outbound calls
  * (Community, Sources, Media, Events, Network token endpoint).
  */
-async function boot({ env = {}, fetch: fetchImpl, dbPath, now, workers = false, tokens } = {}) {
+async function boot({ env = {}, fetch: fetchImpl, dbPath, now, workers = false, tokens, rateLimits = false } = {}) {
     const dir = dbPath ? path.dirname(dbPath) : fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-test-'));
     const config = load({
         NODE_ENV: 'test', PORT: '0', HOST: '127.0.0.1', BASE_URL: 'http://wiki.test',
@@ -43,7 +43,7 @@ async function boot({ env = {}, fetch: fetchImpl, dbPath, now, workers = false, 
         ...env,
     });
     const h = await start({
-        config, publicKey, log: quiet, listen: true, workers, rateLimits: false, now,
+        config, publicKey, log: quiet, listen: true, workers, rateLimits, now,
         fetchImpl: fetchImpl || (async (url) => { throw new Error(`unexpected outbound fetch ${url}`); }),
         tokens: tokens || { getToken: async () => 'stub-token', authHeaders: async () => ({ Authorization: 'Bearer stub-token' }), invalidate() {} },
     });
