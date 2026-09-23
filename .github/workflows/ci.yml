@@ -17,4 +17,3 @@ jobs:
       # The wiki.* capabilities and the wiki service manifest are proposals (docs/) until the lead
       # releases them in OpenVibe.Contracts; until then this check is expected to fail.
       - run: npx openvibe-contracts-check --service wiki --src server
-        continue-on-error: true
