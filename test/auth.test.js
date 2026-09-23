@@ -68,6 +68,11 @@ const { sanitizeNext } = require('../server/auth/session');
         const ready = await H.req(h, 'GET', '/api/ready');
         assert.strictEqual(ready.status, 200);
         assert.strictEqual(ready.json.checks.db.status, 'ok');
+        // The release manifest (registry.release-manifest@1) names where open tabs report updates.
+        const rel = await H.req(h, 'GET', '/release.json');
+        assert.strictEqual(rel.json.service, 'wiki');
+        assert.deepStrictEqual(require('openvibe-contracts').validate('registry.release-manifest@1', rel.json).errors, []);
+        assert.strictEqual(rel.json.metrics_url, '/release-metrics');
         console.log('auth ok');
     } finally {
         await h.stop();

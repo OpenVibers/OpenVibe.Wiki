@@ -59,7 +59,8 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     { const legal = require('openvibe-shared/legal'); app.get(legal.PATHS, legal.handler({ id: 'wiki', service: 'wiki', host: 'openvibe.wiki', name: 'OpenVibe.Wiki', profile: 'ugc' })); }
 
     app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'openvibe-wiki', version: VERSION }));
-    app.get('/release.json', release.handler);
+    // GET /release.json (ADR-016) and POST /release-metrics: open tabs' update reports into /metrics.
+    release.mount(app, { registry: metrics.registry });
     const ready = createReadiness({
         service: 'wiki', release: release.release,
         checks: [

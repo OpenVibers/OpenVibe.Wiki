@@ -7,11 +7,11 @@
   "runtime": "node 22, express, better-sqlite3",
   "port": 4800,
   "domain": "openvibe.wiki",
-  "contracts": "openvibe-contracts v0.19.0",
+  "contracts": "openvibe-contracts v0.32.0",
   "packages": [
     "openvibe-publishing v0.2.1",
-    "openvibe-shared v1.3.0",
-    "openvibe-sdk v0.2.2"
+    "openvibe-shared v1.5.0",
+    "openvibe-sdk v0.5.0"
   ],
   "capabilities": [
     "wiki.space.create",

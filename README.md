@@ -189,9 +189,9 @@ applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 
 The ids were proposed in [docs/capabilities-proposal/](docs/capabilities-proposal/) (the plan's
 `wiki.search` becomes the three-segment `wiki.search.query`) and are released in openvibe-contracts
-v0.17.0 with the service manifest (this repo pins v0.19.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
-The proposal for `wiki.revision.publish` now also lists the revision review route, which the
-released manifest does not name yet.
+v0.17.0 with the service manifest (this repo pins v0.32.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
+The proposal for `wiki.revision.publish` also lists the revision review route, which the released
+capability names since v0.32.0 (as `wiki.page.create` does the space import route).
 
 ## Events
 
@@ -221,8 +221,8 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 
 ## Depends on
 
-- `openvibe-publishing` v0.2.1, `openvibe-contracts` v0.19.0, `openvibe-shared` v1.3.0 (chrome,
-  release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.2.2 (auth, events
+- `openvibe-publishing` v0.2.1, `openvibe-contracts` v0.32.0, `openvibe-shared` v1.5.0 (chrome,
+  release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.5.0 (auth, events
   outbox) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.Search (consumer of the index events). All but the
