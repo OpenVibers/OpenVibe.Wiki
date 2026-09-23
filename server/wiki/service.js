@@ -447,8 +447,10 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
             if (!content.SPACE_SLUG_RE.test(cleanSlug)) fail(422, 'space.invalid_slug', 'A space slug is 2–63 lowercase letters, digits and dashes');
             if (!SPACE_KINDS.includes(kind)) fail(422, 'space.invalid_kind', 'kind is official or user');
             const vis = checkVisibility(visibility, 'public');
-            // Official (editorial) spaces: Network staff, this service, or a service acting as itself.
-            if (kind === 'official' && !(actor && (actor.kind === 'system' || (actor.kind === 'user' && actor.staff) || (actor.kind === 'service' && !actor.subject)))) {
+            // Official (editorial) spaces: Network staff, this service, or a first-party service (svc:…)
+            // acting as itself. A developer app or module (app:…, mod:…) never does.
+            const firstPartyService = actor && actor.kind === 'service' && !actor.subject && /^svc:/.test(String(actor.service));
+            if (kind === 'official' && !(actor && (actor.kind === 'system' || (actor.kind === 'user' && actor.staff) || firstPartyService))) {
                 fail(403, 'space.official_staff_only', 'Only OpenVibe staff create official spaces');
             }
             if (kind === 'user') requirePerson(actor);

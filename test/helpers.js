@@ -22,9 +22,10 @@ function userToken({ subject: sub = subject(), username = 'someone', role = 'use
     return serviceAuth.signServiceToken({ iss: issuer, aud, sub: 42, id: 42, subject_id: sub, username, display_name: username, role, iat: now, exp: now + exp }, privateKey);
 }
 
-function serviceToken({ client = 'ai', cap = [], aud = 'openvibe.wiki', exp = 300 } = {}) {
+/** A principal token: svc:<client> by default; `sub` + `actorType` for an app:/mod: principal, `extra` for on_behalf_of, env… */
+function serviceToken({ client = 'ai', cap = [], aud = 'openvibe.wiki', exp = 300, sub, actorType = 'service', extra = {} } = {}) {
     const now = Math.floor(Date.now() / 1000);
-    return serviceAuth.signServiceToken({ iss: ISSUER, sub: `svc:${client}`, actor_type: 'service', aud: [aud], cap, ns: [], iat: now, exp: now + exp, jti: `tok_${crypto.randomBytes(8).toString('hex')}` }, privateKey);
+    return serviceAuth.signServiceToken({ iss: ISSUER, sub: sub || `svc:${client}`, actor_type: actorType, aud: [aud], cap, ns: [], iat: now, exp: now + exp, jti: `tok_${crypto.randomBytes(8).toString('hex')}`, ...extra }, privateKey);
 }
 
 const quiet = { log() {}, warn() {}, error() {} };
