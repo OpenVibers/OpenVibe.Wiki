@@ -169,6 +169,15 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
         return out;
     }
 
+    /**
+     * A renamed (or deleted) space's old slug keeps answering with its redirect (or 410): nobody but
+     * that space may take it, or the old links would serve someone else's pages.
+     */
+    function checkSlugNotRetired(slug, spaceId = null) {
+        const r = svc.resolveRedirect(`/s/${slug}`);
+        if (r && r.entityId !== spaceId) fail(409, 'space.slug_retired', `The space slug "${slug}" belonged to another space and still leads there`);
+    }
+
     function wrapContentError(fn) {
         try { return fn(); } catch (err) {
             if (err instanceof content.ContentError) fail(422, err.code, err.message);
@@ -399,6 +408,7 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
             const owner = kind === 'user' ? actor.subject : (actor && actor.kind === 'service' ? actor.service : 'svc:wiki');
             return tx(() => {
                 if (q.spaceBySlug.get(cleanSlug)) fail(409, 'space.slug_taken', `The space slug "${cleanSlug}" is taken`);
+                checkSlugNotRetired(cleanSlug);
                 const t = now();
                 const id = spaceIdNew(t);
                 q.insertSpace.run({ id, slug: cleanSlug, name: cleanName, description: description == null ? null : String(description).slice(0, 1000), kind, visibility: vis, owner, created_by: actorId(actor), now: t });
@@ -426,6 +436,7 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
                 if (!content.SPACE_SLUG_RE.test(next.slug)) fail(422, 'space.invalid_slug', 'A space slug is 2–63 lowercase letters, digits and dashes');
                 if (next.slug !== space.slug) {
                     if (q.spaceBySlug.get(next.slug)) fail(409, 'space.slug_taken', `The space slug "${next.slug}" is taken`);
+                    checkSlugNotRetired(next.slug, space.id);
                     redirects.recordMove(space.id, `/s/${space.slug}`, `/s/${next.slug}`, { reason: 'space_renamed' });
                     for (const p of q.pagesOfSpace.all(space.id)) redirects.recordMove(p.id, `/w/${space.slug}/${p.slug}`, `/w/${next.slug}/${p.slug}`, { reason: 'space_renamed' });
                 }
