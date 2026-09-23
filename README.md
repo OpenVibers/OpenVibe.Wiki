@@ -2,9 +2,10 @@
 
 > Wiki spaces with page trees, revisions, citations, media and discussion — editable together, source-backed.
 
-**Status:** alpha (roadmap Wave 16, Wiki half). Runs and is tested; **not deployed**. The domain
-`openvibe.wiki` keeps its placeholder page on [OpenVibe.Sites](https://github.com/OpenVibers/OpenVibe.Sites)
-until the launch rule below holds.
+**Status:** alpha (roadmap Wave 16, Wiki half). **Public at https://openvibe.wiki since 2026-09-23**
+(the launch release also removed the domain from [OpenVibe.Sites](https://github.com/OpenVibers/OpenVibe.Sites)).
+The only content is the official space's 10 AI-assisted seed pages; no person has reviewed them yet,
+so every page is `noindex` and none is in Search.
 **Domain:** `openvibe.wiki` · **Port:** 4800 · **Service id:** `wiki`
 **Plan:** OpenVibe End-to-End Realignment & Implementation Plan, revision 3 — roadmap Wave 16, §15.13, §29, §32.
 **License:** AGPL-3.0 (same as every OpenVibe service).
@@ -18,7 +19,7 @@ Media attachments and Community discussion. AI proposes revisions; a person appr
 publishes. Search indexes only published, public state.
 
 It is the first full consumer of the shared publishing packages
-([openvibe-publishing](https://github.com/OpenVibers/OpenVibe.Publishing) v0.2.0, ADR-019): revisions,
+([openvibe-publishing](https://github.com/OpenVibers/OpenVibe.Publishing) v0.2.1, ADR-019): revisions,
 citations, redirects, the indexability gate, feeds, sitemaps, JSON-LD, authorship, scheduling,
 media references, discussion references and the Search index hooks all come from there. Wiki owns
 its publication state; the packages supply the mechanics.
@@ -156,7 +157,7 @@ applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 
 The ids were proposed in [docs/capabilities-proposal/](docs/capabilities-proposal/) (the plan's
 `wiki.search` becomes the three-segment `wiki.search.query`) and are released in openvibe-contracts
-v0.19.0 with the service manifest ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
+v0.17.0 with the service manifest (this repo pins v0.19.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
 The proposal for `wiki.revision.publish` now also lists the revision review route, which the
 released manifest does not name yet.
 
@@ -182,19 +183,19 @@ fnm exec --using=22.22.1 npm run dev      # http://localhost:4800
 fnm exec --using=22.22.1 npm test         # every test/*.test.js on temp databases, no network
 ```
 
-Production (planned): `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
+Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 [deploy/systemd/openvibe-wiki.service](deploy/systemd/openvibe-wiki.service), database
 `/var/lib/openvibe-wiki/wiki.db`, nginx [deploy/nginx/openvibe.wiki.conf](deploy/nginx/openvibe.wiki.conf).
 
 ## Depends on
 
-- `openvibe-publishing` v0.2.0, `openvibe-contracts` v0.13.0, `openvibe-shared` v1.3.0 (chrome,
+- `openvibe-publishing` v0.2.1, `openvibe-contracts` v0.19.0, `openvibe-shared` v1.3.0 (chrome,
   release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.2.2 (auth, events
   outbox) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.Search (consumer of the index events). All but the
   Network key are optional at runtime and degrade to explicit failure states.
-- OpenVibe.AI for proposals (not built yet: the proposal API is the seam).
+- OpenVibe.AI for proposals (not wired to Wiki yet: the proposal API is the seam).
 
 ## Acceptance (tested in `test/`)
 
@@ -213,22 +214,23 @@ Production (planned): `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 
 ## Launch rule
 
-This repository does not make the product real on its own. `openvibe.wiki` keeps its placeholder
-page on [OpenVibers/OpenVibe.Sites](https://github.com/OpenVibers/OpenVibe.Sites) until all of the
-following hold (plan §12.12):
+This repository does not make the product real on its own. `openvibe.wiki` kept its placeholder
+page on [OpenVibers/OpenVibe.Sites](https://github.com/OpenVibers/OpenVibe.Sites) until the following
+held (plan §12.12); the launch release went out on 2026-09-23:
 
 1. an owning runtime with health/readiness endpoints and observability — **built** (`/api/health`, `/api/ready`, `/metrics`);
-2. canonical identity/auth integration (Network subjects, a scoped service principal) — **built**, principal and grants not provisioned yet;
+2. canonical identity/auth integration (Network subjects, a scoped service principal) — **built**; principal `wiki` and its grants are provisioned in production;
 3. server-rendered public routes useful without JavaScript — **built**;
-4. real persistence and end-to-end workflows — **built**, not deployed;
-5. capability and event registration against OpenVibe.Contracts — **proposed** in `docs/`, not released;
-6. a migration/seed strategy, a security/threat review, sitemap/robots/feed behaviour — seed and discovery **built**; the security review is the lead's;
+4. real persistence and end-to-end workflows — **built** and deployed; `ovhost drill wiki` restored it on the production host on 2026-09-23;
+5. capability and event registration against OpenVibe.Contracts — **released** (capabilities and service manifest in v0.17.0; no `wiki.*` event payload schemas yet);
+6. a migration/seed strategy, a security/threat review, sitemap/robots/feed behaviour — seed and discovery **built**; no written threat review in this README yet (security fixes with tests landed in the 2026-09-23 reviews);
 7. acceptance tests proving the advertised functionality — **built** (`npm test`).
 
-The launch release removes `openvibe.wiki` from `OpenVibe.Sites/sites.json`, switches routing to this
-service and registers its maturity in the ecosystem registry **in the same release it goes live**.
-A placeholder is never counted as an implemented service, and this README does not call the
-product live until that release has happened.
+The launch release removed `openvibe.wiki` from `OpenVibe.Sites/sites.json`, switched routing to this
+service and opened its Network hub entry in the same release. A placeholder is never counted as an
+implemented service. Still open: a person's review of the 10 seed pages (until then they stay
+`noindex`), `/feed.atom` answers 404 while no page is indexable, and there are no event payload
+schemas in OpenVibe.Contracts.
 
 ---
 
