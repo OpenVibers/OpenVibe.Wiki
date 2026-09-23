@@ -63,7 +63,9 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'seeds', 'ope
         }
         // Absent from sitemaps, feeds and Search until reviewed.
         assert.strictEqual(((await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.match(/<loc>/g) || []).length, 0);
-        assert.strictEqual((await H.req(h, 'GET', '/feed.atom')).status, 404);
+        const atomFeed = await H.req(h, 'GET', '/feed.atom');
+        assert.strictEqual(atomFeed.status, 200, 'an empty feed, not a 404');
+        assert.ok(!atomFeed.text.includes('<entry>'));
         assert.deepStrictEqual((await H.req(h, 'GET', '/feed.json')).json.items, []);
         const idx = H.outbox(h).filter((e) => e.event_type.startsWith('wiki.index_document.'));
         assert.ok(idx.length && idx.every((e) => e.event_type === 'wiki.index_document.deleted'), 'Search only ever got tombstones');

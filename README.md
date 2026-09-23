@@ -95,7 +95,8 @@ purge audit tables); the SDK outbox keeps `wiki_event_outbox`.
   (approval publishes it) or rejects it. Published AI text carries a disclosure at the item.
 - **Discovery (§32)**: server-rendered pages with canonical URLs, robots from the gate, JSON-LD from
   real fields only (no invented author, image or date), breadcrumbs; `/sitemap.xml` (index) →
-  `/sitemaps/spaces.xml`, `/sitemaps/pages-N.xml`; `/feed.atom` and `/feed.json` (recent changes);
+  `/sitemaps/spaces.xml`, `/sitemaps/pages-N.xml`; `/feed.atom` and `/feed.json` (recent changes; with nothing listable
+  yet they are valid feeds with zero entries, never a 404);
   `/robots.txt`; `/llms.txt`; a JSON representation of every page at `<page>.json`.
 - **The gate**: `openvibe-publishing/seo` decides indexing per page with explicit reasons
   (policy: at least `WIKI_GATE_MIN_WORDS` words and `WIKI_GATE_MIN_SOURCES` citations; AI text and
@@ -204,6 +205,7 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 - scheduled publication is idempotent across worker restarts (`schedule.test.js`)
 - a private, members-only or deleted page leaves sitemaps, feeds and the Search index (tombstone)
   and is served `Cache-Control: private`; renames 301, deletions 410 (`visibility.test.js`)
+- `/feed.atom` is a valid Atom feed with zero entries while nothing is listable (`feeds.test.js`)
 - a public page is useful with JavaScript disabled, and so is editing (`nojs.test.js`)
 - a deleted or missing Media object renders an explicit broken-asset state (`integrations.test.js`)
 - permissions are enforced; visitors without SSO read public content only; AI proposals need a
@@ -229,8 +231,7 @@ held (plan §12.12); the launch release went out on 2026-09-23:
 The launch release removed `openvibe.wiki` from `OpenVibe.Sites/sites.json`, switched routing to this
 service and opened its Network hub entry in the same release. A placeholder is never counted as an
 implemented service. Still open: a person's review of the 10 seed pages (until then they stay
-`noindex`), `/feed.atom` answers 404 while no page is indexable, and there are no event payload
-schemas in OpenVibe.Contracts.
+`noindex`) and there are no event payload schemas in OpenVibe.Contracts.
 
 ---
 

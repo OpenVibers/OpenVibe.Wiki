@@ -70,10 +70,21 @@ function createMachine({ svc, config }) {
         }));
     }
 
+    /**
+     * Atom needs a feed-level <updated>. With entries it is the newest entry's. With none (nothing
+     * listable yet) it is the last change to a public space — never "now", and never the time of a
+     * change readers cannot see — or the Unix epoch when there is no public space at all. The feed is
+     * linked from every page, so an empty one is a valid feed with zero entries, not a 404.
+     */
+    function emptyFeedUpdated() {
+        const times = svc.listSpaces({ kind: 'anonymous' }).filter((s) => s.visibility === 'public').map((s) => s.updated_at);
+        return new Date(times.length ? Math.max(...times) : 0).toISOString();
+    }
+
     router.get('/feed.atom', (_req, res) => {
         const items = feedItems();
-        if (!items.some((i) => i.decision.listable)) return res.status(404).set('Cache-Control', 'public, max-age=60').type('text/plain').send('Nothing public has been published yet.');
-        cache(res).type('application/atom+xml').send(seo.atomFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.atom`, id: `${origin}/feed.atom` }, items));
+        const updated = items.some((i) => i.decision.listable) ? null : emptyFeedUpdated();
+        cache(res).type('application/atom+xml').send(seo.atomFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.atom`, id: `${origin}/feed.atom`, ...(updated ? { updated } : {}) }, items));
     });
     router.get('/feed.json', (_req, res) => {
         cache(res).type('application/feed+json').send(JSON.stringify(seo.jsonFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.json`, description: 'Public wiki pages by the time their current revision was published.' }, feedItems())));
