@@ -16,6 +16,7 @@ const seo = require('openvibe-publishing/seo');
 const hooks = require('openvibe-publishing/index-hooks');
 const authorship = require('openvibe-publishing/authorship');
 const ssr = require('openvibe-publishing/ssr');
+const { isMediaId } = require('openvibe-publishing/media');
 const { ulid } = require('openvibe-contracts').ids;
 const content = require('./content');
 const { createAccess, VISIBILITIES } = require('./access');
@@ -114,6 +115,9 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         allPublishedPublic: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
                             WHERE p.state = 'published' AND s.deleted_at IS NULL AND s.visibility = 'public' AND p.visibility = 'public'
                             ORDER BY p.id`),
+        insertOrigin: db.prepare(`INSERT INTO wiki_attachment_origins (attachment_id, page_id, media_id, attached_by, media_owner, media_visibility, attached_at)
+                                  VALUES (?, ?, ?, ?, ?, ?, ?)`),
+        originsOf: db.prepare('SELECT * FROM wiki_attachment_origins WHERE page_id = ?'),
         search: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
                             JOIN wiki_page_revisions r ON r.entity_id = p.id AND r.number = p.published_revision
                             WHERE p.state = 'published' AND s.deleted_at IS NULL AND (@space IS NULL OR s.slug = @space)
@@ -792,7 +796,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
                 infobox: infoboxOf(page.id, n),
                 citations: citations.forRevision(page.id, n),
                 links: q.linksOf.all(page.id, n),
-                attachments: attachments.list(page.id),
+                attachments: svc.attachmentsOf(page.id),
                 children: q.children.all(page.id).filter((c) => access.canReadPage(space, c, actor)),
                 parent: page.parent_id ? (() => { const p = q.pageById.get(page.parent_id); return p && access.canReadPage(space, p, actor) ? p : null; })() : null,
                 backlinks: svc.backlinks(space, page, actor),
@@ -906,11 +910,65 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         citationsOf(page, revisionNumber) { return citations.forRevision(page.id, Number(revisionNumber)); },
         citationHistory(page) { return citations.history(page.id); },
 
-        attachMedia(pageId, { mediaId, alt = null, caption = null, role = 'inline' } = {}, actor) {
+        /**
+         * MEDIA ATTACHMENTS ACROSS AUTHORS AND EDITORS. OpenVibe.Media owns an object's read rights:
+         * public and unlisted objects are readable by anyone, a private one only by its owner (the
+         * rule Media applies to an app acting for one of its users). Wiki reads Media with its own
+         * authority, which sees the whole namespace, so it applies that rule itself:
+         *
+         *  1. Attaching is done by a person (an editor of the space, or a service acting for one), and
+         *     the object must be readable by that person: it exists, is not deleted, and is public,
+         *     unlisted or theirs. Anything else — missing, deleted, someone else's private object —
+         *     gets one answer (media.not_readable), so an id is never confirmed to exist.
+         *  2. A page shows its attachments to every reader of the page, and Wiki never re-shares an
+         *     object under its own authority, so a private object is refused even for its owner
+         *     (media.private: share it in Media first). Only public and unlisted objects are attached.
+         *  3. The attachment belongs to the page (every revision), with a record of who attached it
+         *     and what Media said then (wiki_attachment_origins). Editors who revise, revert or publish
+         *     later do not need read rights on existing attachments and never re-attach them: what was
+         *     checked is the attacher's grant. A later editor can detach an attachment, and attaches
+         *     new objects under rule 1 with their own rights.
+         *  4. Media stays the authority afterwards: the check (verifyMedia, periodic when Media is
+         *     configured) marks an object that was deleted broken ('deleted'), and one that is missing
+         *     or became private broken ('not_found' / 'forbidden'). A broken attachment renders an
+         *     explicit placeholder, never an image; it is shown again when Media shares it again.
+         *
+         * describe(mediaId) is platform.media.describe. A Media outage refuses the attachment (503):
+         * nothing is attached unchecked.
+         */
+        async attachMedia(pageId, { mediaId, alt = null, caption = null, role = 'inline' } = {}, actor, { describe } = {}) {
             const page = pageOrFail(pageId);
             const space = spaceOrFail(page.space_id);
+            if (page.state === 'deleted') fail(410, 'page.deleted', 'This page was deleted');
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can attach media');
-            return wrapContentError(() => attachments.attach({ entityId: page.id, mediaId: String(mediaId || '').trim(), alt, caption, role }));
+            const who = actor && actor.kind === 'system' ? null : requirePerson(actor);
+            const id = String(mediaId || '').trim();
+            if (!isMediaId(id)) fail(400, 'media.invalid_id', 'mediaId must be a Media object id (med_<ULID> or legacy:<app>:<kind>:<id>)');
+            if (typeof describe !== 'function') fail(503, 'media.unavailable', 'Attachments are checked against OpenVibe.Media, which is not configured here: nothing was attached');
+            let obj;
+            try { obj = await describe(id); } catch (err) {
+                fail(503, 'media.unavailable', `Attachments are checked against OpenVibe.Media, which could not answer (${err && err.message}): nothing was attached`);
+            }
+            if (obj && obj.exists && !['public', 'unlisted', 'private'].includes(obj.visibility)) fail(503, 'media.unavailable', 'OpenVibe.Media did not say who may read that object: nothing was attached');
+            const readable = !!(obj && obj.exists && (obj.visibility !== 'private' || (who && obj.owner === who)));
+            if (!readable) fail(422, 'media.not_readable', 'No OpenVibe.Media object you can read has that id');
+            if (obj.visibility === 'private') fail(409, 'media.private', 'That object is private in OpenVibe.Media. Every reader of a wiki page sees its media, so make the object unlisted or public in Media first');
+            if (obj.status && obj.status !== 'ready') fail(409, 'media.not_ready', `That object is ${obj.status} in OpenVibe.Media, not ready yet`);
+            return tx(() => {
+                const att = wrapContentError(() => attachments.attach({ entityId: page.id, mediaId: id, alt, caption, role }));
+                q.insertOrigin.run(att.id, page.id, id, actorId(actor), obj.owner || null, obj.visibility, now());
+                attachments.markAvailable(id);
+                return svc.attachmentsOf(page.id).find((a) => a.id === att.id);
+            });
+        },
+
+        /** A page's attachments, each with who attached it (null for rows older than the record). */
+        attachmentsOf(pageId) {
+            const origins = new Map(q.originsOf.all(pageId).map((o) => [o.attachment_id, o]));
+            return attachments.list(pageId).map((a) => {
+                const o = origins.get(a.id);
+                return { ...a, attachedBy: o ? o.attached_by : null, mediaVisibilityAtAttach: o ? o.media_visibility : null };
+            });
         },
 
         detachMedia(pageId, attachmentId, actor) {

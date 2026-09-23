@@ -17,6 +17,7 @@
  * The Publishing packages add their helper tables under the same prefix (wiki_page_drafts,
  * wiki_page_reviews, wiki_page_attachments, wiki_schedule_jobs, wiki_discussion_refs,
  * wiki_index_revisions, the purge audit tables) and the SDK outbox keeps wiki_event_outbox.
+ * wiki_attachment_origins records who attached each Media object and the read rights checked then.
  */
 const fs = require('fs');
 const path = require('path');
@@ -131,6 +132,20 @@ CREATE TABLE IF NOT EXISTS wiki_ai_proposals (
     UNIQUE (page_id, revision)
 );
 CREATE INDEX IF NOT EXISTS wiki_ai_proposals_status ON wiki_ai_proposals (status, created_at);
+
+-- Who attached a Media object to a page, and what Media said about it at that moment (the read
+-- rights that were checked). One row per attachment, written with it and never changed.
+CREATE TABLE IF NOT EXISTS wiki_attachment_origins (
+    attachment_id     INTEGER PRIMARY KEY,
+    page_id           TEXT NOT NULL,
+    media_id          TEXT NOT NULL,
+    attached_by       TEXT NOT NULL,
+    media_owner       TEXT,
+    media_visibility  TEXT NOT NULL CHECK (media_visibility IN ('public','unlisted','private')),
+    attached_at       INTEGER NOT NULL
+);
+CREATE TRIGGER IF NOT EXISTS wiki_attachment_origins_no_update BEFORE UPDATE ON wiki_attachment_origins
+BEGIN SELECT RAISE(ABORT, 'wiki_attachment_origins rows are immutable'); END;
 `;
 
 function openDb(dbPath) {

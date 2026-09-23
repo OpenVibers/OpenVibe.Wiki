@@ -15,6 +15,9 @@ const ITEM = 'itm_01J8Z6Q3KX0000000000000001';
 (async () => {
     const calls = [];
     let sourcesUp = true;
+    // Every object is ready when it is attached; later B goes missing, C is deleted and Media stops answering for D.
+    let mediaLater = false;
+    const mediaState = (id) => (!mediaLater || id === MED('A') ? 'ready' : { [MED('B')]: 'missing', [MED('C')]: 'deleted', [MED('D')]: 'down' }[id] || 'missing');
     const thread = { id: 7, visibility: 'public', comment_count: 1 };
     const comments = [{ id: 1, thread_id: 7, display_name: 'Bea', message: 'Nice page <b>really</b>', created_at: '2026-09-21T10:00:00.000Z', origin: 'user', deleted: false }];
     const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -24,10 +27,10 @@ const ITEM = 'itm_01J8Z6Q3KX0000000000000001';
         calls.push({ url: u.pathname, method: init.method || 'GET', headers, body: init.body ? String(init.body) : null, host: u.host });
         if (u.host === 'media.internal') {
             const id = u.pathname.split('/').pop();
-            if (id === MED('A')) return json(200, { id, lifecycle_status: 'ready' });
-            if (id === MED('B')) return json(404, { code: 'media.object.not_found' });
-            if (id === MED('C')) return json(200, { id, lifecycle_status: 'deleted' });
-            throw new Error('ECONNREFUSED');
+            const state = mediaState(id);
+            if (state === 'down') throw new Error('ECONNREFUSED');
+            if (state === 'missing') return json(404, { code: 'media.object.not_found' });
+            return json(200, { id, visibility: 'public', owner: { subject: me }, lifecycle_status: state });
         }
         if (u.host === 'sources.internal') {
             if (!sourcesUp) throw new Error('ECONNREFUSED');
@@ -84,6 +87,7 @@ const ITEM = 'itm_01J8Z6Q3KX0000000000000001';
         }
         r = await H.req(h, 'POST', `/api/v1/pages/${pageId}/media`, { token: tok, body: { media_id: 'https://evil.example/x.png' } });
         assert.strictEqual(r.status, 400, 'only Media object ids, never URLs');
+        mediaLater = true;
         r = await H.req(h, 'POST', `/api/v1/pages/${pageId}/media/verify`, { token: tok, body: {} });
         const outcome = Object.fromEntries(r.json.results.map((x) => [x.mediaId, x.outcome + (x.reason ? `:${x.reason}` : '')]));
         assert.deepStrictEqual(outcome, { [MED('A')]: 'available', [MED('B')]: 'broken:not_found', [MED('C')]: 'broken:deleted', [MED('D')]: 'check_failed' });
@@ -93,9 +97,9 @@ const ITEM = 'itm_01J8Z6Q3KX0000000000000001';
         assert.ok(html.includes('This media is no longer available.'));
         assert.ok(!html.includes(`src="https://openvibe.media/o/${MED('B')}"`), 'no image for a broken object');
         assert.ok(!html.includes(`src="https://openvibe.media/o/${MED('C')}"`));
-        assert.ok(html.includes(`data-media-id="${MED('D')}" data-state="unverified"`), 'an outage leaves the state alone');
+        assert.ok(html.includes(`data-media-id="${MED('D')}" data-state="available"`), 'an outage leaves the state alone');
         const pj = (await H.req(h, 'GET', '/w/mt/cited.json')).json;
-        assert.deepStrictEqual(pj.attachments.map((a) => a.state), ['available', 'broken', 'broken', 'unverified']);
+        assert.deepStrictEqual(pj.attachments.map((a) => a.state), ['available', 'broken', 'broken', 'available']);
 
         // Community: the thread is resolved once and stored as a reference; comments are Community's.
         r = await H.req(h, 'GET', '/w/mt/cited');

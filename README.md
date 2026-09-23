@@ -43,7 +43,8 @@ The ten authority tables of §15.13, in Wiki's own SQLite database (`WIKI_DB_PAT
 
 The packages add their helper tables under the same prefix (`wiki_page_drafts`, `wiki_page_reviews`,
 `wiki_page_attachments`, `wiki_schedule_jobs`, `wiki_discussion_refs`, `wiki_index_revisions`, the
-purge audit tables); the SDK outbox keeps `wiki_event_outbox`.
+purge audit tables); the SDK outbox keeps `wiki_event_outbox`. Wiki's own `wiki_attachment_origins`
+records who attached each Media object and what Media said about it at that moment.
 
 ## Does not own
 
@@ -83,6 +84,17 @@ purge audit tables); the SDK outbox keeps `wiki_event_outbox`.
 - **Media**: attachments by Media object id; a check against Media marks missing or deleted objects
   `broken` and the page shows an explicit "no longer available" placeholder instead of an image; an
   outage changes nothing (`check_failed`). A periodic check runs when Media is configured.
+- **Media across authors and editors**: Media owns read rights (public and unlisted objects are
+  readable by anyone, a private one only by its owner). A person attaches an object only if they can
+  read it in Media — missing, deleted and other people's private objects get one answer
+  (`media.not_readable`), so an id is never confirmed — and only public or unlisted objects are
+  attached at all (every reader of a page sees its media; Wiki never re-shares a private object under
+  its own authority). The attachment belongs to the page, with who attached it and the Media
+  visibility checked then (`wiki_attachment_origins`); later editors revise, revert and publish
+  without re-attaching and need no rights on it. When Media deletes an object or makes it private,
+  the next check shows "deleted" or "no longer shared publicly" instead of the image, until Media
+  shares it again. With Media unreachable or not configured nothing is attached (503). The model is
+  documented at `attachMedia` in [server/wiki/service.js](server/wiki/service.js).
 - **Discussion**: public, published pages get a Community thread (resolved once, stored as a
   reference); comments render server-side; signed-in people comment through a form (posted to
   Community as that person). Failures show an explicit "could not be loaded" state.
@@ -208,6 +220,9 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 - `/feed.atom` is a valid Atom feed with zero entries while nothing is listable (`feeds.test.js`)
 - a public page is useful with JavaScript disabled, and so is editing (`nojs.test.js`)
 - a deleted or missing Media object renders an explicit broken-asset state (`integrations.test.js`)
+- Media permissions survive the author/editor handoff: an editor keeps the author's attachments,
+  cannot attach an object only the author can read, and an object Media deletes or makes private is
+  shown as broken or withheld on the public page (`media-handoff.test.js`)
 - permissions are enforced; visitors without SSO read public content only; AI proposals need a
   person's approval (`permissions.test.js`)
 - every event is a valid `events.event-envelope@1` and every index document a valid

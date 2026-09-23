@@ -421,7 +421,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
             }
             case 'unpublish': svc.unpublish(page.id, req.actor); return back();
             case 'move': { const p = svc.movePage(page.id, { slug: b.slug, parentId: b.parent_id || null }, req.actor); return back(p); }
-            case 'attach': svc.attachMedia(page.id, { mediaId: b.media_id, alt: b.alt || null, caption: b.caption || null }, req.actor); return back();
+            case 'attach': await svc.attachMedia(page.id, { mediaId: b.media_id, alt: b.alt || null, caption: b.caption || null }, req.actor, { describe: platform.media.describe }); return back();
             case 'detach': svc.detachMedia(page.id, Number(b.attachment_id), req.actor); return back();
             case 'verify': {
                 const results = await svc.verifyMedia(page.id, platform.media.resolve);
@@ -433,7 +433,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
             default: throw new svc.WikiError(400, 'request.invalid', 'Unknown action');
             }
         } catch (err) {
-            if (!err.status || err.status >= 500) throw err;
+            if (!err.status || (err.status >= 500 && err.status !== 503)) throw err;
             renderPageSettings(req, res, space, svc.pageById(page.id), err.status, { error: err.message });
         }
     }));

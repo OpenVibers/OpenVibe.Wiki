@@ -26,7 +26,7 @@
  *   POST   /pages/:id/schedule             wiki.revision.publish { revision?, run_at }
  *   POST   /pages/:id/unpublish            wiki.revision.publish
  *   POST   /pages/:id/revert               wiki.revision.revert  { to_revision, expected_revision, message?, publish? }
- *   POST   /pages/:id/media                wiki.page.create      { media_id, alt?, caption? }
+ *   POST   /pages/:id/media                wiki.page.create      { media_id, alt?, caption? }  a person who can read the object in Media
  *   POST   /pages/:id/media/verify         wiki.page.create
  *   PUT    /pages/:id/watch                                      { watching: bool }  people only
  *   POST   /proposals                      wiki.revision.propose { space, page_id?, title?, body, summary?, infobox?, citations?, workflow: { id, run_id, version?, model? }, stub_provider?, expected_revision?, note? }
@@ -64,6 +64,10 @@ function serializeRevision(r) {
 
 function serializeCitation(c) {
     return { id: c.id, revision: c.revision, url: c.url, title: c.title, source_item_id: c.sourceItemId, retrieved_at: c.retrievedAt, quote: c.quote, license_note: c.licenseNote, carried_from: c.carriedFrom, attached_by: c.attachedBy, attached_at: c.attachedAt };
+}
+
+function serializeAttachment(a) {
+    return { id: a.id, media_id: a.mediaId, alt: a.alt, caption: a.caption, state: a.state, broken_reason: a.brokenReason, checked_at: a.checkedAt, attached_by: a.attachedBy };
 }
 
 function serializeTree(nodes, svc, space) {
@@ -125,7 +129,7 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         return {
             page: serializePage(page, svc, space), revision: serializeRevision(v.revision),
             citations: v.citations.map(serializeCitation), infobox: v.infobox,
-            attachments: v.attachments.map((a) => ({ id: a.id, media_id: a.mediaId, alt: a.alt, caption: a.caption, state: a.state, broken_reason: a.brokenReason, checked_at: a.checkedAt })),
+            attachments: v.attachments.map(serializeAttachment),
             links: v.links.map((l) => ({ space: l.target_space, slug: l.target_slug, label: l.label })),
             indexability: { indexable: v.decision.indexable, reasons: v.decision.reasons },
             discussion_thread: v.discussion ? v.discussion.threadId : null,
@@ -201,9 +205,10 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         const out = svc.revert(req.params.id, { toRevision: int(b.to_revision), expectedRevision: int(b.expected_revision), message: b.message, publish: b.publish }, req.actor);
         return { page: serializePage(out.page, svc, svc.spaceById(out.page.space_id)), revision: serializeRevision(out.revision), published: out.published };
     }, 201));
-    router.post('/pages/:id/media', guard('wiki.page.create'), R((req) => {
+    router.post('/pages/:id/media', guard('wiki.page.create'), R(async (req) => {
         const b = req.body || {};
-        return { attachment: svc.attachMedia(req.params.id, { mediaId: b.media_id, alt: b.alt, caption: b.caption }, req.actor) };
+        const a = await svc.attachMedia(req.params.id, { mediaId: b.media_id, alt: b.alt, caption: b.caption }, req.actor, { describe: platform.media.describe });
+        return { attachment: serializeAttachment(a) };
     }, 201));
     router.post('/pages/:id/media/verify', guard('wiki.page.create'), R(async (req) => {
         const { space } = pageAndSpace(req.params.id);

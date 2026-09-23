@@ -18,6 +18,7 @@ class IntegrationError extends Error {
 }
 
 const SUBJECT_RE = /^(usr|gst)_[0-9A-HJKMNP-TV-Z]{26}$/;
+const MEDIA_VISIBILITIES = ['public', 'unlisted', 'private'];
 
 function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = null, now = () => Date.now(), log = console } = {}) {
     const tokenClient = tokens || (config.oauth.clientSecret
@@ -132,12 +133,18 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
         },
     };
 
-    // ── Media: does an attached object still exist? (media.object.read, namespace = WIKI_MEDIA_APP) ──
+    // ── Media: attached objects (media.object.read, namespace = WIKI_MEDIA_APP) ──
+    // Wiki reads with its own authority, which sees the whole namespace; who else may read an object
+    // is decided from what Media reports (visibility, owner) — see attachMedia in the wiki service.
     const media = {
         configured: !!(tokenClient && config.mediaInternalUrl),
         publicUrl: (mediaId) => `${config.mediaPublicUrl}/o/${encodeURIComponent(mediaId)}`,
-        /** { exists: true } | { exists: false, reason } | throws (outage: no verdict). */
-        async resolve(mediaId) {
+        /**
+         * { exists: false, reason: 'not_found'|'deleted' }
+         * | { exists: true, visibility: 'public'|'unlisted'|'private'|null, owner: 'usr_…'|null, status }
+         * | throws (outage: no verdict).
+         */
+        async describe(mediaId) {
             if (!media.configured) throw new IntegrationError(503, 'media.unavailable', 'OpenVibe.Media is not configured (OV_MEDIA_INTERNAL_URL)');
             const r = await getJson(`${config.mediaInternalUrl}/api/v2/${encodeURIComponent(config.mediaApp)}/objects/${encodeURIComponent(mediaId)}`, 'openvibe.media');
             if (r.status === 404) return { exists: false, reason: 'not_found' };
@@ -146,6 +153,20 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
             if (r.status !== 200 || !r.body) throw new IntegrationError(503, 'media.unavailable', `Media answered ${r.status}`);
             const obj = r.body.object || r.body;
             if (obj.lifecycle_status === 'deleted') return { exists: false, reason: 'deleted' };
+            const owner = obj.owner && typeof obj.owner.subject === 'string' && SUBJECT_RE.test(obj.owner.subject) ? obj.owner.subject : null;
+            return { exists: true, visibility: MEDIA_VISIBILITIES.includes(obj.visibility) ? obj.visibility : null, owner, status: obj.lifecycle_status || null };
+        },
+        /**
+         * The periodic and on-demand check: { exists: true } | { exists: false, reason } | throws.
+         * Every reader of a page sees its attachments, so an object that became private in Media is
+         * withheld (broken, reason 'forbidden') until it is shared again; Media not saying who may
+         * read it is no verdict.
+         */
+        async resolve(mediaId) {
+            const d = await media.describe(mediaId);
+            if (!d.exists) return d;
+            if (d.visibility === 'private') return { exists: false, reason: 'forbidden' };
+            if (d.visibility == null) throw new IntegrationError(503, 'media.unavailable', 'Media did not say who may read the object');
             return { exists: true };
         },
     };

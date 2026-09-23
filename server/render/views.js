@@ -72,9 +72,15 @@ function citationsHtml(cites) {
     return html`<section class="wk-sources"><h2>Sources</h2><ol>${cites.map((c) => html`<li id="cite-${String(c.id)}">${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <span class="wk-muted">(OpenVibe.Sources item <code>${c.sourceItemId}</code>)</span>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : html`, <span class="wk-muted">retrieval time unknown</span>`}${c.licenseNote ? html` (${c.licenseNote})` : ''}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</li>`)}</ol></section>`;
 }
 
+const UNAVAILABLE = {
+    deleted: 'This media was deleted from OpenVibe.Media and is no longer available.',
+    forbidden: 'This media is no longer shared publicly in OpenVibe.Media, so it is not shown here.',
+    not_found: 'This media is no longer available.',
+};
+
 function mediaHtml(attachments, urlFor) {
     if (!attachments.length) return '';
-    return html`<section class="wk-media"><h2>Media</h2>${attachments.map((a) => raw(figureHtml(a, { urlFor, unavailableText: a.brokenReason === 'deleted' ? 'This media was deleted from OpenVibe.Media and is no longer available.' : 'This media is no longer available.' })))}</section>`;
+    return html`<section class="wk-media"><h2>Media</h2>${attachments.map((a) => raw(figureHtml(a, { urlFor, unavailableText: UNAVAILABLE[a.brokenReason] || UNAVAILABLE.not_found })))}</section>`;
 }
 
 function discussionHtml(d, { space, page, actor }) {
@@ -254,7 +260,8 @@ ${page.state === 'published' ? html`<form method="post" action="${base}/settings
 <p class="wk-muted">The old address keeps working as a permanent redirect.</p>
 <p><button type="submit">Move</button></p></form>
 <h2>Media attachments</h2>
-${v.attachments.length ? html`<ul>${v.attachments.map((a) => html`<li><code>${a.mediaId}</code> ${a.state}${a.brokenReason ? ` (${a.brokenReason})` : ''} <form method="post" action="${base}/settings" class="wk-inline"><input type="hidden" name="op" value="detach"><input type="hidden" name="attachment_id" value="${String(a.id)}"><button type="submit">Detach</button></form></li>`)}</ul>` : html`<p class="wk-muted">No media attached.</p>`}
+<p class="wk-muted">Attach public or unlisted OpenVibe.Media objects you can read; every reader of this page sees them. Attachments stay when someone else edits the page; if Media deletes an object or makes it private, the page shows a placeholder instead.</p>
+${v.attachments.length ? html`<ul>${v.attachments.map((a) => html`<li><code>${a.mediaId}</code> ${a.state}${a.brokenReason ? ` (${a.brokenReason})` : ''}${a.attachedBy ? html` <span class="wk-muted">attached by <code>${a.attachedBy}</code></span>` : ''} <form method="post" action="${base}/settings" class="wk-inline"><input type="hidden" name="op" value="detach"><input type="hidden" name="attachment_id" value="${String(a.id)}"><button type="submit">Detach</button></form></li>`)}</ul>` : html`<p class="wk-muted">No media attached.</p>`}
 <form method="post" action="${base}/settings" class="wk-form"><input type="hidden" name="op" value="attach">
 <label>OpenVibe.Media object id <input type="text" name="media_id" required placeholder="med_…"></label>
 <label>Alt text <input type="text" name="alt" maxlength="1000"></label>
