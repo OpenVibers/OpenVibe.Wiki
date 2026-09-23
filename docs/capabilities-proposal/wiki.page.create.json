@@ -4,7 +4,7 @@
   "owner": "wiki",
   "status": "active",
   "visibility": "first-party",
-  "description": "Create pages and write human-authored revisions (text, typed infobox values, citations), move or rename pages (old addresses answer 301), attach OpenVibe.Media objects and check them, on behalf of the person named in X-OV-Subject, who must be an editor of the space. Deleting pages and changing page visibility need the owner role.",
+  "description": "Create pages and write human-authored revisions (text, typed infobox values, citations), move or rename pages (old addresses answer 301), attach OpenVibe.Media objects the person can read in Media and check them, on behalf of the person named in X-OV-Subject, who must be an editor of the space. Deleting pages, changing page visibility and importing a bundle of pages into the space need the owner role.",
   "permissions": [
     "wiki:page:write"
   ],
@@ -19,6 +19,7 @@
   ],
   "implementedBy": [
     "POST /api/v1/spaces/:space/pages",
+    "POST /api/v1/spaces/:space/import",
     "POST /api/v1/pages/:id/revisions",
     "PATCH /api/v1/pages/:id",
     "DELETE /api/v1/pages/:id",

@@ -12,6 +12,7 @@
  *   GET    /spaces/:space/roles                      owner
  *   PUT    /spaces/:space/roles/:subject   wiki.space.create     { role: owner|editor|viewer|null }  owner
  *   POST   /spaces/:space/pages            wiki.page.create      { title, body, summary?, infobox?, parent_id?, visibility?, citations?, message? }
+ *   POST   /spaces/:space/import           wiki.page.create      { pages: [...], publish?, on_existing?, source?, original_author?, ai_assisted? }  owner; all or nothing (server/wiki/import.js)
  *   GET    /pages/:id                      wiki.page.read        page + the revision the caller may read (?revision=)
  *   PATCH  /pages/:id                      wiki.page.create      { slug?, parent_id?, visibility?, noindex? }
  *   DELETE /pages/:id                      wiki.page.create      owner
@@ -36,7 +37,8 @@
  */
 const express = require('express');
 const contracts = require('openvibe-contracts');
-const { actorMiddleware, guard, run, resolveCitations } = require('./common');
+const { actorMiddleware, guard, run, resolveCitations, resolveBundleCitations } = require('./common');
+const importer = require('../wiki/import');
 
 const { http } = contracts;
 
@@ -80,8 +82,14 @@ function createApi({ svc, viewers, platform, config, log = console }) {
     const router = express.Router();
     const ownOrigin = new URL(config.baseUrl).origin;
     router.use(http.middleware());
+    // An import bundle may be larger than any other request body (server/wiki/import.js).
+    router.post('/spaces/:space/import', express.json({ limit: importer.MAX_BUNDLE_BYTES }));
     router.use(express.json({ limit: '512kb' }));
-    router.use((err, req, res, next) => (err ? http.sendProblem(res, 400, 'request.invalid_json', { detail: 'Malformed JSON body', ctx: req.ov }) : next()));
+    router.use((err, req, res, next) => {
+        if (!err) return next();
+        if (err.type === 'entity.too.large') return http.sendProblem(res, 413, 'request.too_large', { detail: `The request body is larger than ${err.limit} bytes`, ctx: req.ov });
+        return http.sendProblem(res, 400, 'request.invalid_json', { detail: 'Malformed JSON body', ctx: req.ov });
+    });
     // Cookie-authenticated writes from another site are refused (Bearer callers are not browsers' ambient credentials).
     router.use((req, res, next) => {
         if (req.method === 'GET' || req.method === 'HEAD' || req.headers.authorization) return next();
@@ -120,6 +128,16 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         const out = svc.createPage(req.params.space, { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, parentId: b.parent_id || null, visibility: b.visibility, citations: cites, message: b.message }, req.actor);
         const space = svc.spaceById(out.page.space_id);
         return { page: serializePage(out.page, svc, space), revision: serializeRevision(out.revision), citations: svc.citationsOf(out.page, out.revision.number).map(serializeCitation) };
+    }, 201));
+
+    router.post('/spaces/:space/import', guard('wiki.page.create'), R(async (req) => {
+        const { space, bundle } = svc.prepareImport(req.params.space, req.body, req.actor);
+        await resolveBundleCitations(bundle, platform);
+        const out = svc.importPages(space.id, bundle, req.actor);
+        return {
+            space: serializeSpace(out.space), published: out.published, skipped: out.skipped,
+            created: out.created.map((c) => ({ ...serializePage(c.page, svc, out.space), revision: c.revision.number })),
+        };
     }, 201));
 
     // Pages

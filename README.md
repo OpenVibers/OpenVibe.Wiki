@@ -119,6 +119,17 @@ records who attached each Media object and what Media said about it at that mome
   AI-assisted imports only after a person's review; owner-requested noindex). Only public, published, indexable pages enter sitemaps and
   the Search index; members/private/deleted pages are tombstones and never appear in sitemaps,
   feeds or search, and are served `Cache-Control: private, no-store`.
+- **Importing a space**: an owner imports a bundle of pages into their space —
+  `POST /api/v1/spaces/:space/import` or the `/s/:space/import` form (paste the JSON; no
+  JavaScript needed). The bundle is JSON in the seed file's page shape (`title`, Markdown `body`,
+  `summary`, `parent` by title, `infobox`, `citations`, `visibility`), validated strictly first
+  (unknown fields, duplicate slugs, parents, sizes: at most 200 pages, 2 MB, 200,000 characters per
+  page) and imported in one transaction: one bad page imports nothing. Pages are created exactly like
+  hand-made ones — drafts unless the bundle says `publish`, the same sanitising renderer, link and
+  citation records, events and Search documents — with `imported` authorship naming the importer as
+  the accountable person and where the text comes from; `ai_assisted: true` keeps every page noindex
+  until a person reviews it. Existing slugs stop the import (409) unless `on_existing: "skip"`.
+  Twenty imports per hour per address. Format: [server/wiki/import.js](server/wiki/import.js).
 - **Seed**: `npm run seed` imports the official "OpenVibe" space (`seeds/openvibe.json`): ten pages
   about the network's repositories, summarised from their README/STATUS files at pinned commits,
   each cited with a GitHub permalink and retrieval time, authorship recorded as `imported` with
@@ -141,7 +152,7 @@ match; network search is OpenVibe.Search).
 ## Routes
 
 Pages (SSR, useful without JavaScript): `/`, `/recent`, `/search?q=`, `/new-space`, `/s/:space`,
-`/s/:space/new`, `/s/:space/settings`, `/s/:space/proposals`, `/w/:space/:slug` (`?rev=N`),
+`/s/:space/new`, `/s/:space/settings`, `/s/:space/import`, `/s/:space/proposals`, `/w/:space/:slug` (`?rev=N`),
 `/w/:space/:slug.json`, `/w/:space/:slug/history`, `/w/:space/:slug/sources` (`?rev=N`), `/w/:space/:slug/diff/:a/:b` (`?mode=line`),
 `/w/:space/:slug/edit`, `/w/:space/:slug/revert?to=N`, `/w/:space/:slug/settings`,
 `POST /w/:space/:slug/watch|discuss`. Sign-in: `/auth/login|callback|logout|me|refresh|fedcm`
@@ -164,7 +175,7 @@ applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 | Capability (proposed) | Routes |
 |---|---|
 | `wiki.space.create` | `POST /spaces`, `PATCH /spaces/:space`, `PUT /spaces/:space/roles/:subject` |
-| `wiki.page.create` | `POST /spaces/:space/pages`, `POST /pages/:id/revisions`, `PATCH`/`DELETE /pages/:id`, `POST /pages/:id/media[/verify]` |
+| `wiki.page.create` | `POST /spaces/:space/pages`, `POST /spaces/:space/import`, `POST /pages/:id/revisions`, `PATCH`/`DELETE /pages/:id`, `POST /pages/:id/media[/verify]` |
 | `wiki.page.read` | `GET /pages/:id`, `/revisions`, `/revisions/:n`, `/diff`, `/revisions/:n/citations`, `GET /proposals/:id` |
 | `wiki.revision.propose` | `POST /proposals` |
 | `wiki.revision.publish` | `POST /pages/:id/publish`, `/schedule`, `/unpublish`, `POST /pages/:id/revisions/:n/review`, `POST /proposals/:id/review` |
@@ -231,6 +242,8 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
   shown as broken or withheld on the public page (`media-handoff.test.js`)
 - permissions are enforced; visitors without SSO read public content only; AI proposals need a
   person's approval (`permissions.test.js`)
+- only owners import into a space; invalid, oversized and colliding bundles are refused and any
+  failure imports nothing (`import.test.js`)
 - every event is a valid `events.event-envelope@1` and every index document a valid
   `search.index-document@1` (`visibility.test.js`); the proposals validate against the contracts
   schemas (`proposals.test.js`); user text is escaped everywhere (`content.test.js`)

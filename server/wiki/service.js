@@ -19,6 +19,7 @@ const ssr = require('openvibe-publishing/ssr');
 const { isMediaId } = require('openvibe-publishing/media');
 const { ulid } = require('openvibe-contracts').ids;
 const content = require('./content');
+const importer = require('./import');
 const { createAccess, VISIBILITIES } = require('./access');
 
 class WikiError extends Error {
@@ -396,6 +397,34 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         return authorship.record({ mode: 'human', authors: [requirePerson(actor)] });
     }
 
+    /** A new page with its first revision (permission checks and authorship are the caller's). */
+    function insertPage(space, { title, body, infobox = [], parentId = null, visibility = 'public', citations: cites = [], message = null, summary = null }, actor, rec) {
+        const cleanTitle = checkTitle(title);
+        const slug = wrapContentError(() => content.pageSlug(cleanTitle));
+        const text = checkBody(body == null ? '' : body);
+        const box = wrapContentError(() => content.normalizeInfobox(infobox));
+        const vis = checkVisibility(visibility, 'public');
+        return tx(() => {
+            const existing = q.pageBySlug.get(space.id, slug);
+            if (existing) fail(409, existing.state === 'deleted' ? 'page.slug_deleted' : 'page.slug_taken', existing.state === 'deleted' ? `A deleted page held "${slug}"; its address stays gone (410)` : `A page "${slug}" already exists in this space`, { page_id: existing.id });
+            if (parentId) { const par = q.pageById.get(parentId); if (!par || par.space_id !== space.id || par.state === 'deleted') fail(422, 'page.invalid_parent', 'The parent must be a page of the same space'); }
+            const t = now();
+            const id = pageIdNew(t);
+            q.insertPage.run({ id, space_id: space.id, slug, title: cleanTitle, parent_id: parentId || null, position: 0, visibility: vis, created_by: actorId(actor), now: t });
+            redirects.release(`/w/${space.slug}/${slug}`);
+            const { revision } = wrapContentError(() => revisions.create({
+                entityId: id, expectedRevision: 0, content: text, fields: { title: cleanTitle, summary: summary || null, infobox: box },
+                meta: { authorship: rec }, author: actorId(actor), message,
+            }));
+            const page = q.pageById.get(id);
+            writeRevisionExtras(space, page, revision, box);
+            attachCitationList(page, revision.number, cites, actor);
+            revisionEvent(space, page, revision, actor);
+            if (/^usr_/.test(actorId(actor))) q.watch.run(id, actorId(actor), t);
+            return { page, revision };
+        });
+    }
+
     // ── Publication (internal: no permission checks) ─────────
     function publishRevision(page, revisionNumber, actor) {
         const rev = revisions.get(page.id, revisionNumber);
@@ -557,29 +586,75 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
             const rec = actor && actor.kind === 'system' && importRecord ? wrapContentError(() => authorship.record(importRecord)) : humanRecord(actor);
             // authorship.record() keeps label and original author only; the AI-assistance flag is ours.
             if (importRecord && rec.mode === 'imported' && importRecord.importedFrom && importRecord.importedFrom.aiAssisted === true) rec.importedFrom.aiAssisted = true;
-            const cleanTitle = checkTitle(title);
-            const slug = wrapContentError(() => content.pageSlug(cleanTitle));
-            const text = checkBody(body == null ? '' : body);
-            const box = wrapContentError(() => content.normalizeInfobox(infobox));
-            const vis = checkVisibility(visibility, 'public');
+            return insertPage(space, { title, body, infobox, parentId, visibility, citations: cites, message, summary }, actor, rec);
+        },
+
+        /**
+         * Space import, step 1 (before any outbound call): who may import, and a strictly validated
+         * bundle (server/wiki/import.js). Only an owner of the space, acting as a person. A space the
+         * caller cannot read is "not found", exactly like everywhere else.
+         */
+        prepareImport(spaceIdOrSlug, input, actor) {
+            const space = spaceOrFail(spaceIdOrSlug);
+            if (!access.canReadSpace(space, actor)) fail(404, 'space.not_found', 'No such space');
+            if (!access.canManage(space, actor)) fail(403, 'import.forbidden', 'Only an owner of this space imports pages into it');
+            requirePerson(actor);
+            return { space, bundle: importer.validateBundle(input) };
+        },
+
+        /**
+         * Space import, step 2: every page of the bundle (citations already resolved) in ONE
+         * transaction — any failure imports nothing, events included. Each page is created exactly
+         * like one made by hand (same slug rule, sanitising renderer at view time, [[link]] and
+         * citation records, wiki.revision.created, the importer watching it), as a draft unless the
+         * bundle says publish (then the usual publication events and Search documents follow).
+         * Authorship is `imported` with the importer as the accountable person; an AI-assisted bundle
+         * stays noindex until a person reviews each page. Existing slugs: "fail" (409, nothing
+         * imported) or "skip" (left alone, reported).
+         */
+        importPages(spaceIdOrSlug, bundle, actor) {
+            const space = spaceOrFail(spaceIdOrSlug);
+            if (!access.canManage(space, actor)) fail(403, 'import.forbidden', 'Only an owner of this space imports pages into it');
+            const who = requirePerson(actor);
+            const rec = wrapContentError(() => authorship.record({ mode: 'imported', authors: [who], importedFrom: { label: bundle.source || 'a page bundle', originalAuthor: bundle.originalAuthor || null } }));
+            if (bundle.aiAssisted) rec.importedFrom.aiAssisted = true;
             return tx(() => {
-                const existing = q.pageBySlug.get(space.id, slug);
-                if (existing) fail(409, existing.state === 'deleted' ? 'page.slug_deleted' : 'page.slug_taken', existing.state === 'deleted' ? `A deleted page held "${slug}"; its address stays gone (410)` : `A page "${slug}" already exists in this space`, { page_id: existing.id });
-                if (parentId) { const par = q.pageById.get(parentId); if (!par || par.space_id !== space.id || par.state === 'deleted') fail(422, 'page.invalid_parent', 'The parent must be a page of the same space'); }
-                const t = now();
-                const id = pageIdNew(t);
-                q.insertPage.run({ id, space_id: space.id, slug, title: cleanTitle, parent_id: parentId || null, position: 0, visibility: vis, created_by: actorId(actor), now: t });
-                redirects.release(`/w/${space.slug}/${slug}`);
-                const { revision } = wrapContentError(() => revisions.create({
-                    entityId: id, expectedRevision: 0, content: text, fields: { title: cleanTitle, summary: summary || null, infobox: box },
-                    meta: { authorship: rec }, author: actorId(actor), message,
-                }));
-                const page = q.pageById.get(id);
-                writeRevisionExtras(space, page, revision, box);
-                attachCitationList(page, revision.number, cites, actor);
-                revisionEvent(space, page, revision, actor);
-                if (/^usr_/.test(actorId(actor))) q.watch.run(id, actorId(actor), t);
-                return { page, revision };
+                const existing = bundle.pages.map((p) => ({ p, page: q.pageBySlug.get(space.id, p.slug) })).filter((x) => x.page);
+                if (existing.length && bundle.onExisting !== 'skip') {
+                    fail(409, 'import.pages_exist', `Already in this space: ${existing.map((x) => x.p.slug).join(', ')}. Nothing was imported (import with on_existing "skip" to leave them alone)`, { slugs: existing.map((x) => x.p.slug) });
+                }
+                const skipped = existing.map((x) => ({ slug: x.p.slug, title: x.p.title, reason: x.page.state === 'deleted' ? 'deleted' : 'exists' }));
+                const skip = new Set(skipped.map((x) => x.slug));
+                const toCreate = new Set(bundle.pages.map((p) => p.slug).filter((sl) => !skip.has(sl)));
+                const made = new Map();
+                const created = [];
+                let pending = bundle.pages.filter((p) => toCreate.has(p.slug));
+                // Parents first: a page whose parent (in the bundle) is not created yet waits for the next pass.
+                while (pending.length) {
+                    const next = [];
+                    for (const p of pending) {
+                        let parentId = null;
+                        if (p.parentSlug) {
+                            if (toCreate.has(p.parentSlug) && !made.has(p.parentSlug)) { next.push(p); continue; }
+                            const parent = made.get(p.parentSlug) || q.pageBySlug.get(space.id, p.parentSlug);
+                            if (!parent || parent.state === 'deleted') fail(422, 'import.invalid_parent', `"${p.title}": its parent is neither in the bundle nor a page of this space`);
+                            parentId = parent.id;
+                        }
+                        let out;
+                        try {
+                            out = insertPage(space, { ...p, parentId }, actor, rec);
+                        } catch (err) {
+                            if (err instanceof WikiError) fail(err.status, err.code, `"${p.title}": ${err.message}`, err.extra);
+                            throw err;
+                        }
+                        made.set(p.slug, out.page);
+                        created.push(out);
+                    }
+                    if (next.length === pending.length) fail(422, 'import.invalid_parent', `Parents form a loop: ${next.map((p) => p.title).join(', ')}`);
+                    pending = next;
+                }
+                if (bundle.publish) for (const c of created) publishRevision(q.pageById.get(c.page.id), c.revision.number, actor);
+                return { space, created: created.map((c) => ({ page: q.pageById.get(c.page.id), revision: c.revision })), skipped, published: !!bundle.publish };
             });
         },
 

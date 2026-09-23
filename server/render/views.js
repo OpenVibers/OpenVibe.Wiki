@@ -45,7 +45,7 @@ function spacePage({ space, tree, canEdit, canManage, proposals }) {
 <section><h1>${space.name}</h1>
 <p class="wk-muted">${space.kind === 'official' ? 'Official space' : 'Community space'} · ${VIS_LABEL[space.visibility]}</p>
 ${space.description ? html`<p>${space.description}</p>` : ''}
-${canEdit ? html`<p><a class="wk-button" href="/s/${e(space.slug)}/new">New page</a>${canManage ? html` <a href="/s/${e(space.slug)}/settings">Space settings</a>` : ''}</p>` : ''}
+${canEdit ? html`<p><a class="wk-button" href="/s/${e(space.slug)}/new">New page</a>${canManage ? html` <a href="/s/${e(space.slug)}/import">Import pages</a> <a href="/s/${e(space.slug)}/settings">Space settings</a>` : ''}</p>` : ''}
 ${proposals && proposals.length ? html`<p>${notice('info', `${proposals.length} AI proposal(s) wait for review.`)} <a href="/s/${e(space.slug)}/proposals">Review them</a></p>` : ''}
 <h2>Pages</h2>${tree.length ? raw(treeHtml(tree, space)) : html`<p class="wk-muted">No pages yet.</p>`}
 </section>`;
@@ -243,6 +243,30 @@ ${staff ? html`<label class="wk-check"><input type="checkbox" name="official" va
 <p><button type="submit">Create space</button></p></form></section>`;
 }
 
+const IMPORT_EXAMPLE = JSON.stringify({ pages: [
+    { title: 'Bread', body: 'All about bread. See [[Rye]].', summary: 'One sentence.' },
+    { title: 'Rye', parent: 'Bread', body: 'Rye bread is dense.', infobox: [{ label: 'Gluten', type: 'text', value: 'low' }], citations: [{ url: 'https://example.org/rye', title: 'Rye', retrievedAt: '2026-09-01' }] },
+] }, null, 2);
+
+function importPage({ space, values = {}, error = null, result = null }) {
+    const base = `/s/${e(space.slug)}`;
+    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name, url: base }, { name: 'Import' }])}
+<section><h1>Import pages into ${space.name}</h1>
+${error ? notice('error', `${error} Nothing was imported.`) : ''}
+${result ? html`${notice('ok', `Imported ${result.created.length} page(s)${result.published ? ' and published them' : ' as drafts'}${result.skipped.length ? `; left ${result.skipped.length} existing page(s) alone` : ''}.`)}
+<ul>${result.created.map((c) => html`<li><a href="${wpath(space, c.page)}">${c.page.title}</a> <span class="wk-tag">${c.page.state}</span></li>`)}</ul>
+${result.skipped.length ? html`<p>Left alone: ${result.skipped.map((x, i) => html`${i ? ', ' : ''}${x.title} (${x.reason})`)}</p>` : ''}` : ''}
+<p>Paste a bundle: JSON with a <code>pages</code> list (the same shape as the wiki's seed file). Each page has a <code>title</code> and a Markdown <code>body</code>, and optionally <code>summary</code>, <code>parent</code> (the title of another page), <code>infobox</code>, <code>citations</code> and <code>visibility</code>. Everything is checked first and imported in one step: if one page is invalid, nothing is imported. At most 200 pages and 2 MB.</p>
+<details><summary>Example</summary><pre>${IMPORT_EXAMPLE}</pre></details>
+<form method="post" action="${base}/import" class="wk-form">
+<label>Bundle (JSON) <textarea name="bundle" rows="18" required>${values.bundle || ''}</textarea></label>
+<label>Where the text comes from (shown on each page as "Imported from …") <input type="text" name="source" maxlength="200" value="${values.source || ''}"></label>
+<label>Pages that already exist <select name="on_existing"><option value="fail"${values.on_existing !== 'skip' ? raw(' selected') : ''}>stop: import nothing</option><option value="skip"${values.on_existing === 'skip' ? raw(' selected') : ''}>leave them alone, import the rest</option></select></label>
+<label class="wk-check"><input type="checkbox" name="publish" value="1"${values.publish ? raw(' checked') : ''}> Publish the imported pages (otherwise they are drafts only editors see)</label>
+<label class="wk-check"><input type="checkbox" name="ai_assisted" value="1"${values.ai_assisted ? raw(' checked') : ''}> The text was written with AI assistance (search engines skip each page until a person reviews it)</label>
+<p><button type="submit">Import</button></p></form></section>`;
+}
+
 function spaceSettingsPage({ space, roles, error = null, flash = null }) {
     return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name, url: `/s/${e(space.slug)}` }, { name: 'Settings' }])}
 <section><h1>Settings of ${space.name}</h1>${error ? notice('error', error) : ''}${flash ? notice('ok', flash) : ''}
@@ -260,6 +284,7 @@ ${roles.map((r) => html`<tr><td><code>${r.subject}</code></td><td>${r.role}</td>
 <label>Person (usr_… subject id) <input type="text" name="subject" required pattern="usr_[0-9A-Z]{26}"></label>
 <label>Role <select name="role"><option value="editor">editor</option><option value="viewer">viewer</option><option value="owner">owner</option></select></label>
 <p><button type="submit">Grant role</button></p></form>
+<h2>Import</h2><p><a href="/s/${e(space.slug)}/import">Import pages from a bundle</a></p>
 <h2>Delete</h2><form method="post" action="/s/${e(space.slug)}/settings" class="wk-form"><input type="hidden" name="op" value="delete"><label class="wk-check"><input type="checkbox" name="confirm" value="yes" required> Delete this space and take every page offline (addresses answer 410 Gone)</label><p><button type="submit">Delete space</button></p></form>
 </section>`;
 }
@@ -349,6 +374,6 @@ function signInPage({ next, message }) {
 
 module.exports = {
     home, spacePage, articlePage, historyPage, sourcesPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
-    spaceSettingsPage, pageSettingsPage, revertPage, confirmPublishPage, proposalsPage, searchPage, recentPage,
+    spaceSettingsPage, importPage, pageSettingsPage, revertPage, confirmPublishPage, proposalsPage, searchPage, recentPage,
     signInPage, errorBody, wpath, VIS_LABEL,
 };

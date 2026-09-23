@@ -94,6 +94,19 @@ async function resolveCitations(list, platform) {
     return out;
 }
 
+/** Every page's citations of an import bundle, resolved before the import's transaction. */
+async function resolveBundleCitations(bundle, platform) {
+    for (const p of bundle.pages) {
+        try {
+            p.citations = await resolveCitations(p.citations, platform);
+        } catch (err) {
+            if (err && err.status && err.status < 500) err.message = `"${p.title}": ${err.message}`;
+            throw err;
+        }
+    }
+    return bundle;
+}
+
 /** The no-JS form's citation rows (cite_url_N, cite_title_N, cite_retrieved_N, cite_quote_N, cite_item_N). */
 function citationsFromForm(body) {
     const out = [];
@@ -112,4 +125,4 @@ function citationsFromForm(body) {
     return out;
 }
 
-module.exports = { actorMiddleware, guard, sendError, run, resolveCitations, citationsFromForm };
+module.exports = { actorMiddleware, guard, sendError, run, resolveCitations, resolveBundleCitations, citationsFromForm };

@@ -74,6 +74,8 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     });
     app.get('/api/ready', ready.handler);
 
+    // Imports are the heaviest writes (up to 200 pages in one transaction): a few per hour.
+    app.post(['/api/v1/spaces/:space/import', '/s/:space/import'], limiter(60 * 60000, 20));
     app.use('/api/', limiter(60000, 300));
     app.use('/api/v1', createApi({ svc, viewers, platform, config, log }));
     app.use('/api', (req, res) => require('openvibe-contracts').http.sendProblem(res, 404, 'route.not_found', { detail: 'Not found' }));

@@ -9,6 +9,7 @@
  *   GET  /s/:space                      the page tree
  *   GET|POST /s/:space/new              new page (?title= prefill, from a red link)
  *   GET|POST /s/:space/settings         owner: settings, roles, delete
+ *   GET|POST /s/:space/import           owner: import a JSON bundle of pages (all or nothing)
  *   GET  /s/:space/proposals            editors: AI proposals to review;  POST /proposals/:id
  *   GET  /w/:space/:slug                the article (?rev=N for an old revision)
  *   GET  /w/:space/:slug.json           the same data as JSON (same visibility rules)
@@ -31,7 +32,8 @@ const ssr = require('openvibe-publishing/ssr');
 const { renderPage } = require('../render/layout');
 const views = require('../render/views');
 const content = require('../wiki/content');
-const { actorMiddleware, resolveCitations, citationsFromForm } = require('./common');
+const { actorMiddleware, resolveCitations, resolveBundleCitations, citationsFromForm } = require('./common');
+const importer = require('../wiki/import');
 
 function createPages({ svc, viewers, platform, config, log = console }) {
     const router = express.Router();
@@ -194,6 +196,40 @@ function createPages({ svc, viewers, platform, config, log = console }) {
             if (!err.status || err.status >= 500) throw err;
             if (!svc.access.canManage(space, req.actor)) return errorPage(req, res, err.status, 'Owners only', err.message);
             send(req, res, err.status, views.spaceSettingsPage({ space, roles: svc.roles(space.id, req.actor), error: err.message }), { title: `Settings of ${space.name}`, robots: 'noindex, nofollow' });
+        }
+    }));
+
+    // Import pages into a space (owners): the same JSON bundle as POST /api/v1/spaces/:space/import,
+    // pasted into a form; the options come from the form's controls.
+    const importForm = express.urlencoded({ extended: false, limit: '6mb' });
+    function ownersOnly(req, res, space) {
+        if (svc.access.canManage(space, req.actor)) return true;
+        if (!req.actor.subject) needSignIn(req, res, 'Sign in as an owner of this space to import pages.');
+        else errorPage(req, res, 403, 'Owners only', 'Only an owner of this space imports pages into it.');
+        return false;
+    }
+    router.get('/s/:space/import', (req, res) => {
+        const space = locateSpace(req, res);
+        if (!space || !ownersOnly(req, res, space)) return;
+        send(req, res, 200, views.importPage({ space, values: {} }), { title: `Import pages into ${space.name}`, robots: 'noindex, nofollow' });
+    });
+    router.post('/s/:space/import', importForm, wrap(async (req, res) => {
+        const space = locateSpace(req, res);
+        if (!space || !ownersOnly(req, res, space)) return;
+        const b = req.body || {};
+        const values = { bundle: String(b.bundle || ''), publish: b.publish === '1', on_existing: b.on_existing, source: b.source, ai_assisted: b.ai_assisted === '1' };
+        const again = (status, error, result = null) => send(req, res, status, views.importPage({ space, values, error, result }), { title: `Import pages into ${space.name}`, robots: 'noindex, nofollow' });
+        try {
+            const parsed = importer.parseBundleText(values.bundle);
+            const input = Array.isArray(parsed) ? { pages: parsed } : { ...parsed };
+            Object.assign(input, { publish: values.publish, on_existing: values.on_existing || 'fail', source: values.source || input.source || null, ai_assisted: values.ai_assisted });
+            const { bundle } = svc.prepareImport(space.id, input, req.actor);
+            await resolveBundleCitations(bundle, platform);
+            const out = svc.importPages(space.id, bundle, req.actor);
+            again(200, null, out);
+        } catch (err) {
+            if (!err.status || (err.status >= 500 && err.status !== 503)) throw err;
+            again(err.status, err.message);
         }
     }));
 
