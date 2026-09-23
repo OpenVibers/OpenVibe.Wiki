@@ -164,6 +164,10 @@ Caching: anonymous views of public published pages are `public, max-age=60`; sig
 members/private pages, editing surfaces and errors are `private, no-store`. A page a visitor may
 not read answers 404, so its existence does not leak.
 
+Rate limits per address (besides nginx's): sign-in 60 per 15 min, API 300/min, form posts 120 per
+10 min, `/search` 60/min, diffs 30/min, imports 20/hour. Outbound links in community spaces carry
+`rel="nofollow ugc noopener"`. The threat review is [docs/threat-review.md](docs/threat-review.md).
+
 ## API `/api/v1`
 
 People use their Network user JWT (Bearer, or the `ov_token` cookie; cross-site cookie writes are
@@ -259,7 +263,7 @@ held (plan §12.12); the launch release went out on 2026-09-23:
 3. server-rendered public routes useful without JavaScript — **built**;
 4. real persistence and end-to-end workflows — **built** and deployed; `ovhost drill wiki` restored it on the production host on 2026-09-23;
 5. capability and event registration against OpenVibe.Contracts — **released** (capabilities and service manifest in v0.17.0; no `wiki.*` event payload schemas yet);
-6. a migration/seed strategy, a security/threat review, sitemap/robots/feed behaviour — seed and discovery **built**; no written threat review in this README yet (security fixes with tests landed in the 2026-09-23 reviews);
+6. a migration/seed strategy, a security/threat review, sitemap/robots/feed behaviour — seed and discovery **built**; the written threat review is [docs/threat-review.md](docs/threat-review.md) (2026-09-23: mitigations with code references, the gaps fixed in that pass with tests in `test/threat-review.test.js`, and the gaps that remain with their owners);
 7. acceptance tests proving the advertised functionality — **built** (`npm test`).
 
 The launch release removed `openvibe.wiki` from `OpenVibe.Sites/sites.json`, switched routing to this
