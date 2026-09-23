@@ -97,14 +97,23 @@ purge audit tables); the SDK outbox keeps `wiki_event_outbox`.
   `/sitemaps/spaces.xml`, `/sitemaps/pages-N.xml`; `/feed.atom` and `/feed.json` (recent changes);
   `/robots.txt`; `/llms.txt`; a JSON representation of every page at `<page>.json`.
 - **The gate**: `openvibe-publishing/seo` decides indexing per page with explicit reasons
-  (policy: at least `WIKI_GATE_MIN_WORDS` words and `WIKI_GATE_MIN_SOURCES` citations; AI text only
-  after review; owner-requested noindex). Only public, published, indexable pages enter sitemaps and
+  (policy: at least `WIKI_GATE_MIN_WORDS` words and `WIKI_GATE_MIN_SOURCES` citations; AI text and
+  AI-assisted imports only after a person's review; owner-requested noindex). Only public, published, indexable pages enter sitemaps and
   the Search index; members/private/deleted pages are tombstones and never appear in sitemaps,
   feeds or search, and are served `Cache-Control: private, no-store`.
 - **Seed**: `npm run seed` imports the official "OpenVibe" space (`seeds/openvibe.json`): ten pages
   about the network's repositories, summarised from their README/STATUS files at pinned commits,
-  each cited with a GitHub permalink and retrieval time, authorship recorded as `imported`
-  ("summarised with AI assistance"). Idempotent.
+  each cited with a GitHub permalink and retrieval time, authorship recorded as `imported` with
+  `importedFrom.aiAssisted: true` ("summarised with AI assistance"). Idempotent. Being generated
+  text, the pages are published and readable with that disclosure ("Not yet reviewed by a person")
+  but the gate keeps them `noindex` (`ai_generated_unreviewed`) — out of sitemaps, feeds and Search —
+  until a person reviews each one.
+- **Reviewing revisions**: owners and editors (people) review an existing AI-assisted revision from
+  the history view ("Reviewed — correct" / "Needs changes") or `POST /api/v1/pages/:id/revisions/:n/review`.
+  The review goes into the append-only review log; for the published revision the gate is
+  re-evaluated and a changed Search document goes out (with `wiki.page.updated`). Imported rows
+  written before the flag existed are recognised by their "AI assistance" label, and at boot Wiki
+  re-sends Search any document whose indexability changed (`reconcileIndex`, idempotent).
 
 Not built yet: page-level talk moderation, media upload from Wiki (attach existing Media objects
 only), consuming Media/Sources change events (Media does not emit deletion events yet; checks are
@@ -140,16 +149,16 @@ applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 | `wiki.page.create` | `POST /spaces/:space/pages`, `POST /pages/:id/revisions`, `PATCH`/`DELETE /pages/:id`, `POST /pages/:id/media[/verify]` |
 | `wiki.page.read` | `GET /pages/:id`, `/revisions`, `/revisions/:n`, `/diff`, `/revisions/:n/citations`, `GET /proposals/:id` |
 | `wiki.revision.propose` | `POST /proposals` |
-| `wiki.revision.publish` | `POST /pages/:id/publish`, `/schedule`, `/unpublish`, `POST /proposals/:id/review` |
+| `wiki.revision.publish` | `POST /pages/:id/publish`, `/schedule`, `/unpublish`, `POST /pages/:id/revisions/:n/review`, `POST /proposals/:id/review` |
 | `wiki.revision.revert` | `POST /pages/:id/revert` |
 | `wiki.citation.attach` | `POST /pages/:id/revisions/:n/citations` |
 | `wiki.search.query` | `GET /search` |
 
-The ids are proposed in [docs/capabilities-proposal/](docs/capabilities-proposal/) (the plan's
-`wiki.search` becomes the three-segment `wiki.search.query`), with the service manifest in
-[docs/service-manifest-proposal.json](docs/service-manifest-proposal.json). Until a contracts
-release defines them, [server/auth/capabilities.js](server/auth/capabilities.js) decides grants with
-the contracts library's own matching rule.
+The ids were proposed in [docs/capabilities-proposal/](docs/capabilities-proposal/) (the plan's
+`wiki.search` becomes the three-segment `wiki.search.query`) and are released in openvibe-contracts
+v0.19.0 with the service manifest ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
+The proposal for `wiki.revision.publish` now also lists the revision review route, which the
+released manifest does not name yet.
 
 ## Events
 
@@ -158,7 +167,7 @@ transaction as the change; the relay publishes to OpenVibe.Events when `EVENTS_U
 
 - `wiki.space.updated` — created, settings, visibility, roles, renamed, deleted
 - `wiki.revision.created` — every revision (internal: a revision is a draft until published)
-- `wiki.page.published | updated | unpublished | deleted` — publication changes (public only for public, listable pages)
+- `wiki.page.published | updated | unpublished | deleted` — publication changes (public only for public, listable pages); `updated` also when a review changes what Search holds
 - `wiki.watch.triggered` — recipients who may read the page
 - `wiki.index_document.upserted | deleted` — `search.index-document@1` documents and tombstones for
   OpenVibe.Search, with a monotonic index revision (`createIndexSequencer`)

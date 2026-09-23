@@ -5,7 +5,9 @@
  * Idempotent: an existing space is reused and a page whose slug exists is left alone (never
  * overwritten), so running it twice changes nothing. Authorship is recorded as `imported` with the
  * truth about where the text comes from: summaries of the cited repository READMEs/STATUS files,
- * written with AI assistance. Every page carries URL citations (permalinks at the commit read, with
+ * written with AI assistance (`importedFrom.aiAssisted`). Pages are published and readable with that
+ * disclosure, but the gate keeps them noindex (out of sitemaps, feeds and Search) until a person
+ * reviews each revision (service.reviewRevision). Every page carries URL citations (permalinks at the commit read, with
  * the retrieval time) on the revision that uses them.
  */
 const { pageSlug } = require('./content');
@@ -16,6 +18,8 @@ const IMPORTED = {
     importedFrom: {
         label: 'the OpenVibe repository README and STATUS files at the cited commits, summarised with AI assistance',
         originalAuthor: 'OpenVibers',
+        // Generated text: held noindex (the gate's ai_generated_unreviewed) until a person reviews it.
+        aiAssisted: true,
     },
 };
 

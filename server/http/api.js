@@ -21,6 +21,7 @@
  *   GET    /pages/:id/diff?from=&to=&mode= wiki.page.read
  *   GET    /pages/:id/revisions/:n/citations  wiki.page.read
  *   POST   /pages/:id/revisions/:n/citations  wiki.citation.attach  { citations: [...] }  (unpublished head only)
+ *   POST   /pages/:id/revisions/:n/review     wiki.revision.publish { decision: approved|rejected, note? }  a person (owner/editor)
  *   POST   /pages/:id/publish              wiki.revision.publish { revision? }
  *   POST   /pages/:id/schedule             wiki.revision.publish { revision?, run_at }
  *   POST   /pages/:id/unpublish            wiki.revision.publish
@@ -175,6 +176,12 @@ function createApi({ svc, viewers, platform, config, log = console }) {
     router.post('/pages/:id/revisions/:n/citations', guard('wiki.citation.attach'), R(async (req) => {
         const cites = await resolveCitations((req.body || {}).citations, platform);
         return { citations: svc.attachCitations(req.params.id, int(req.params.n), cites, req.actor).map(serializeCitation) };
+    }, 201));
+    router.post('/pages/:id/revisions/:n/review', guard('wiki.revision.publish'), R((req) => {
+        const { page, space } = pageAndSpace(req.params.id);
+        const b = req.body || {};
+        const out = svc.reviewRevision(space.id, page.slug, int(req.params.n), { decision: b.decision, note: b.note == null ? null : String(b.note) }, req.actor);
+        return { review: out.review, page: serializePage(out.page, svc, space), action: out.action, indexable: out.indexable, reasons: out.reasons };
     }, 201));
     router.post('/pages/:id/publish', guard('wiki.revision.publish'), R((req) => {
         const out = svc.publish(req.params.id, { revision: int((req.body || {}).revision) }, req.actor);

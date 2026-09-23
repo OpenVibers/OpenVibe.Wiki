@@ -7,12 +7,12 @@
   "runtime": "node 22, express, better-sqlite3",
   "port": 4800,
   "domain": "openvibe.wiki",
-  "contracts": "openvibe-contracts v0.13.0",
+  "contracts": "openvibe-contracts v0.19.0",
   "packages": ["openvibe-publishing v0.2.0", "openvibe-shared v1.3.0", "openvibe-sdk v0.2.2"],
   "capabilities": ["wiki.space.create", "wiki.page.create", "wiki.page.read", "wiki.revision.propose", "wiki.revision.publish", "wiki.revision.revert", "wiki.citation.attach", "wiki.search.query"],
-  "capabilitiesRegistered": false,
+  "capabilitiesRegistered": true,
   "deployed": false,
   "onOpenVibeSites": true,
-  "seed": "official space \"openvibe\" (10 pages summarised from the repositories' README/STATUS files, cited)",
+  "seed": "official space \"openvibe\" (10 pages summarised with AI assistance from the repositories' README/STATUS files, cited; noindex until a person reviews each)",
   "updated": "2026-09-22"
 }

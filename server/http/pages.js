@@ -18,7 +18,7 @@
  *   GET|POST /w/:space/:slug/revert     revert as a new revision
  *   GET  /w/:space/:slug/publish?rev=   confirm publishing an older revision
  *   GET|POST /w/:space/:slug/settings   publish, schedule, unpublish, move, media, visibility, delete
- *   POST /w/:space/:slug/watch, /discuss
+ *   POST /w/:space/:slug/watch, /discuss, /review (a person reviews an AI-assisted revision)
  *
  * Caching: an anonymous view of a public, published page is `public, max-age=60`; everything
  * else (signed-in views, members/private pages, editing surfaces, errors) is `private, no-store`.
@@ -436,6 +436,16 @@ function createPages({ svc, viewers, platform, config, log = console }) {
             if (!err.status || err.status >= 500) throw err;
             renderPageSettings(req, res, space, svc.pageById(page.id), err.status, { error: err.message });
         }
+    }));
+
+    router.post('/w/:space/:slug/review', form, wrap(async (req, res) => {
+        const found = locate(req, res, '/review');
+        if (!found) return;
+        const { space, page } = found;
+        if (!editorsOnly(req, res, space)) return;
+        const b = req.body || {};
+        svc.reviewRevision(space.id, page.slug, Number(b.revision), { decision: b.decision, note: b.note ? String(b.note).slice(0, 2000) : null }, req.actor);
+        res.redirect(303, `${views.wpath(space, page)}/history`);
     }));
 
     router.post('/w/:space/:slug/watch', form, wrap(async (req, res) => {

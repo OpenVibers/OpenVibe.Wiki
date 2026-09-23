@@ -22,6 +22,8 @@ async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fe
     const stores = createStores(db, { now });
     const platform = createPlatform({ config, db, fetchImpl, tokens, now, log });
     const svc = createWikiService({ db, stores, outbox: platform.outbox, config, now, log });
+    const reconciled = svc.reconcileIndex();
+    if (reconciled.sent) log.log(`[Wiki] re-sent ${reconciled.sent} Search document(s) whose indexability changed`);
     const keys = createKeyStore({ config, fetchImpl, log, publicKey });
     keys.ensure().catch(() => {});
     const viewers = createViewerResolver({ keys, config });

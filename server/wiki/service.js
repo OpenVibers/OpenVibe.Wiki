@@ -34,6 +34,35 @@ function proposalIdNew(t) { return `prp_${ulid(t)}`; }
 
 function toIso(ms) { return ms == null ? null : new Date(ms).toISOString(); }
 
+/**
+ * An imported revision whose text was produced with AI assistance (the seed) is generated content:
+ * it needs a person's review before it may be indexed, exactly like AI output. Rows written before
+ * the explicit flag existed are recognised by their import label.
+ */
+function aiAssistedImport(rec) {
+    if (!rec || rec.mode !== 'imported' || !rec.importedFrom) return false;
+    return rec.importedFrom.aiAssisted === true || /AI assistance/i.test(String(rec.importedFrom.label || ''));
+}
+
+/** Gate facts for a revision's authorship: AI-assisted imports count as AI output until reviewed. */
+function authorshipGateFacts(rec, review) {
+    if (aiAssistedImport(rec)) return { authorship: { mode: 'ai', reviewed: authorship.isReviewed(rec, review) } };
+    return authorship.gateFacts(rec, review);
+}
+
+/** The disclosure shown at the item; AI-assisted imports say whether a person has reviewed them. */
+function disclosureFor(rec, review) {
+    const d = authorship.disclosure(rec, review);
+    if (!d || !aiAssistedImport(rec)) return d;
+    const reviewed = authorship.isReviewed(rec, review);
+    return {
+        ...d,
+        short: 'Imported, written with AI assistance',
+        long: `${d.long.replace(/\.\s*$/, '')}. ${reviewed ? 'Reviewed by a person.' : 'Not yet reviewed by a person.'}`,
+        reviewed,
+    };
+}
+
 function createWikiService({ db, stores, outbox, config, now = () => Date.now(), log = console }) {
     const { revisions, citations, redirects, reviews, attachments, discussions, scheduler, sequencer } = stores;
     const access = createAccess(db);
@@ -207,7 +236,7 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
             text,
             citationCount: citations.forRevision(page.id, rev.number).length,
             noindex: !!page.noindex,
-            ...(rec ? authorship.gateFacts(rec, reviews.latest(page.id, rev.number)) : {}),
+            ...(rec ? authorshipGateFacts(rec, reviews.latest(page.id, rev.number)) : {}),
         };
     }
 
@@ -226,7 +255,7 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
      * from the last one sent (members/private pages are always tombstones: never in search), and the
      * product event when the publication state moved. Both go to the outbox in the caller's transaction.
      */
-    function sync(before, pageId, actor) {
+    function sync(before, pageId, actor, { updatedIfIndexChanged = false } = {}) {
         const page = q.pageById.get(pageId);
         const space = q.spaceById.get(page.space_id);
         const eff = access.effectiveVisibility(space, page);
@@ -236,7 +265,8 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
         const cites = rev ? citations.forRevision(page.id, rev.number) : [];
         const doc = sequencer.stamp(hooks.buildIndexDocument({
             owner: 'wiki', type: 'page', id: page.id, revision: 0, state, visibility: GATE_VIS[eff],
-            deleted: eff !== 'public' || !decision,
+            // Not listable (e.g. unreviewed generated text): never in Search, like members/private pages.
+            deleted: eff !== 'public' || !decision || !decision.listable,
             canonicalUrl: pageUrl(space, page), title: rev ? rev.fields.title : page.title,
             summary: rev ? (rev.fields.summary || ssr.markdownToText(rev.content, 300)) : null,
             body: rev ? ssr.markdownToText(rev.content) : '',
@@ -248,7 +278,9 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
         if (doc.revision !== sentBefore) emit(hooks.indexEvent({ document: doc, now: now() }));
 
         const after = { state, visibility: eff, revision: page.published_revision };
-        const action = hooks.actionFor(before && before.state ? before : null, after);
+        let action = hooks.actionFor(before && before.state ? before : null, after);
+        // A review changes only the gate decision: announce it when what Search holds changed.
+        if (!action && updatedIfIndexChanged && state === 'published' && doc.revision !== sentBefore) action = 'updated';
         if (action) {
             let evDoc = doc;
             if (doc.deleted && (action === 'published' || action === 'updated')) {
@@ -459,6 +491,8 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can create pages');
             // Only this service's own import path (the seed) may state another authorship; people are human authors.
             const rec = actor && actor.kind === 'system' && importRecord ? wrapContentError(() => authorship.record(importRecord)) : humanRecord(actor);
+            // authorship.record() keeps label and original author only; the AI-assistance flag is ours.
+            if (importRecord && rec.mode === 'imported' && importRecord.importedFrom && importRecord.importedFrom.aiAssisted === true) rec.importedFrom.aiAssisted = true;
             const cleanTitle = checkTitle(title);
             const slug = wrapContentError(() => content.pageSlug(cleanTitle));
             const text = checkBody(body == null ? '' : body);
@@ -692,7 +726,8 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
             return {
                 space, page, revision: rev, decision, canEdit, canManage: access.canManage(space, actor),
                 isPublishedRevision: n === page.published_revision && page.state === 'published',
-                authorship: rec, review, disclosure: rec ? authorship.disclosure(rec, review) : null,
+                authorship: rec, review, disclosure: rec ? disclosureFor(rec, review) : null,
+                needsReview: !!rec && aiAssistedImport(rec) && !authorship.isReviewed(rec, review),
                 proposal: q.proposalByRev.get(page.id, n) || null,
                 infobox: infoboxOf(page.id, n),
                 citations: citations.forRevision(page.id, n),
@@ -739,6 +774,9 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
             const space = q.spaceById.get(page.space_id);
             return revisions.list(page.id, { limit, before: cursor }).filter((r) => revisionVisible(space, page, r.number, actor)).map((r) => ({
                 ...r, proposal: props.get(r.number) || null, published: page.state === 'published' && r.number === page.published_revision,
+                review: reviews.latest(page.id, r.number),
+                aiAssisted: aiAssistedImport(r.meta && r.meta.authorship),
+                needsReview: aiAssistedImport(r.meta && r.meta.authorship) && !authorship.isReviewed(r.meta.authorship, reviews.latest(page.id, r.number)),
                 citationCount: citations.forRevision(page.id, r.number).length,
             }));
         },
@@ -854,6 +892,54 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
             return { watching: on };
         },
 
+        /**
+         * Re-send Search whatever differs from what it was last sent, for every page (idempotent: the
+         * sequencer sends nothing for an unchanged document). Run at boot, so a rule change — e.g.
+         * AI-assisted imports becoming noindex until reviewed — reaches Search for rows written earlier.
+         */
+        reconcileIndex() {
+            return tx(() => {
+                let sent = 0;
+                for (const { id } of db.prepare('SELECT id FROM wiki_pages ORDER BY id').all()) {
+                    const b = before(q.pageById.get(id));
+                    if (b.indexRevision == null) continue; // never sent: nothing in Search to correct
+                    const out = sync(b, id, { kind: 'system', service: 'svc:wiki' });
+                    if (out.indexRevision !== b.indexRevision) sent++;
+                }
+                return { sent };
+            });
+        },
+
+        /**
+         * A person reviews an existing revision ("reviewed, correct" = approved / "needs changes" =
+         * rejected). Recorded in the append-only review log; when it is the published revision the
+         * gate is re-evaluated, and a changed Search document goes out with wiki.page.updated.
+         * Pending AI proposals are reviewed through reviewProposal instead.
+         */
+        reviewRevision(spaceIdOrSlug, slug, revisionNumber, { decision, note = null } = {}, actor) {
+            const space = spaceOrFail(spaceIdOrSlug);
+            const page = q.pageBySlug.get(space.id, String(slug));
+            if (!page || page.state === 'deleted') fail(404, 'page.not_found', 'No such page');
+            if (!access.canEdit(space, actor)) fail(403, 'review.forbidden', 'Only owners and editors of this space review revisions');
+            const who = requirePerson(actor);
+            if (decision !== 'approved' && decision !== 'rejected') fail(422, 'review.invalid_decision', 'decision is approved or rejected');
+            const n = Number(revisionNumber);
+            if (!Number.isInteger(n) || !revisions.get(page.id, n)) fail(404, 'revision.not_found', `No revision ${revisionNumber}`);
+            const prop = q.proposalByRev.get(page.id, n);
+            if (prop && prop.status === 'pending') fail(409, 'review.proposal_pending', 'This revision is a pending AI proposal: approve or reject the proposal', { proposal_id: prop.id });
+            return tx(() => {
+                const b = before(page);
+                const review = wrapContentError(() => reviews.record({ entityId: page.id, revision: n, reviewer: who, decision, note }));
+                const out = page.state === 'published' && page.published_revision === n
+                    ? sync(b, page.id, actor, { updatedIfIndexChanged: true })
+                    : { action: null, indexRevision: b ? b.indexRevision : null };
+                const fresh = q.pageById.get(page.id);
+                const rev = revisions.get(page.id, n);
+                const decisionNow = fresh.state === 'published' && fresh.published_revision === n ? decide(space, fresh, rev) : null;
+                return { review, page: fresh, action: out.action, indexable: decisionNow ? decisionNow.indexable : null, reasons: decisionNow ? decisionNow.codes : null };
+            });
+        },
+
         // AI proposals (a seam for OpenVibe.AI: Wiki never calls a model) -------------------
         /**
          * An AI workflow proposes a revision. It becomes an immutable revision with ai authorship
@@ -929,4 +1015,4 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
     return svc;
 }
 
-module.exports = { createWikiService, WikiError, GATE_VIS };
+module.exports = { createWikiService, WikiError, GATE_VIS, aiAssistedImport };
