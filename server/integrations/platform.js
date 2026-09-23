@@ -3,6 +3,7 @@
  * Clients for the services Wiki composes (roadmap §29): Events (outbox relay), Community
  * (discussion threads), Sources (citation items) and Media (attachment checks). Each call uses a
  * Network client-credentials token for svc:wiki, minted per audience by the SDK token client.
+ * Hiding the thread of a page that stopped being public needs community.comment.moderate.
  *
  * Every integration is optional. Missing configuration or an unreachable service is an explicit
  * failure (an error with a stable code, or `configured: false`), never invented data.
@@ -91,6 +92,30 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
                 throw new IntegrationError(res.status >= 500 ? 503 : res.status, (body && body.code) || 'discussion.unavailable', (body && (body.detail || body.error)) || `Community answered ${res.status}`);
             }
             return body;
+        },
+        /**
+         * Hide a page's thread (the page was unpublished, deleted or stopped being public) or show
+         * it again ('public'). Needs community.comment.moderate. Throws on failure; the caller
+         * treats it as best effort.
+         */
+        async setThreadVisibility(threadId, visibility) {
+            if (!community.configured) throw new IntegrationError(503, 'discussion.unavailable', 'OpenVibe.Community is not configured');
+            if (visibility !== 'public' && visibility !== 'hidden') throw new IntegrationError(422, 'discussion.invalid_visibility', 'visibility is public or hidden');
+            let res;
+            try {
+                res = await fetchImpl(`${communityBase}/api/v1/comments/threads/${encodeURIComponent(threadId)}/visibility`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(await tokenClient.authHeaders({ audience: 'openvibe.community', scope: 'community.comment.moderate' })) },
+                    body: JSON.stringify({ visibility }),
+                    signal: AbortSignal.timeout(5000),
+                });
+            } catch (err) {
+                throw new IntegrationError(503, 'discussion.unavailable', `Community did not answer: ${err && err.message}`);
+            }
+            const body = await res.json().catch(() => null);
+            if (res.status === 401) forAudience('openvibe.community').invalidate();
+            if (!res.ok) throw new IntegrationError(res.status >= 500 ? 503 : res.status, (body && body.code) || 'discussion.unavailable', (body && (body.detail || body.error)) || `Community answered ${res.status}`);
+            return true;
         },
     };
 

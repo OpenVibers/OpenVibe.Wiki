@@ -7,6 +7,8 @@
  * Every write runs in one SQLite transaction together with the events it causes (transactional
  * outbox): wiki.space.updated, wiki.revision.created, wiki.page.published|updated|unpublished|deleted,
  * wiki.watch.triggered, and the Search index events wiki.index_document.upserted|deleted.
+ * After the commit (never inside it), a page that stops or starts being public has its Community
+ * discussion thread hidden or shown again (best effort).
  *
  * Methods take an actor (server/wiki/access.js) and throw WikiError (status + stable code).
  */
@@ -63,7 +65,7 @@ function disclosureFor(rec, review) {
     };
 }
 
-function createWikiService({ db, stores, outbox, config, now = () => Date.now(), log = console }) {
+function createWikiService({ db, stores, outbox, config, community = null, now = () => Date.now(), log = console }) {
     const { revisions, citations, redirects, reviews, attachments, discussions, scheduler, sequencer } = stores;
     const access = createAccess(db);
     const origin = config.baseUrl;
@@ -124,7 +126,48 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
     const pagePath = (space, page) => `/w/${encodeURIComponent(space.slug)}/${encodeURIComponent(page.slug)}`;
     const pageUrl = (space, page) => seo.canonicalUrl(origin, pagePath(space, page));
     const fail = (status, code, message, extra) => { throw new WikiError(status, code, message, extra); };
-    const tx = (fn) => db.transaction(fn)();
+
+    // Work that must wait until the write has committed (never inside the transaction). Queued by
+    // afterCommit() and run once the outermost tx() returns; dropped when the transaction throws.
+    let commitQueue = null;
+    function tx(fn) {
+        if (commitQueue) return db.transaction(fn)();
+        commitQueue = [];
+        let out;
+        try {
+            out = db.transaction(fn)();
+        } catch (err) {
+            commitQueue = null;
+            throw err;
+        }
+        const queue = commitQueue;
+        commitQueue = null;
+        for (const job of queue) {
+            try { job(); } catch (err) { log.warn(`[Wiki] after-commit: ${err && err.message}`); }
+        }
+        return out;
+    }
+    function afterCommit(job) {
+        if (commitQueue) commitQueue.push(job);
+        else job();
+    }
+
+    /**
+     * Keep a page's Community discussion thread in step with the page: hidden when it is
+     * unpublished, deleted or stops being public, shown again when it is public again. Best effort
+     * after the commit (needs community.comment.moderate); a failure never fails the write. A page
+     * that never had a thread (threads exist only for public pages) calls nothing.
+     */
+    function followThread(pageId, visibility) {
+        if (!community || typeof community.setThreadVisibility !== 'function') return;
+        afterCommit(() => {
+            const known = discussions.get(pageId);
+            if (!known) return;
+            Promise.resolve()
+                .then(() => community.setThreadVisibility(known.threadId, visibility))
+                .catch((err) => log.warn(`[Wiki] could not set the discussion thread of ${pageId} to ${visibility}: ${err && err.message}`));
+        });
+    }
 
     function actorId(actor) {
         if (!actor) return 'svc:wiki';
@@ -263,6 +306,7 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
      * After any change to a page: send Search the current document or a tombstone when it differs
      * from the last one sent (members/private pages are always tombstones: never in search), and the
      * product event when the publication state moved. Both go to the outbox in the caller's transaction.
+     * When the page stops (or starts) being public, its discussion thread follows after the commit.
      */
     function sync(before, pageId, actor, { updatedIfIndexChanged = false } = {}) {
         const page = q.pageById.get(pageId);
@@ -287,6 +331,9 @@ function createWikiService({ db, stores, outbox, config, now = () => Date.now(),
         if (doc.revision !== sentBefore) emit(hooks.indexEvent({ document: doc, now: now() }));
 
         const after = { state, visibility: eff, revision: page.published_revision };
+        const wasPublic = Boolean(before) && before.state === 'published' && before.visibility === 'public';
+        const isPublic = state === 'published' && eff === 'public';
+        if (wasPublic !== isPublic) followThread(page.id, isPublic ? 'public' : 'hidden');
         let action = hooks.actionFor(before && before.state ? before : null, after);
         // A review changes only the gate decision: announce it when what Search holds changed.
         if (!action && updatedIfIndexChanged && state === 'published' && doc.revision !== sentBefore) action = 'updated';
