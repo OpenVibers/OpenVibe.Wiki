@@ -67,9 +67,35 @@ function infoboxHtml(entries, resolve) {
     return html`<aside class="wk-infobox" aria-label="Infobox"><table><tbody>${entries.map((x) => html`<tr data-key="${x.key}" data-type="${x.type}"><th scope="row">${x.label}</th><td>${cell(x)}</td></tr>`)}</tbody></table></aside>`;
 }
 
-function citationsHtml(cites) {
-    if (!cites.length) return html`<section class="wk-sources"><h2>Sources</h2><p class="wk-muted">This revision cites no sources.</p></section>`;
-    return html`<section class="wk-sources"><h2>Sources</h2><ol>${cites.map((c) => html`<li id="cite-${String(c.id)}">${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <span class="wk-muted">(OpenVibe.Sources item <code>${c.sourceItemId}</code>)</span>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : html`, <span class="wk-muted">retrieval time unknown</span>`}${c.licenseNote ? html` (${c.licenseNote})` : ''}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</li>`)}</ol></section>`;
+function citationsHtml(cites, inspectHref) {
+    const inspect = inspectHref ? html`<p class="wk-muted"><a href="${inspectHref}">Inspect these sources</a> (retrieval times, where each was first cited, what changed between revisions)</p>` : '';
+    if (!cites.length) return html`<section class="wk-sources"><h2>Sources</h2><p class="wk-muted">This revision cites no sources.</p>${inspect}</section>`;
+    return html`<section class="wk-sources"><h2>Sources</h2><ol>${cites.map((c) => html`<li id="cite-${String(c.id)}">${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <span class="wk-muted">(OpenVibe.Sources item <code>${c.sourceItemId}</code>)</span>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : html`, <span class="wk-muted">retrieval time unknown</span>`}${c.licenseNote ? html` (${c.licenseNote})` : ''}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</li>`)}</ol>${inspect}</section>`;
+}
+
+const CHANGE_LABEL = { kept: 'kept from revision', new: 'new in this revision', restored: 'restored from an older revision' };
+
+/** The citation inspector: one revision's sources in full, and how they changed from the previous one. */
+function sourcesPage({ space, page, view: v, citations: cites, previous, dropped, revisions }) {
+    const base = wpath(space, page);
+    const n = v.revision.number;
+    const hostOf = (u) => { try { return new URL(u).host; } catch { return null; } };
+    const row = (c) => html`<tr id="cite-${String(c.id)}">
+<td>${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a><br><span class="wk-muted">${hostOf(c.url) || ''}</span>` : html`${c.title || 'Sources item'}`}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</td>
+<td>${c.sourceItemId ? html`OpenVibe.Sources item <code>${c.sourceItemId}</code><br><span class="wk-muted">URL, title, retrieval time and license from the item's provenance</span>` : 'URL given by the editor'}</td>
+<td>${c.retrievedAt ? t(c.retrievedAt) : html`<span class="wk-muted">unknown</span>`}</td>
+<td>${c.licenseNote || html`<span class="wk-muted">none recorded</span>`}</td>
+<td>${c.firstRevision ? html`<a href="${base}/sources?rev=${String(c.firstRevision)}">revision ${String(c.firstRevision)}</a>, ${t(c.firstAttachedAt)}` : html`<span class="wk-muted">an earlier revision</span>`}</td>
+<td>${c.change === 'kept' && previous ? html`${CHANGE_LABEL.kept} ${String(previous)}` : CHANGE_LABEL[c.change]}</td></tr>`;
+    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name, url: `/s/${e(space.slug)}` }, { name: page.title, url: page.state === 'published' ? base : null }, { name: 'Sources' }])}
+<section class="wk-inspector"><h1>Sources of ${v.revision.fields.title || page.title}, revision ${String(n)}</h1>
+<p>${v.isPublishedRevision ? 'This is the published revision.' : html`This is not the published revision${page.published_revision && page.state === 'published' ? html` (<a href="${base}/sources">see the published one</a>)` : ''}.`} <a href="${base}?rev=${String(n)}">Read revision ${String(n)}</a> · <a href="${base}/history">history</a></p>
+<p class="wk-muted">Every citation belongs to the revision that used it and is never edited. A later revision keeps a source by carrying it forward; a dropped source stays on the older revision.</p>
+${cites.length ? html`<table class="wk-citations"><thead><tr><th scope="col">Source</th><th scope="col">Kind</th><th scope="col">Retrieved</th><th scope="col">License</th><th scope="col">First cited in</th><th scope="col">In this revision</th></tr></thead><tbody>${cites.map(row)}</tbody></table>` : html`<p>Revision ${String(n)} cites no sources.</p>`}
+${previous ? html`<h2>Dropped since revision ${String(previous)}</h2>${dropped.length ? html`<ul>${dropped.map((c) => html`<li>${c.url ? html`<a href="${c.url}" rel="noopener nofollow">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <code>${c.sourceItemId}</code>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : ''}</li>`)}</ul>` : html`<p class="wk-muted">None.</p>`}` : ''}
+<h2>Other revisions</h2>
+<ul class="wk-revisions">${revisions.map((r) => html`<li>${r.number === n ? html`<strong>Revision ${String(r.number)}</strong>` : html`<a href="${base}/sources?rev=${String(r.number)}">Revision ${String(r.number)}</a>`}${r.published ? ' (published)' : ''} · ${t(r.createdAt)} · ${String(r.citationCount)} source(s)</li>`)}</ul>
+</section>`;
 }
 
 const UNAVAILABLE = {
@@ -119,7 +145,7 @@ ${banners}
 ${raw(infoboxHtml(v.infobox, resolve))}
 <div class="wk-content">${raw(contentHtml)}</div>
 ${raw(mediaHtml(v.attachments, mediaUrl))}
-${raw(citationsHtml(v.citations))}
+${raw(citationsHtml(v.citations, `${base}/sources${v.isPublishedRevision ? '' : `?rev=${rev.number}`}`))}
 ${v.children.length ? html`<section><h2>Subpages</h2><ul>${v.children.map((c) => html`<li><a href="${wpath(space, c)}">${c.title}</a></li>`)}</ul></section>` : ''}
 ${v.backlinks.length ? html`<section><h2>What links here</h2><ul>${v.backlinks.map((b) => html`<li><a href="${wpath(b.space, b.page)}">${b.page.title}</a>${b.space.id !== space.id ? html` <span class="wk-muted">(${b.space.name})</span>` : ''}</li>`)}</ul></section>` : ''}
 <footer class="wk-meta"><p>Revision ${String(rev.number)}${rev.kind === 'revert' ? html` (a revert to revision ${String(rev.revertedTo)})` : ''}, saved ${t(rev.createdAt)}${page.published_at ? html` · first published ${t(page.published_at)}` : ''} · <a href="${base}/history">history</a> · <a href="${base}.json">JSON</a></p>
@@ -139,7 +165,7 @@ ${list.map((r, i) => html`<tr${r.published ? raw(' class="wk-live"') : ''}><td><
 <td><a href="${base}?rev=${String(r.number)}">${String(r.number)}</a>${r.published ? html` <span class="wk-tag">published</span>` : ''}</td>
 <td>${t(r.createdAt)}</td><td>${r.author || ''}</td>
 <td>${r.kind}${r.meta && r.meta.authorship && r.meta.authorship.mode !== 'human' ? html` · ${r.meta.authorship.mode === 'ai' ? 'AI-generated' : r.meta.authorship.mode}` : ''}${r.proposal ? html` · proposal ${r.proposal.status}` : ''}</td>
-<td>${r.message || ''} <span class="wk-muted">${String(r.citationCount)} source(s)</span>
+<td>${r.message || ''} <a class="wk-muted" href="${base}/sources?rev=${String(r.number)}">${String(r.citationCount)} source(s)</a>
 ${r.aiAssisted ? html` <span class="wk-tag">${r.needsReview ? 'AI-assisted, not yet reviewed' : (r.review && r.review.decision === 'approved' ? 'reviewed by a person' : 'AI-assisted')}</span>` : ''}
 ${canEdit && !r.published ? html` <a href="${base}/revert?to=${String(r.number)}">revert to this</a>` : ''}
 ${canEdit && !r.published && (!r.proposal || r.proposal.status === 'approved') ? html` <a href="${base}/publish?rev=${String(r.number)}">publish this</a>` : ''}</td></tr>`)}
@@ -322,7 +348,7 @@ function signInPage({ next, message }) {
 }
 
 module.exports = {
-    home, spacePage, articlePage, historyPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
+    home, spacePage, articlePage, historyPage, sourcesPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
     spaceSettingsPage, pageSettingsPage, revertPage, confirmPublishPage, proposalsPage, searchPage, recentPage,
     signInPage, errorBody, wpath, VIS_LABEL,
 };

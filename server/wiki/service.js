@@ -908,6 +908,37 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         },
 
         citationsOf(page, revisionNumber) { return citations.forRevision(page.id, Number(revisionNumber)); },
+
+        /**
+         * The citation inspector: one revision's sources (the published one by default) with their
+         * retrieval times, where each was first cited, and how the list changed from the previous
+         * revision the actor may read (kept, new, restored from an older revision, dropped). Same
+         * read rules as the article (view() refuses what the actor may not see); an origin revision
+         * the actor may not read is not named.
+         */
+        citationInspector(space, page, actor, { revision } = {}) {
+            const v = svc.view(space, page, actor, { revision });
+            const n = v.revision.number;
+            const readable = svc.history(page, { limit: 500, actor });
+            const visible = new Set(readable.map((r) => r.number));
+            const lineage = (c) => c.carriedFrom || c.id;
+            const prev = readable.find((r) => r.number < n) || null;
+            const prevCites = prev ? citations.forRevision(page.id, prev.number) : [];
+            const prevLines = new Set(prevCites.map(lineage));
+            const items = v.citations.map((c) => {
+                const first = c.carriedFrom ? citations.get(c.carriedFrom) : c;
+                const shown = first && visible.has(first.revision) ? first : null;
+                const change = prevLines.has(lineage(c)) ? 'kept' : (c.carriedFrom ? 'restored' : 'new');
+                return { ...c, change, firstRevision: shown ? shown.revision : null, firstAttachedAt: shown ? shown.attachedAt : null };
+            });
+            const here = new Set(v.citations.map(lineage));
+            return {
+                view: v, citations: items,
+                previous: prev ? prev.number : null,
+                dropped: prevCites.filter((c) => !here.has(lineage(c))),
+                revisions: readable.map((r) => ({ number: r.number, createdAt: r.createdAt, citationCount: r.citationCount, published: r.published })),
+            };
+        },
         citationHistory(page) { return citations.history(page.id); },
 
         /**

@@ -13,6 +13,7 @@
  *   GET  /w/:space/:slug                the article (?rev=N for an old revision)
  *   GET  /w/:space/:slug.json           the same data as JSON (same visibility rules)
  *   GET  /w/:space/:slug/history        every revision; /compare?a&b → /diff/:a/:b
+ *   GET  /w/:space/:slug/sources        citation inspector (?rev=N; default the published revision)
  *   GET  /w/:space/:slug/diff/:a/:b     word (default) or ?mode=line diff
  *   GET|POST /w/:space/:slug/edit       edit form (preview / save / save and publish)
  *   GET|POST /w/:space/:slug/revert     revert as a new revision
@@ -286,6 +287,22 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         const { space, page } = found;
         send(req, res, 200, views.historyPage({ space, page, list: svc.history(page, { limit: 500, actor: req.actor }), canEdit: svc.access.canEdit(space, req.actor) }), {
             title: `History of ${page.title}`, robots: 'noindex, follow', cache: page.state === 'published' && svc.access.effectiveVisibility(space, page) === 'public' ? 'public' : null,
+        });
+    });
+
+    // The citation inspector: one revision's sources (?rev=N; the published one by default), with the
+    // same read rules as the article.
+    router.get('/w/:space/:slug/sources', (req, res) => {
+        const found = locate(req, res, '/sources');
+        if (!found) return;
+        const { space, page } = found;
+        const rev = req.query.rev != null ? Number(req.query.rev) : undefined;
+        if (rev !== undefined && !Number.isInteger(rev)) return notFound(req, res);
+        let inspected;
+        try { inspected = svc.citationInspector(space, page, req.actor, { revision: rev }); } catch (err) { if (err.status === 404) return notFound(req, res); throw err; }
+        send(req, res, 200, views.sourcesPage({ space, page, ...inspected }), {
+            title: `Sources of ${inspected.view.revision.fields.title || page.title}`, robots: 'noindex, follow',
+            cache: page.state === 'published' && svc.access.effectiveVisibility(space, page) === 'public' ? 'public' : null,
         });
     });
 

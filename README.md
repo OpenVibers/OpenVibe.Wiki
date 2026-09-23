@@ -80,7 +80,11 @@ records who attached each Media object and what Media said about it at that mome
   for everyone else. "What links here" per page.
 - **Citations**: OpenVibe.Sources items (url, title, `retrieved_at`, license from the item's
   provenance) or URLs with a required retrieval time; attached to one revision, carried forward
-  explicitly, never edited; a published revision's sources are fixed.
+  explicitly, never edited; a published revision's sources are fixed. The citation inspector
+  (`/w/:space/:slug/sources`, linked from the article's sources and every history row) shows one
+  revision's sources in full — kind, retrieval time, license, quote, the revision that first cited
+  each one, and what was kept, added, restored or dropped since the previous revision — under the
+  article's read rules.
 - **Media**: attachments by Media object id; a check against Media marks missing or deleted objects
   `broken` and the page shows an explicit "no longer available" placeholder instead of an image; an
   outage changes nothing (`check_failed`). A periodic check runs when Media is configured.
@@ -138,7 +142,7 @@ match; network search is OpenVibe.Search).
 
 Pages (SSR, useful without JavaScript): `/`, `/recent`, `/search?q=`, `/new-space`, `/s/:space`,
 `/s/:space/new`, `/s/:space/settings`, `/s/:space/proposals`, `/w/:space/:slug` (`?rev=N`),
-`/w/:space/:slug.json`, `/w/:space/:slug/history`, `/w/:space/:slug/diff/:a/:b` (`?mode=line`),
+`/w/:space/:slug.json`, `/w/:space/:slug/history`, `/w/:space/:slug/sources` (`?rev=N`), `/w/:space/:slug/diff/:a/:b` (`?mode=line`),
 `/w/:space/:slug/edit`, `/w/:space/:slug/revert?to=N`, `/w/:space/:slug/settings`,
 `POST /w/:space/:slug/watch|discuss`. Sign-in: `/auth/login|callback|logout|me|refresh|fedcm`
 (Network SSO, same session layer as OpenVibe.Community). Legal: `/terms`, `/privacy`, `/dmca`.
@@ -213,7 +217,9 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 ## Acceptance (tested in `test/`)
 
 - create → edit → publish → revise → diff → revert keeps an immutable lineage (`revisions.test.js`)
-- citations and infobox values stay attached to the exact revision that used them (`revisions.test.js`)
+- citations and infobox values stay attached to the exact revision that used them (`revisions.test.js`);
+  the citation inspector shows them per revision without JavaScript and leaks nothing the article
+  would not show (`citation-inspector.test.js`)
 - scheduled publication is idempotent across worker restarts (`schedule.test.js`)
 - a private, members-only or deleted page leaves sitemaps, feeds and the Search index (tombstone)
   and is served `Cache-Control: private`; renames 301, deletions 410 (`visibility.test.js`)

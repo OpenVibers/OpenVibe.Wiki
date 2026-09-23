@@ -60,8 +60,9 @@ fieldset { border: 1px solid var(--wk-line); border-radius: 6px; margin: 12px 0;
 .wk-sources blockquote { margin: 4px 0 0 12px; color: var(--wk-muted); font-style: italic; }
 .wk-meta { clear: both; font-size: 14px; color: var(--wk-muted); border-top: 1px solid var(--wk-line); margin-top: 24px; }
 table { border-collapse: collapse; }
-.wk-history, .wk-fields { width: 100%; font-size: 14px; display: block; overflow-x: auto; }
-.wk-history th, .wk-history td, .wk-fields th, .wk-fields td { padding: 4px 8px; border-bottom: 1px solid var(--wk-line); text-align: left; vertical-align: top; }
+.wk-history, .wk-fields, .wk-citations { width: 100%; font-size: 14px; display: block; overflow-x: auto; }
+.wk-history th, .wk-history td, .wk-fields th, .wk-fields td, .wk-citations th, .wk-citations td { padding: 4px 8px; border-bottom: 1px solid var(--wk-line); text-align: left; vertical-align: top; }
+.wk-citations blockquote { margin: 4px 0 0 12px; color: var(--wk-muted); font-style: italic; }
 .wk-history tr.wk-live { background: var(--wk-panel); }
 .wk-tree { padding-left: 1.2em; }
 .wk-comments { list-style: none; padding: 0; }
