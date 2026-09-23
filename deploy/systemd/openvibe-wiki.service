@@ -1,0 +1,32 @@
+[Unit]
+Description=OpenVibe.Wiki — wiki spaces, revisions, citations and discussion (server-rendered)
+# Network (openvibe-network) signs the tokens this service verifies. Wiki starts without it and
+# keeps retrying the JWKS fetch: public pages work, sign-in and token calls answer 503 meanwhile.
+# Events, Community, Sources and Media are optional: each degrades to an explicit failure state.
+After=network.target
+Wants=openvibe-network.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/openvibe.wiki
+EnvironmentFile=/etc/openvibe/wiki.env
+Environment=NODE_ENV=production
+Environment=PORT=4800
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env node /opt/openvibe.wiki/server/index.js
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# The code tree stays read-only; the database lives in /var/lib/openvibe-wiki.
+StateDirectory=openvibe-wiki
+Environment=WIKI_DB_PATH=/var/lib/openvibe-wiki/wiki.db
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+{
+  "id": "wiki.search.query",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Search published pages by title and text, returning only pages the person named in X-OV-Subject may read (without a subject: public pages only). Network-wide discovery goes through OpenVibe.Search, which Wiki feeds with wiki.index_document.* events.",
+  "permissions": [
+    "wiki:search"
+  ],
+  "resourceConstraints": [
+    "none"
+  ],
+  "quotaClass": "wiki-read",
+  "events": [],
+  "implementedBy": [
+    "GET /api/v1/search"
+  ]
+}

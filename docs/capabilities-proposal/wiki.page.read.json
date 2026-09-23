@@ -1,0 +1,24 @@
+{
+  "id": "wiki.page.read",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Read pages, revisions, diffs, citations and AI proposals as the person named in X-OV-Subject sees them (without a subject: public, published content only). Members-only and private pages follow the space's roles; drafts and history of unpublished pages need the editor role.",
+  "permissions": [
+    "wiki:page:read"
+  ],
+  "resourceConstraints": [
+    "space_member"
+  ],
+  "quotaClass": "wiki-read",
+  "events": [],
+  "implementedBy": [
+    "GET /api/v1/pages/:id",
+    "GET /api/v1/pages/:id/revisions",
+    "GET /api/v1/pages/:id/revisions/:n",
+    "GET /api/v1/pages/:id/diff",
+    "GET /api/v1/pages/:id/revisions/:n/citations",
+    "GET /api/v1/proposals/:id"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "wiki.citation.attach",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Attach citations (an OpenVibe.Sources item id, whose URL, title, retrieval time and license come from the item's provenance, or an http(s) URL with its retrieval time) to the newest, unpublished revision of a page. Citations are append-only and stay with the revision that used them.",
+  "permissions": [
+    "wiki:citation:write"
+  ],
+  "resourceConstraints": [
+    "space_member"
+  ],
+  "quotaClass": "wiki-write",
+  "events": [],
+  "implementedBy": [
+    "POST /api/v1/pages/:id/revisions/:n/citations"
+  ]
+}

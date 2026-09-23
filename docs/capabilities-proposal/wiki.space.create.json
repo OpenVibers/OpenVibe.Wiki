@@ -1,0 +1,23 @@
+{
+  "id": "wiki.space.create",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Create a wiki space and change a space's settings and roles. People create user spaces they own; official (editorial) spaces are created by staff or by a service acting as itself. Settings and role changes need the owner role of the space (for a service: the X-OV-Subject person).",
+  "permissions": [
+    "wiki:space:write"
+  ],
+  "resourceConstraints": [
+    "space_member"
+  ],
+  "quotaClass": "wiki-write",
+  "events": [
+    "wiki.space.updated"
+  ],
+  "implementedBy": [
+    "POST /api/v1/spaces",
+    "PATCH /api/v1/spaces/:space",
+    "PUT /api/v1/spaces/:space/roles/:subject"
+  ]
+}

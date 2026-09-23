@@ -1,0 +1,21 @@
+{
+  "id": "wiki.revision.propose",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Propose a revision (or a new page) as the output of an OpenVibe.AI workflow run. The proposal becomes an immutable revision with ai authorship (workflow id and run id, stub-provider flag) and a pending proposal; it is never published until a person with the editor role approves it.",
+  "permissions": [
+    "wiki:revision:propose"
+  ],
+  "resourceConstraints": [
+    "none"
+  ],
+  "quotaClass": "wiki-write",
+  "events": [
+    "wiki.revision.created"
+  ],
+  "implementedBy": [
+    "POST /api/v1/proposals"
+  ]
+}

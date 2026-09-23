@@ -1,0 +1,28 @@
+{
+  "id": "wiki.revision.publish",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Publish a revision now or at a scheduled time (idempotent), unpublish a page, and record a person's approval or rejection of an AI proposal, on behalf of the editor named in X-OV-Subject. AI-generated revisions cannot be published without an approving review by a person.",
+  "permissions": [
+    "wiki:revision:publish"
+  ],
+  "resourceConstraints": [
+    "space_member"
+  ],
+  "quotaClass": "wiki-write",
+  "events": [
+    "wiki.page.published",
+    "wiki.page.updated",
+    "wiki.page.unpublished",
+    "wiki.index_document.upserted",
+    "wiki.index_document.deleted"
+  ],
+  "implementedBy": [
+    "POST /api/v1/pages/:id/publish",
+    "POST /api/v1/pages/:id/schedule",
+    "POST /api/v1/pages/:id/unpublish",
+    "POST /api/v1/proposals/:id/review"
+  ]
+}

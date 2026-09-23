@@ -1,0 +1,22 @@
+{
+  "id": "wiki.revision.revert",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Revert a page to an earlier revision by adding a new revision that copies its text, infobox and citations (history is never rewritten), on behalf of the editor named in X-OV-Subject. A revert of a published page is published.",
+  "permissions": [
+    "wiki:revision:revert"
+  ],
+  "resourceConstraints": [
+    "space_member"
+  ],
+  "quotaClass": "wiki-write",
+  "events": [
+    "wiki.revision.created",
+    "wiki.page.updated"
+  ],
+  "implementedBy": [
+    "POST /api/v1/pages/:id/revert"
+  ]
+}

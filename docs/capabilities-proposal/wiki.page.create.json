@@ -1,0 +1,28 @@
+{
+  "id": "wiki.page.create",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Create pages and write human-authored revisions (text, typed infobox values, citations), move or rename pages (old addresses answer 301), attach OpenVibe.Media objects and check them, on behalf of the person named in X-OV-Subject, who must be an editor of the space. Deleting pages and changing page visibility need the owner role.",
+  "permissions": [
+    "wiki:page:write"
+  ],
+  "resourceConstraints": [
+    "space_member"
+  ],
+  "quotaClass": "wiki-write",
+  "events": [
+    "wiki.revision.created",
+    "wiki.page.updated",
+    "wiki.page.deleted"
+  ],
+  "implementedBy": [
+    "POST /api/v1/spaces/:space/pages",
+    "POST /api/v1/pages/:id/revisions",
+    "PATCH /api/v1/pages/:id",
+    "DELETE /api/v1/pages/:id",
+    "POST /api/v1/pages/:id/media",
+    "POST /api/v1/pages/:id/media/verify"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "version": "0.1.0",
+  "contractRanges": {
+    "openvibe-contracts": ">=0.13.0 <1.0.0"
+  },
+  "id": "wiki",
+  "name": "OpenVibe.Wiki",
+  "status": "alpha",
+  "repository": "OpenVibers/OpenVibe.Wiki",
+  "domains": [
+    "openvibe.wiki"
+  ],
+  "publicOrigin": "https://openvibe.wiki",
+  "health": "/api/health",
+  "ready": "/api/ready",
+  "capabilities": [
+    "wiki.space.create",
+    "wiki.page.create",
+    "wiki.page.read",
+    "wiki.revision.propose",
+    "wiki.revision.publish",
+    "wiki.revision.revert",
+    "wiki.citation.attach",
+    "wiki.search.query"
+  ],
+  "eventsProduced": [
+    "wiki.space.updated",
+    "wiki.revision.created",
+    "wiki.page.published",
+    "wiki.page.updated",
+    "wiki.page.unpublished",
+    "wiki.page.deleted",
+    "wiki.watch.triggered",
+    "wiki.index_document.upserted",
+    "wiki.index_document.deleted"
+  ],
+  "eventsConsumed": [],
+  "namespacesOwned": [
+    "wiki.*"
+  ],
+  "notes": "Wiki spaces (official and user), page trees with canonical slugs and history-aware redirects, immutable revisions with diff and revert, typed infoboxes, [[internal links]] with red links, citations per revision (Sources items or URLs with retrieval time), Media attachments with an explicit broken state, Community discussion references, watchers notified through wiki.watch.triggered, AI proposals held for a person's approval. Server-rendered public routes useful without JavaScript; sitemaps, Atom/JSON feeds and Search index events only for public, published, indexable pages (openvibe-publishing v0.2.0). Not deployed; openvibe.wiki stays on OpenVibe.Sites until launch."
+}
