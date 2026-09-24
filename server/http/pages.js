@@ -27,6 +27,7 @@
  * A page a visitor may not read answers 404 (not 403), so its existence does not leak.
  */
 const express = require('express');
+const ovServe = require('openvibe-shared/serve');
 const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const { renderPage } = require('../render/layout');
@@ -103,7 +104,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         });
     });
     // What shipped on OpenVibe.Wiki: the shared update log every OpenVibe site has.
-    router.get('/updates', (req, res) => send(req, res, 200, frame.updatesBody({ service: 'wiki', siteName: 'OpenVibe.Wiki' }) + frame.shippedScript(), { title: 'What shipped on OpenVibe.Wiki', robots: 'index, follow', cache: 'public', path: '/updates' }));
+    router.get('/updates', (req, res) => send(req, res, 200, frame.updatesBody({ service: 'wiki', siteName: 'OpenVibe.Wiki' }) + `<script src="${ovServe.url('shipped.js')}" defer></script>`, { title: 'What shipped on OpenVibe.Wiki', robots: 'index, follow', cache: 'public', path: '/updates' }));
     router.get('/recent', (req, res) => send(req, res, 200, views.recentPage({ items: svc.recentChanges(100) }), { title: 'Recent changes', robots: 'noindex, follow', cache: 'public', active: 'recent' }));
     router.get('/search', (req, res) => {
         const query = String(req.query.q || '').slice(0, 200);
