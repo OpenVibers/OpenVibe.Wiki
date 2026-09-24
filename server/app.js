@@ -25,6 +25,8 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     const app = express();
     app.disable('x-powered-by');
     app.set('trust proxy', config.trustProxy);
+    // One W3C trace across services (openvibe-shared/trace): calls made while serving a request carry its traceparent.
+    require('openvibe-shared/trace').install(app);
 
     const release = require('openvibe-shared/release').createRelease({ service: 'wiki', root: path.join(__dirname, '..') });
     const metrics = require('openvibe-shared/metrics').instrument(app, { service: 'wiki', release: release.release });
