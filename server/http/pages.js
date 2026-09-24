@@ -31,6 +31,7 @@ const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const { renderPage } = require('../render/layout');
 const views = require('../render/views');
+const chromeSsr = require('openvibe-shared/chrome-ssr');
 const content = require('../wiki/content');
 const { actorMiddleware, resolveCitations, resolveBundleCitations, citationsFromForm } = require('./common');
 const importer = require('../wiki/import');
@@ -96,11 +97,13 @@ function createPages({ svc, viewers, platform, config, log = console }) {
     router.get('/', (req, res) => {
         const spaces = svc.listSpaces(req.actor);
         const recent = svc.recentChanges(10);
-        send(req, res, 200, views.home({ spaces, recent, actor: req.actor }), {
+        send(req, res, 200, views.home({ spaces, recent, actor: req.actor }) + chromeSsr.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
             robots: 'index, follow', cache: 'public', active: 'home', path: '/',
             jsonLd: seo.structuredData.webPage({ url: `${config.baseUrl}/`, name: 'OpenVibe.Wiki', description: 'Wiki spaces of the OpenVibe network.' }),
         });
     });
+    // What shipped on OpenVibe.Wiki: the shared update log every OpenVibe site has.
+    router.get('/updates', (req, res) => send(req, res, 200, chromeSsr.updatesBody({ service: 'wiki', siteName: 'OpenVibe.Wiki' }) + chromeSsr.shippedScript(), { title: 'What shipped on OpenVibe.Wiki', robots: 'index, follow', cache: 'public', path: '/updates' }));
     router.get('/recent', (req, res) => send(req, res, 200, views.recentPage({ items: svc.recentChanges(100) }), { title: 'Recent changes', robots: 'noindex, follow', cache: 'public', active: 'recent' }));
     router.get('/search', (req, res) => {
         const query = String(req.query.q || '').slice(0, 200);

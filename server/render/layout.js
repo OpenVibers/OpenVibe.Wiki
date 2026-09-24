@@ -42,6 +42,7 @@ function navConfig(o, config) {
         silentLogin: `${config.baseUrl}/auth/login?silent=1&next={url}`,
         sessionUrl: '/auth/me',
         loginUrl: `/auth/login?next=${encodeURIComponent(o.path || '/')}`,
+        logoutUrl: '/auth/logout?next={path}',   // Sign out in the shared navbar ends this site's session too
     };
 }
 
@@ -82,13 +83,13 @@ ${feeds.map((f) => `<link rel="alternate" type="${f.type}" title="${esc(f.title)
 <a class="wk-skip" href="#main">Skip to content</a>
 <div id="navbar-mount"></div>
 ${chrome.noscriptNav({ name: SITE_NAME, home: '/', links: [{ label: 'Spaces', href: '/' }, { label: 'Recent changes', href: '/recent' }, { label: 'Search', href: '/search' }] })}
-<header class="wk-bar"><a class="wk-brand" href="/">${SITE_NAME}</a><form class="wk-search" action="/search" method="get" role="search"><label for="wk-q" class="wk-sr">Search the wiki</label><input id="wk-q" name="q" type="search" placeholder="Search the wiki" value="${esc(o.query || '')}"><button type="submit">Search</button></form><span class="wk-account">${who}</span></header>
+<header class="wk-bar"><a class="wk-brand" href="/">${SITE_NAME}</a><form class="wk-search" action="/search" method="get" role="search"><label for="wk-q" class="wk-sr">Search the wiki</label><input id="wk-q" name="q" type="search" placeholder="Search the wiki" value="${esc(o.query || '')}"><button type="submit">Search</button></form><noscript><span class="wk-account">${who}</span></noscript></header>
 <main id="main" class="wk-main">
 ${o.body || ''}
 </main>
-${chrome.footer({ service: 'wiki', variant: 'full' })}
+${chrome.footer({ service: 'wiki', variant: 'full', updates: '/updates' })}
 <script>
-window.__OV_PAGE = ${JSON.stringify({ navbar: navConfig(o, config), footer: { service: 'wiki', variant: 'full', mount: '#ov-footer', brandName: SITE_NAME } }).replace(/</g, '\\u003c')};
+window.__OV_PAGE = ${JSON.stringify({ navbar: navConfig(o, config), footer: { service: 'wiki', variant: 'full', mount: '#ov-footer', brandName: SITE_NAME, updates: '/updates' } }).replace(/</g, '\\u003c')};
 document.addEventListener('DOMContentLoaded', function () {
   try { if (window.OpenVibeNavbar) OpenVibeNavbar.init(window.__OV_PAGE.navbar); } catch (e) { /* chrome is optional */ }
   try { if (window.OpenVibeFooter) OpenVibeFooter.init(window.__OV_PAGE.footer); } catch (e) { /* */ }
