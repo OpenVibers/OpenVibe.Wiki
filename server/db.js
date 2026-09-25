@@ -106,6 +106,18 @@ CREATE TABLE IF NOT EXISTS wiki_permissions (
 );
 CREATE INDEX IF NOT EXISTS wiki_permissions_subject ON wiki_permissions (subject);
 
+-- People whose wiki.projects user module (Network) needs writing again: marked in the same transaction as
+-- the space or role change, drained by server/integrations/projects-module.js.
+CREATE TABLE IF NOT EXISTS wiki_module_dirty (
+    subject     TEXT PRIMARY KEY,
+    marked_at   INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS wiki_module_pushes (
+    subject     TEXT PRIMARY KEY,
+    hash        TEXT NOT NULL,
+    pushed_at   INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS wiki_watchers (
     page_id     TEXT NOT NULL REFERENCES wiki_pages(id),
     subject     TEXT NOT NULL,

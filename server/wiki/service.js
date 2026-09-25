@@ -99,6 +99,12 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         putRole: db.prepare(`INSERT INTO wiki_permissions (space_id, subject, role, granted_by, granted_at) VALUES (?, ?, ?, ?, ?)
                              ON CONFLICT (space_id, subject) DO UPDATE SET role = excluded.role, granted_by = excluded.granted_by, granted_at = excluded.granted_at`),
         delRole: db.prepare('DELETE FROM wiki_permissions WHERE space_id = ? AND subject = ?'),
+        // wiki.projects (Network user module): who needs their record written again.
+        dirtySubject: db.prepare("INSERT INTO wiki_module_dirty (subject, marked_at) VALUES (?, ?) ON CONFLICT (subject) DO UPDATE SET marked_at = excluded.marked_at"),
+        dirtySpace: db.prepare(`INSERT INTO wiki_module_dirty (subject, marked_at)
+                                SELECT subject, @t FROM wiki_permissions WHERE space_id = @id AND substr(subject, 1, 4) = 'usr_'
+                                UNION SELECT owner, @t FROM wiki_spaces WHERE id = @id AND substr(owner, 1, 4) = 'usr_'
+                                ON CONFLICT (subject) DO UPDATE SET marked_at = excluded.marked_at`),
         owners: db.prepare("SELECT COUNT(*) AS n FROM wiki_permissions WHERE space_id = ? AND role = 'owner'"),
         watchers: db.prepare('SELECT subject FROM wiki_watchers WHERE page_id = ? ORDER BY subject'),
         watch: db.prepare('INSERT OR IGNORE INTO wiki_watchers (page_id, subject, created_at) VALUES (?, ?, ?)'),
@@ -249,6 +255,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
     function emit(envelope) { return outbox.enqueue(envelope); }
 
     function spaceEvent(space, actor, change) {
+        q.dirtySpace.run({ id: space.id, t: now() });
         emit({
             event_type: 'wiki.space.updated',
             actor: hooks.subjectRef(actorId(actor)),
@@ -572,6 +579,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
                 if (losingOwner && space.kind === 'user' && q.owners.get(space.id).n <= 1) fail(409, 'space.last_owner', 'A user space keeps at least one owner');
                 if (role == null) q.delRole.run(space.id, subject);
                 else q.putRole.run(space.id, subject, role, actorId(actor), now());
+                q.dirtySubject.run(subject, now());   // a removed role is no longer in the space's list
                 spaceEvent(space, actor, 'roles');
                 return svc.roles(space.id, actor);
             });

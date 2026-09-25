@@ -44,6 +44,9 @@ async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fe
             timers.push(setInterval(() => svc.verifyAllMedia(platform.media.resolve).catch((err) => log.warn(`[Wiki] media check: ${err.message}`)), config.mediaVerifyIntervalMs));
         }
         if (platform.eventsConfigured) platform.outbox.start();
+        // wiki.projects on Network (Contracts 0.41.0): people whose spaces or roles changed, every minute.
+        const projects = require('./integrations/projects-module').createProjectsModule({ db, config, tokens: platform.tokenClient, fetchImpl, now, log });
+        if (projects.enabled) timers.push(setInterval(() => projects.drain().catch((err) => log.warn(`[Wiki] wiki.projects: ${err.message}`)), 60 * 1000));
         for (const t of timers) if (t.unref) t.unref();
     }
 
