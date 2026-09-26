@@ -40,11 +40,13 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
         res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
         res.set('Content-Security-Policy', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://openvibe.network",
+            // Cloudflare Web Analytics: Cloudflare injects its beacon at the edge and the privacy text says it may
+            // measure performance; script-src loads the beacon, connect-src is where it reports.
+            "script-src 'self' 'unsafe-inline' https://openvibe.network https://static.cloudflareinsights.com",
             "style-src 'self' 'unsafe-inline' https://openvibe.network https://fonts.googleapis.com https://cdnjs.cloudflare.com",
             "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: https:",
-            "connect-src 'self' https://openvibe.network",
+            "connect-src 'self' https://openvibe.network https://cloudflareinsights.com",
             "frame-src 'self' https://openvibe.network",
             "frame-ancestors 'self'",
             "form-action 'self' https://openvibe.network",
