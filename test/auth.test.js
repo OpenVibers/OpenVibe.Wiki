@@ -55,7 +55,13 @@ const { sanitizeNext } = require('../server/auth/session');
         r = await H.req(h, 'GET', '/auth/me', { cookie: `ov_token=${token}` });
         assert.strictEqual(r.status, 200);
         assert.strictEqual(r.json.user.username, 'ana');
-        assert.strictEqual((await H.req(h, 'GET', '/auth/me')).status, 401);
+        // A guest (no cookie, no token at all) is signed out, not an error; a bad credential is still 401.
+        r = await H.req(h, 'GET', '/auth/me');
+        assert.strictEqual(r.status, 200);
+        assert.deepStrictEqual(r.json, { user: null });
+        assert.strictEqual(r.headers.get('cache-control'), 'private, no-store');
+        assert.strictEqual((await H.req(h, 'GET', '/auth/me', { cookie: 'ov_token=expired.or.forged' })).status, 401);
+        assert.strictEqual((await H.req(h, 'GET', '/auth/me', { cookie: `ov_token=${H.userToken({ exp: -120 })}` })).status, 401, 'an expired cookie');
         // An expired cookie is simply signed out on pages.
         r = await H.req(h, 'GET', '/', { cookie: `ov_token=${H.userToken({ exp: -120 })}` });
         assert.strictEqual(r.status, 200);
