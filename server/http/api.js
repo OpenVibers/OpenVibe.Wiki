@@ -99,6 +99,17 @@ function createApi({ svc, viewers, platform, config, log = console }) {
     });
     router.use(actorMiddleware(viewers));
     const R = (fn, status) => run(fn, status, log);
+    // VIP (WS-K task 8): ask VIP about the space or page a route names before its synchronous access check.
+    const prepare = (req, pairs, next) => (req.actor && req.actor.subject ? svc.access.prepareVip(req.actor, pairs).then(() => next(), next) : next());
+    router.param('space', (req, res, next, ref) => {
+        const space = svc.findSpace(ref);
+        return space && !space.deleted_at ? prepare(req, [{ space }, ...svc.vipPagesOf(space.id).map((page) => ({ space, page }))], next) : next();
+    });
+    router.param('id', (req, res, next, id) => {
+        const page = svc.pageById(id);
+        const space = page && svc.spaceById(page.space_id);
+        return space ? prepare(req, [{ space }, { space, page }], next) : next();
+    });
 
     const pageAndSpace = (id) => {
         const page = svc.pageById(id);

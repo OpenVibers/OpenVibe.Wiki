@@ -57,6 +57,16 @@ function load(env = process.env) {
         mediaApp: env.WIKI_MEDIA_APP || 'wiki',
         mediaVerifyIntervalMs: int(env.WIKI_MEDIA_VERIFY_INTERVAL_MS, 6 * 60 * 60 * 1000),
 
+        // OpenVibe.VIP: who may read a VIP space or page (server/integrations/vip.js, WS-K task 8).
+        vip: {
+            internalUrl: trim(env.OV_VIP_INTERNAL_URL || 'http://127.0.0.1:4620'),
+            publicUrl: trim(env.OV_VIP_URL || 'https://openvibe.vip'),
+            timeoutMs: int(env.WIKI_VIP_TIMEOUT_MS, 2000),
+            ttlMs: int(env.WIKI_VIP_CACHE_TTL_MS, 30_000),
+            denyTtlMs: int(env.WIKI_VIP_CACHE_DENY_TTL_MS, 10_000),
+            unavailableTtlMs: int(env.WIKI_VIP_CACHE_UNAVAILABLE_TTL_MS, 2_000),
+        },
+
         // Scheduled publication worker.
         scheduleIntervalMs: int(env.WIKI_SCHEDULE_INTERVAL_MS, 15000),
         workerId: env.WIKI_WORKER_ID || `wiki-${process.pid}`,

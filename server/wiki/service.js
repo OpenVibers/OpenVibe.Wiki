@@ -30,7 +30,7 @@ const SPACE_KINDS = ['official', 'user'];
 const MAX_BODY = 200000;
 const MAX_TITLE = 200;
 const MAX_SUMMARY = 300;
-const GATE_VIS = { public: 'public', members: 'gated', private: 'private' };
+const GATE_VIS = { public: 'public', members: 'gated', vip: 'gated', private: 'private' };
 const PAGE_ID_RE = /^pg_[0-9A-HJKMNP-TV-Z]{26}$/;
 
 function pageIdNew(t) { return `pg_${ulid(t)}`; }
@@ -68,9 +68,9 @@ function disclosureFor(rec, review) {
     };
 }
 
-function createWikiService({ db, stores, outbox, config, community = null, now = () => Date.now(), log = console }) {
+function createWikiService({ db, stores, outbox, config, community = null, vip = null, now = () => Date.now(), log = console }) {
     const { revisions, citations, redirects, reviews, attachments, discussions, scheduler, sequencer } = stores;
-    const access = createAccess(db);
+    const access = createAccess(db, { vip });
     const origin = config.baseUrl;
     const policy = config.gate;
 
@@ -227,9 +227,11 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         return body.replace(/\r\n?/g, '\n');
     }
 
-    function checkVisibility(v, fallback) {
+    function checkVisibility(v, fallback, space = null) {
         const out = v == null || v === '' ? fallback : String(v);
         if (!VISIBILITIES.includes(out)) fail(422, 'wiki.invalid_visibility', `visibility is one of ${VISIBILITIES.join(', ')}`);
+        // An official space has no owner in OpenVibe.VIP, so VIP content there would admit no one (WS-K task 8).
+        if (out === 'vip' && space && space.kind === 'official') fail(422, 'wiki.vip_needs_owner', 'An official space has no VIP owner: use members or private');
         return out;
     }
 
@@ -421,7 +423,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
         const cleanSummary = checkSummary(summary);
         const text = checkBody(body == null ? '' : body);
         const box = wrapContentError(() => content.normalizeInfobox(infobox));
-        const vis = checkVisibility(visibility, 'public');
+        const vis = checkVisibility(visibility, 'public', space);
         return tx(() => {
             const existing = q.pageBySlug.get(space.id, slug);
             if (existing) fail(409, existing.state === 'deleted' ? 'page.slug_deleted' : 'page.slug_taken', existing.state === 'deleted' ? `A deleted page held "${slug}"; its address stays gone (410)` : `A page "${slug}" already exists in this space`, { page_id: existing.id });
@@ -477,6 +479,10 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
 
         // Spaces ---------------------------------------------------------------------------
         listSpaces(actor) { return q.spaces.all().filter((s) => access.canReadSpace(s, actor)); },
+        /** VIP spaces (for preparing a viewer's VIP answers before a list renders; WS-K task 8). */
+        vipSpaces() { return q.spaces.all().filter((s) => s.visibility === 'vip').slice(0, 50); },
+        /** A space's VIP-only pages (its tree), at most 50. */
+        vipPagesOf(spaceId) { return db.prepare("SELECT * FROM wiki_pages WHERE space_id = ? AND visibility = 'vip' AND state <> 'deleted' LIMIT 50").all(spaceId); },
 
         getSpace(idOrSlug, actor) {
             const s = spaceOrFail(idOrSlug);
@@ -497,7 +503,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
             try { cleanSlug = slug ? String(slug).trim().toLowerCase() : content.pageSlug(cleanName); } catch (err) { fail(422, 'space.invalid_slug', err.message); }
             if (!content.SPACE_SLUG_RE.test(cleanSlug)) fail(422, 'space.invalid_slug', 'A space slug is 2–63 lowercase letters, digits and dashes');
             if (!SPACE_KINDS.includes(kind)) fail(422, 'space.invalid_kind', 'kind is official or user');
-            const vis = checkVisibility(visibility, 'public');
+            const vis = checkVisibility(visibility, 'public', { kind });
             // Official (editorial) spaces: Network staff, this service, or a first-party service (svc:…)
             // acting as itself. A developer app or module (app:…, mod:…) never does.
             const firstPartyService = actor && actor.kind === 'service' && !actor.subject && /^svc:/.test(String(actor.service));
@@ -530,7 +536,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
                 const next = {
                     name: name == null ? space.name : String(name).replace(/\s+/g, ' ').trim().slice(0, 120) || space.name,
                     description: description === undefined ? space.description : (description == null ? null : String(description).slice(0, 1000)),
-                    visibility: checkVisibility(visibility, space.visibility),
+                    visibility: checkVisibility(visibility, space.visibility, space),
                     slug: slug == null || slug === '' ? space.slug : String(slug).trim().toLowerCase(),
                 };
                 if (!content.SPACE_SLUG_RE.test(next.slug)) fail(422, 'space.invalid_slug', 'A space slug is 2–63 lowercase letters, digits and dashes');
@@ -849,7 +855,7 @@ function createWikiService({ db, stores, outbox, config, community = null, now =
             return tx(() => {
                 const b = before(page);
                 db.prepare('UPDATE wiki_pages SET visibility = ?, noindex = ?, updated_at = ? WHERE id = ?')
-                    .run(checkVisibility(visibility, page.visibility), noindex == null ? page.noindex : (noindex ? 1 : 0), now(), page.id);
+                    .run(checkVisibility(visibility, page.visibility, space), noindex == null ? page.noindex : (noindex ? 1 : 0), now(), page.id);
                 return { page: q.pageById.get(page.id), ...sync(b, page.id, actor) };
             });
         },

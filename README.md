@@ -62,9 +62,24 @@ records who attached each Media object and what Media said about it at that mome
 
 - **Spaces**: official (created by Network staff, or a service acting as itself) and user spaces
   (created by any signed-in person, who becomes owner). Visibility `public` (anyone), `members`
-  (any signed-in OpenVibe account), `private` (people with a role). Roles `owner` (settings, roles,
+  (any signed-in OpenVibe account), `vip` (the space owner's OpenVibe.VIP members, see below), `private`
+  (people with a role). Roles `owner` (settings, roles,
   delete, page visibility), `editor` (write, publish, revert, review proposals), `viewer` (read a
   private space). Staff act as owners of official spaces only; they get no silent access to user spaces.
+- **VIP spaces and pages** (roadmap WS-K task 8, Contracts 0.64.0): a `vip` space or page is read by the
+  space's roles and by the viewers OpenVibe.VIP admits as members of the space owner.
+  - *Who decides:* Wiki asks `vip.resource.policy.evaluate` (`server/integrations/vip.js`). The resource
+    is `wiki/page/<id>` when the page itself is VIP-only, else `wiki/space/<id>`, with the fallback
+    `wiki:gated_page`, so a rule the owner sets in VIP wins.
+  - *When it asks:* before rendering. Route params trigger `access.prepareVip`, answers are cached
+    (a yes 30 s, a no 10 s), and the JSON export asks authoritatively.
+  - *Who is refused:* others get a join prompt (403, never cached) linking to the owner's VIP plans.
+    Every doubt refuses.
+  - *Where it never shows:* search, sitemaps, feeds, and another viewer's lists.
+  - *Official spaces* have no VIP owner and refuse `vip`.
+  - *Migration:* databases made before it get their visibility CHECK widened in place at startup
+    (`widenVisibilityChecks`, integrity-checked).
+  - Config: `OV_VIP_INTERNAL_URL`, `OV_VIP_URL`, and `WIKI_VIP_*` for the timeout and cache.
 - **Pages**: a tree per space, canonical slugs, rename/move with history-aware 301s (chains
   collapse; renaming a space redirects all its pages), deletion answers 410 at every old address.
 - **Revisions**: immutable, optimistic concurrency (`expected_revision` → 412 on conflict), word and

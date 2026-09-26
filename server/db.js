@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS wiki_spaces (
     name         TEXT NOT NULL,
     description  TEXT,
     kind         TEXT NOT NULL CHECK (kind IN ('official','user')),
-    visibility   TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public','members','private')),
+    visibility   TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public','members','vip','private')),
     owner        TEXT NOT NULL,
     created_by   TEXT NOT NULL,
     created_at   INTEGER NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS wiki_pages (
     parent_id           TEXT REFERENCES wiki_pages(id),
     position            INTEGER NOT NULL DEFAULT 0,
     state               TEXT NOT NULL DEFAULT 'draft' CHECK (state IN ('draft','scheduled','published','unpublished','deleted')),
-    visibility          TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public','members','private')),
+    visibility          TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public','members','vip','private')),
     noindex             INTEGER NOT NULL DEFAULT 0,
     published_revision  INTEGER,
     published_at        INTEGER,
@@ -173,9 +173,41 @@ function openDb(dbPath) {
  * Creates every table (package tables first: the infobox purge trigger references
  * wiki_page_revision_purges) and returns the package stores bound to this database.
  */
+/**
+ * Contracts 0.64.0 (WS-K task 8) adds the `vip` visibility. Tables created before it carry
+ * CHECK (visibility IN ('public','members','private')); SQLite cannot ALTER a CHECK, and widening one
+ * changes no stored row, so the table's CREATE statement is rewritten in place (SQLite's documented
+ * writable_schema procedure, in one transaction with a schema_version bump), then integrity-checked.
+ * Idempotent: a database already on the new text is left alone. Returns the tables changed.
+ */
+const OLD_VIS_CHECK = "CHECK (visibility IN ('public','members','private'))";
+const NEW_VIS_CHECK = "CHECK (visibility IN ('public','members','vip','private'))";
+function widenVisibilityChecks(db) {
+    const rows = db.prepare("SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name IN ('wiki_spaces', 'wiki_pages')").all()
+        .filter((r) => r.sql && r.sql.includes(OLD_VIS_CHECK));
+    if (!rows.length) return [];
+    db.unsafeMode(true);
+    try {
+        db.transaction(() => {
+            const version = db.pragma('schema_version', { simple: true });
+            db.pragma('writable_schema = ON');
+            const set = db.prepare("UPDATE sqlite_master SET sql = ? WHERE type = 'table' AND name = ?");
+            for (const r of rows) set.run(r.sql.split(OLD_VIS_CHECK).join(NEW_VIS_CHECK), r.name);
+            db.pragma(`schema_version = ${Number(version) + 1}`);
+            db.pragma('writable_schema = OFF');
+        })();
+    } finally {
+        db.unsafeMode(false);
+    }
+    const check = db.pragma('integrity_check', { simple: true });
+    if (check !== 'ok') throw new Error(`wiki: integrity_check after widening the visibility CHECK: ${check}`);
+    return rows.map((r) => r.name);
+}
+
 function createStores(db, { now = () => Date.now(), scheduleLeaseMs = 60000 } = {}) {
     const revisions = createRevisionStore(db, { prefix: 'wiki_page', now });
     db.exec(SCHEMA);
+    widenVisibilityChecks(db);
     return {
         revisions,
         citations: createCitationStore(db, { prefix: 'wiki', now, revisions }),
@@ -188,4 +220,4 @@ function createStores(db, { now = () => Date.now(), scheduleLeaseMs = 60000 } = 
     };
 }
 
-module.exports = { openDb, createStores, SCHEMA };
+module.exports = { openDb, createStores, widenVisibilityChecks, SCHEMA };

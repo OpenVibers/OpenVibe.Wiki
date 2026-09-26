@@ -10,7 +10,7 @@ const { infoboxToText } = require('../wiki/content');
 const { html, raw } = ssr;
 const t = (v) => raw(ssr.timeTag(v));
 const e = encodeURIComponent;
-const VIS_LABEL = { public: 'Public', members: 'Members (any signed-in OpenVibe account)', private: 'Private (people with a role in this space)' };
+const VIS_LABEL = { public: 'Public', members: 'Members (any signed-in OpenVibe account)', vip: 'VIP (the space owner\'s OpenVibe.VIP members)', private: 'Private (people with a role in this space)' };
 
 function wpath(space, page) { return `/w/${e(space.slug)}/${e(page.slug)}`; }
 
@@ -23,6 +23,12 @@ function crumbs(items) { return raw(ssr.breadcrumbsHtml(items)); }
 
 function errorBody({ status, title, message }) {
     return html`<section class="wk-error"><h1>${title}</h1><p>${message}</p><p class="wk-muted">HTTP ${String(status)}</p><p><a href="/">Back to the wiki</a></p></section>`;
+}
+
+/** A VIP space or page the viewer is not (yet) admitted to: the join prompt (WS-K task 8). */
+function vipGateBody({ title, spaceName, joinUrl, signedIn, signInUrl }) {
+    return html`<section class="wk-error"><h1>For VIP members</h1><p>${title ? html`<strong>${title}</strong> is` : 'This is'} for the VIP members of ${spaceName ? html`<strong>${spaceName}</strong>'s owner` : 'its owner'}.</p>
+<p>${signedIn ? '' : html`<a class="wk-btn" href="${signInUrl}">Sign in</a> `}${joinUrl ? html`<a class="wk-btn" href="${joinUrl}" rel="noopener">See their VIP plans</a>` : ''}</p><p><a href="/">Back to the wiki</a></p></section>`;
 }
 
 function home({ spaces, recent, actor }) {
@@ -220,7 +226,7 @@ ${preview ? html`<section class="wk-preview" aria-label="Preview"><h2>Preview (n
 <input type="hidden" name="base_revision" value="${String(baseRevision)}">
 <label>Title <input type="text" name="title" required maxlength="200" value="${values.title || ''}"></label>
 ${isNew ? html`<label>Parent page <select name="parent_id"><option value="">(top level)</option>${parents.map((p) => html`<option value="${p.id}"${values.parent_id === p.id ? raw(' selected') : ''}>${p.title}</option>`)}</select></label>
-<label>Visibility <select name="visibility">${['public', 'members', 'private'].map((v) => html`<option value="${v}"${(values.visibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>` : ''}
+<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${(values.visibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>` : ''}
 <label>Summary (one sentence, optional) <input type="text" name="summary" maxlength="300" value="${values.summary || ''}"></label>
 <label>Text (Markdown; link pages with [[Page title]] or [[space:Page title|label]]) <textarea name="body" rows="22">${values.body || ''}</textarea></label>
 <label>Infobox (one row per line: <code>Label | type | value</code>; types: text, number, date, url, boolean, page, media) <textarea name="infobox" rows="5">${values.infobox || ''}</textarea></label>
@@ -242,7 +248,7 @@ function newSpacePage({ values = {}, error = null, staff = false }) {
 <label>Name <input type="text" name="name" required maxlength="120" value="${values.name || ''}"></label>
 <label>Address (optional; lowercase letters, digits and dashes) <input type="text" name="slug" maxlength="63" pattern="[a-z0-9][a-z0-9-]{1,62}" value="${values.slug || ''}"></label>
 <label>Description <input type="text" name="description" maxlength="1000" value="${values.description || ''}"></label>
-<label>Visibility <select name="visibility">${['public', 'members', 'private'].map((v) => html`<option value="${v}"${(values.visibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
+<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${(values.visibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
 ${staff ? html`<label class="wk-check"><input type="checkbox" name="official" value="1"> Official (editorial) space</label>` : ''}
 <p><button type="submit">Create space</button></p></form></section>`;
 }
@@ -277,7 +283,7 @@ function spaceSettingsPage({ space, roles, error = null, flash = null }) {
 <form method="post" action="/s/${e(space.slug)}/settings" class="wk-form">
 <label>Name <input type="text" name="name" maxlength="120" value="${space.name}"></label>
 <label>Description <input type="text" name="description" maxlength="1000" value="${space.description || ''}"></label>
-<label>Visibility <select name="visibility">${['public', 'members', 'private'].map((v) => html`<option value="${v}"${space.visibility === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
+<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${space.visibility === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
 <p class="wk-muted">Making a space members-only or private removes its pages from sitemaps, feeds and OpenVibe.Search.</p>
 <p><button type="submit" name="op" value="settings">Save settings</button></p></form>
 <h2>Roles</h2>
@@ -323,7 +329,7 @@ ${v.attachments.length ? html`<ul>${v.attachments.map((a) => html`<li><code>${a.
 <label>Caption <input type="text" name="caption" maxlength="2000"></label>
 <p><button type="submit">Attach</button> <button type="submit" name="op" value="verify" formnovalidate>Check attachments against Media</button></p></form>
 ${canManage ? html`<h2>Visibility</h2><form method="post" action="${base}/settings" class="wk-form"><input type="hidden" name="op" value="visibility">
-<label>Visibility <select name="visibility">${['public', 'members', 'private'].map((x) => html`<option value="${x}"${page.visibility === x ? raw(' selected') : ''}>${VIS_LABEL[x]}</option>`)}</select></label>
+<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((x) => html`<option value="${x}"${page.visibility === x ? raw(' selected') : ''}>${VIS_LABEL[x]}</option>`)}</select></label>
 <label class="wk-check"><input type="checkbox" name="noindex" value="1"${page.noindex ? raw(' checked') : ''}> Ask search engines not to index this page</label>
 <p><button type="submit">Save</button></p></form>
 <h2>Delete</h2><form method="post" action="${base}/settings" class="wk-form"><input type="hidden" name="op" value="delete"><label class="wk-check"><input type="checkbox" name="confirm" value="yes" required> Delete this page (its address answers 410 Gone; history is kept)</label><p><button type="submit">Delete page</button></p></form>` : ''}
@@ -377,6 +383,7 @@ function signInPage({ next, message }) {
 }
 
 module.exports = {
+    vipGateBody,
     home, spacePage, articlePage, historyPage, sourcesPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
     spaceSettingsPage, importPage, pageSettingsPage, revertPage, confirmPublishPage, proposalsPage, searchPage, recentPage,
     signInPage, errorBody, wpath, VIS_LABEL,

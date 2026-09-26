@@ -171,8 +171,11 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
         },
     };
 
+    // ── VIP: VIP spaces and pages (WS-K task 8) ──
+    const vip = require('./vip').createVip({ config, tokenClient, fetchImpl, now, log });
+
     return {
-        tokenClient, sdk, events, outbox, community, sources, media,
+        tokenClient, sdk, events, outbox, community, sources, media, vip,
         eventsConfigured: !!(tokenClient && config.eventsUrl),
     };
 }

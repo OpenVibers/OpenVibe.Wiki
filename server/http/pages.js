@@ -42,6 +42,16 @@ function createPages({ svc, viewers, platform, config, log = console }) {
     const form = express.urlencoded({ extended: false, limit: '600kb' });
     router.use(actorMiddleware(viewers, { services: false }));
 
+    // VIP (WS-K task 8): before any handler's synchronous access check, ask VIP about the space and page this
+    // URL names (and a space's VIP-only pages, for its tree). The JSON export is sensitive: VIP asks Billing.
+    router.param('space', (req, res, next, ref) => {
+        const space = svc.findSpace(ref);
+        if (!space || space.deleted_at || !req.actor || !req.actor.subject) return next();
+        const page = req.params.slug ? svc.findPage(space.id, req.params.slug) : null;
+        const pairs = [{ space }, ...(page ? [{ space, page }] : svc.vipPagesOf(space.id).map((p) => ({ space, page: p })))];
+        svc.access.prepareVip(req.actor, pairs, { sensitive: /\.json$/.test(req.path) }).then(() => next(), next);
+    });
+
     const origin = new URL(config.baseUrl).origin;
     // Cross-site form posts are refused (the session cookie is SameSite=Lax as well).
     router.use((req, res, next) => {
@@ -59,6 +69,13 @@ function createPages({ svc, viewers, platform, config, log = console }) {
     const errorPage = (req, res, status, title, message) => send(req, res, status, views.errorBody({ status, title, message }), { title, robots: 'noindex, nofollow' });
     const notFound = (req, res) => errorPage(req, res, 404, 'Page not found', 'Nothing lives at that address, or it is not visible to you.');
     const gone = (req, res) => errorPage(req, res, 410, 'Gone', 'This page was deleted. Its history is kept, but it is no longer published.');
+    // VIP (WS-K task 8): the join prompt for a VIP space or page the viewer is not admitted to (403, never cached).
+    const vipGate = (req, res, space, page) => {
+        const r = svc.access.vipRefusal(space, page, req.actor);
+        if (!r) return false;
+        send(req, res, 403, views.vipGateBody({ title: page ? page.title : space.name, spaceName: space.name, joinUrl: r.joinUrl, signedIn: !!req.actor.subject, signInUrl: `/auth/login?next=${encodeURIComponent(req.originalUrl)}` }), { title: 'For VIP members', robots: 'noindex, nofollow' });
+        return true;
+    };
     const needSignIn = (req, res, message) => send(req, res, 401, views.signInPage({ next: req.originalUrl, message }), { title: 'Sign in', robots: 'noindex, nofollow' });
     const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((err) => {
         if (err && err.status && err.status < 500) return errorPage(req, res, err.status, 'That did not work', err.message);
@@ -77,7 +94,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
             notFound(req, res);
             return null;
         }
-        if (!svc.access.canReadPage(space, page, req.actor)) { notFound(req, res); return null; }
+        if (!svc.access.canReadPage(space, page, req.actor)) { if (page.state !== 'published' || !vipGate(req, res, space, page)) notFound(req, res); return null; }
         return { space, page };
     }
 
@@ -90,19 +107,20 @@ function createPages({ svc, viewers, platform, config, log = console }) {
             notFound(req, res);
             return null;
         }
-        if (!svc.access.canReadSpace(space, req.actor)) { notFound(req, res); return null; }
+        if (!svc.access.canReadSpace(space, req.actor)) { if (!vipGate(req, res, space, null)) notFound(req, res); return null; }
         return space;
     }
 
     // ── Home, recent, search ─────────────────────────────────
-    router.get('/', (req, res) => {
+    router.get('/', wrap(async (req, res) => {
+        if (req.actor.subject) await svc.access.prepareVip(req.actor, svc.vipSpaces().map((space) => ({ space })));   // VIP spaces the viewer may see
         const spaces = svc.listSpaces(req.actor);
         const recent = svc.recentChanges(10);
         send(req, res, 200, views.home({ spaces, recent, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
             robots: 'index, follow', cache: 'public', active: 'home', path: '/',
             jsonLd: seo.structuredData.webPage({ url: `${config.baseUrl}/`, name: 'OpenVibe.Wiki', description: 'Wiki spaces of the OpenVibe network.' }),
         });
-    });
+    }));
     // What shipped on OpenVibe.Wiki: the shared update log every OpenVibe site has.
     router.get('/updates', (req, res) => send(req, res, 200, frame.updatesBody({ service: 'wiki', siteName: 'OpenVibe.Wiki' }) + `<script src="${ovServe.url('shipped.js')}" defer></script>`, { title: 'What shipped on OpenVibe.Wiki', robots: 'index, follow', cache: 'public', path: '/updates' }));
     router.get('/recent', (req, res) => send(req, res, 200, views.recentPage({ items: svc.recentChanges(100) }), { title: 'Recent changes', robots: 'noindex, follow', cache: 'public', active: 'recent' }));
