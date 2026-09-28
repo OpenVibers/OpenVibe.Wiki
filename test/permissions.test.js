@@ -73,10 +73,10 @@ const H = require('./helpers');
         // Staff get no silent access to a private user space.
         assert.strictEqual((await H.req(h, 'GET', '/w/garden/tomatoes', { cookie: H.cookieFor(tok(staff, 'admin')) })).status, 404);
         // A watcher who loses access is not notified.
-        h.svc.watch(pageId, { kind: 'user', subject: viewer }, true);
-        h.db.prepare('INSERT INTO wiki_watchers (page_id, subject, created_at) VALUES (?, ?, ?)').run(pageId, stranger, Date.now());
-        h.svc.editPage(pageId, { expectedRevision: 1, body: `${H.LONG} More.` }, { kind: 'user', subject: editor });
-        const watch = H.outbox(h).filter((e) => e.event_type === 'wiki.watch.triggered').pop();
+        await h.svc.watch(pageId, { kind: 'user', subject: viewer }, true);
+        await h.db.prepare('INSERT INTO wiki_watchers (page_id, subject, created_at) VALUES (?, ?, ?)').run(pageId, stranger, Date.now());
+        await h.svc.editPage(pageId, { expectedRevision: 1, body: `${H.LONG} More.` }, { kind: 'user', subject: editor });
+        const watch = (await H.outbox(h)).filter((e) => e.event_type === 'wiki.watch.triggered').pop();
         assert.ok(watch.payload.recipients.includes(viewer));
         assert.ok(!watch.payload.recipients.includes(stranger), 'no notification about a page the person cannot read');
         assert.ok(!watch.payload.recipients.includes(editor), 'the actor is not notified of their own change');
@@ -147,7 +147,7 @@ const H = require('./helpers');
         assert.ok(shown.text.includes('Proposed by a workflow'));
         assert.ok(shown.text.includes('AI-generated'), 'the AI disclosure is shown at the item');
         assert.ok(shown.text.includes('reviewed by a person'));
-        const doc = H.outbox(h).filter((e) => e.event_type === 'wiki.index_document.upserted' && e.subject.id === pageId).pop().payload;
+        const doc = (await H.outbox(h)).filter((e) => e.event_type === 'wiki.index_document.upserted' && e.subject.id === pageId).pop().payload;
         assert.strictEqual(doc.authorship, 'ai_generated');
         assert.ok(doc.provenance.some((p) => p.service === 'ai' && p.type === 'run' && p.id === 'run_01'));
         r = await H.req(h, 'POST', `/api/v1/proposals/${prop.id}/review`, { token: tok(editor), body: { decision: 'rejected' } });
@@ -163,7 +163,7 @@ const H = require('./helpers');
         const p2 = r.json.proposal;
         r = await H.req(h, 'POST', `/api/v1/proposals/${p2.id}/review`, { token: tok(editor), body: { decision: 'rejected', note: 'not sourced' } });
         assert.strictEqual(r.json.published, false);
-        assert.strictEqual(h.svc.pageById(p2.page_id).state, 'draft');
+        assert.strictEqual((await h.svc.pageById(p2.page_id)).state, 'draft');
         assert.strictEqual((await H.req(h, 'GET', '/w/garden/peppers')).status, 404);
         console.log('permissions ok');
     } finally {

@@ -35,15 +35,15 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'seeds', 'ope
 
     const h = await H.boot({ env: { WIKI_GATE_MIN_WORDS: '80' } });
     try {
-        const first = seed(h.svc, data, { log: H.quiet });
+        const first = await seed(h.svc, data, { log: H.quiet });
         assert.strictEqual(first.created.length, data.pages.length);
-        const again = seed(h.svc, data, { log: H.quiet });
+        const again = await seed(h.svc, data, { log: H.quiet });
         assert.strictEqual(again.created.length, 0, 'idempotent');
         assert.strictEqual(again.skipped.length, data.pages.length);
-        const space = h.svc.findSpace('openvibe');
+        const space = await h.svc.findSpace('openvibe');
         assert.strictEqual(space.kind, 'official');
 
-        const published = h.svc.publishedPublic();
+        const published = await h.svc.publishedPublic();
         assert.strictEqual(published.length, data.pages.length);
         // Generated (AI-assisted) text: published and readable, but noindex until a person reviews it.
         for (const { page, decision } of published) {
@@ -51,7 +51,7 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'seeds', 'ope
             assert.strictEqual(decision.indexable, false, page.title);
             assert.strictEqual(decision.listable, false, page.title);
             assert.deepStrictEqual(decision.codes, ['ai_generated_unreviewed'], `${page.title}: only the review is missing (${decision.codes.join(', ')})`);
-            assert.strictEqual(h.stores.revisions.get(page.id, page.published_revision).meta.authorship.importedFrom.aiAssisted, true);
+            assert.strictEqual((await h.stores.revisions.get(page.id, page.published_revision)).meta.authorship.importedFrom.aiAssisted, true);
         }
         for (const p of data.pages) {
             const r = await H.req(h, 'GET', `/w/openvibe/${content.pageSlug(p.title)}`);
@@ -67,17 +67,17 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'seeds', 'ope
         assert.strictEqual(atomFeed.status, 200, 'an empty feed, not a 404');
         assert.ok(!atomFeed.text.includes('<entry>'));
         assert.deepStrictEqual((await H.req(h, 'GET', '/feed.json')).json.items, []);
-        const idx = H.outbox(h).filter((e) => e.event_type.startsWith('wiki.index_document.'));
+        const idx = (await H.outbox(h)).filter((e) => e.event_type.startsWith('wiki.index_document.'));
         assert.ok(idx.length && idx.every((e) => e.event_type === 'wiki.index_document.deleted'), 'Search only ever got tombstones');
         // The official space is not editable by an ordinary signed-in person, but is by staff.
         const person = { kind: 'user', subject: H.subject(), staff: false };
         const staff = { kind: 'user', subject: H.subject(), staff: true };
-        assert.throws(() => h.svc.createPage(space.id, { title: 'Spam', body: 'x' }, person), (e) => e.status === 403);
-        assert.ok(h.svc.createPage(space.id, { title: 'Staff note', body: 'x' }, staff).page);
+        await assert.rejects(async () => await h.svc.createPage(space.id, { title: 'Spam', body: 'x' }, person), (e) => e.status === 403);
+        assert.ok((await h.svc.createPage(space.id, { title: 'Staff note', body: 'x' }, staff)).page);
         // After a person's review the page is indexable; its Search document records the imported authorship.
         const first1 = published[0].page;
-        h.svc.reviewRevision('openvibe', first1.slug, first1.published_revision, { decision: 'approved' }, staff);
-        const doc = H.outbox(h).filter((e) => e.event_type === 'wiki.index_document.upserted').pop().payload;
+        await h.svc.reviewRevision('openvibe', first1.slug, first1.published_revision, { decision: 'approved' }, staff);
+        const doc = (await H.outbox(h)).filter((e) => e.event_type === 'wiki.index_document.upserted').pop().payload;
         assert.strictEqual(doc.id, first1.id);
         assert.strictEqual(doc.authorship, 'imported');
         assert.strictEqual(doc.indexability.decision, 'index');

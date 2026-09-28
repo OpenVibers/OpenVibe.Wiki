@@ -49,11 +49,13 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     // VIP (WS-K task 8): before any handler's synchronous access check, ask VIP about the space and page this
     // URL names (and a space's VIP-only pages, for its tree). The JSON export is sensitive: VIP asks Billing.
     router.param('space', (req, res, next, ref) => {
-        const space = svc.findSpace(ref);
-        if (!space || space.deleted_at || !req.actor || !req.actor.subject) return next();
-        const page = req.params.slug ? svc.findPage(space.id, req.params.slug) : null;
-        const pairs = [{ space }, ...(page ? [{ space, page }] : svc.vipPagesOf(space.id).map((p) => ({ space, page: p })))];
-        svc.access.prepareVip(req.actor, pairs, { sensitive: /\.json$/.test(req.path) }).then(() => next(), next);
+        (async () => {
+            const space = await svc.findSpace(ref);
+            if (!space || space.deleted_at || !req.actor || !req.actor.subject) return;
+            const page = req.params.slug ? await svc.findPage(space.id, req.params.slug) : null;
+            const pairs = [{ space }, ...(page ? [{ space, page }] : (await svc.vipPagesOf(space.id)).map((p) => ({ space, page: p })))];
+            await svc.access.prepareVip(req.actor, pairs, { sensitive: /\.json$/.test(req.path) });
+        })().then(() => next(), next);
     });
 
     const origin = new URL(config.baseUrl).origin;
@@ -87,12 +89,12 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     });
 
     /** Resolve :space/:slug; follows history-aware redirects (301) and reports deleted pages (410). */
-    function locate(req, res, suffix = '') {
-        const space = svc.findSpace(req.params.space);
-        const page = space && !space.deleted_at ? svc.findPage(space.id, req.params.slug) : null;
+    async function locate(req, res, suffix = '') {
+        const space = await svc.findSpace(req.params.space);
+        const page = space && !space.deleted_at ? await svc.findPage(space.id, req.params.slug) : null;
         if (page && page.state === 'deleted') { gone(req, res); return null; }
         if (!page) {
-            const r = svc.resolveRedirect(`/w/${req.params.space}/${req.params.slug}`);
+            const r = await svc.resolveRedirect(`/w/${req.params.space}/${req.params.slug}`);
             if (r && r.status === 301) { res.set('Cache-Control', 'public, max-age=300').redirect(301, r.location + suffix + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '')); return null; }
             if ((r && r.status === 410) || (space && space.deleted_at)) { gone(req, res); return null; }
             notFound(req, res);
@@ -102,10 +104,10 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         return { space, page };
     }
 
-    function locateSpace(req, res) {
-        const space = svc.findSpace(req.params.space);
+    async function locateSpace(req, res) {
+        const space = await svc.findSpace(req.params.space);
         if (!space || space.deleted_at) {
-            const r = svc.resolveRedirect(`/s/${req.params.space}`);
+            const r = await svc.resolveRedirect(`/s/${req.params.space}`);
             if (r && r.status === 301) { res.redirect(301, r.location + req.path.replace(/^\/s\/[^/]+/, '')); return null; }
             if ((r && r.status === 410) || (space && space.deleted_at)) { gone(req, res); return null; }
             notFound(req, res);
@@ -117,9 +119,8 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
 
     // ── Home, recent, search ─────────────────────────────────
     router.get('/', wrap(async (req, res) => {
-        if (req.actor.subject) await svc.access.prepareVip(req.actor, svc.vipSpaces().map((space) => ({ space })));   // VIP spaces the viewer may see
-        const spaces = svc.listSpaces(req.actor);
-        const recent = svc.recentChanges(10);
+        if (req.actor.subject) await svc.access.prepareVip(req.actor, (await svc.vipSpaces()).map((space) => ({ space })));   // VIP spaces the viewer may see
+        const [spaces, recent] = await Promise.all([svc.listSpaces(req.actor), svc.recentChanges(10)]);
         send(req, res, 200, views.home({ spaces, recent, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
             robots: 'index, follow', cache: 'public', active: 'home', path: '/',
             jsonLd: seo.structuredData.webPage({ url: `${config.baseUrl}/`, name: 'OpenVibe.Wiki', description: 'Wiki spaces of the OpenVibe network.' }),
@@ -127,11 +128,11 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     }));
     // What shipped on OpenVibe.Wiki: the shared update log every OpenVibe site has.
     router.get('/updates', (req, res) => send(req, res, 200, frame.updatesBody({ service: 'wiki', siteName: 'OpenVibe.Wiki' }) + `<script src="${ovServe.url('shipped.js')}" defer></script>`, { title: 'What shipped on OpenVibe.Wiki', robots: 'index, follow', cache: 'public', path: '/updates' }));
-    router.get('/recent', (req, res) => send(req, res, 200, views.recentPage({ items: svc.recentChanges(100) }), { title: 'Recent changes', robots: 'noindex, follow', cache: 'public', active: 'recent' }));
-    router.get('/search', (req, res) => {
+    router.get('/recent', wrap(async (req, res) => send(req, res, 200, views.recentPage({ items: await svc.recentChanges(100) }), { title: 'Recent changes', robots: 'noindex, follow', cache: 'public', active: 'recent' })));
+    router.get('/search', wrap(async (req, res) => {
         const query = String(req.query.q || '').slice(0, 200);
-        send(req, res, 200, views.searchPage({ query, results: query ? svc.search(query, req.actor) : [] }), { title: query ? `Search: ${query}` : 'Search', robots: 'noindex, follow', query, active: 'search' });
-    });
+        send(req, res, 200, views.searchPage({ query, results: query ? await svc.search(query, req.actor) : [] }), { title: query ? `Search: ${query}` : 'Search', robots: 'noindex, follow', query, active: 'search' });
+    }));
 
     // ── Spaces ───────────────────────────────────────────────
     router.get('/new-space', (req, res) => {
@@ -142,7 +143,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to start a space.');
         const b = req.body || {};
         try {
-            const space = svc.createSpace({ name: b.name, slug: b.slug || null, description: b.description || null, visibility: b.visibility, kind: b.official === '1' && req.actor.staff ? 'official' : 'user' }, req.actor);
+            const space = await svc.createSpace({ name: b.name, slug: b.slug || null, description: b.description || null, visibility: b.visibility, kind: b.official === '1' && req.actor.staff ? 'official' : 'user' }, req.actor);
             res.redirect(303, `/s/${encodeURIComponent(space.slug)}`);
         } catch (err) {
             if (!err.status || err.status >= 500) throw err;
@@ -150,18 +151,18 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         }
     }));
 
-    router.get('/s/:space', (req, res) => {
-        const space = locateSpace(req, res);
+    router.get('/s/:space', wrap(async (req, res) => {
+        const space = await locateSpace(req, res);
         if (!space) return;
         const canEdit = svc.access.canEdit(space, req.actor);
-        const proposals = canEdit ? svc.pendingProposals(req.actor).filter((p) => p.space_id === space.id) : [];
+        const proposals = canEdit ? (await svc.pendingProposals(req.actor)).filter((p) => p.space_id === space.id) : [];
         const open = space.visibility === 'public';
-        send(req, res, 200, views.spacePage({ space, tree: svc.tree(space, req.actor), canEdit, canManage: svc.access.canManage(space, req.actor), proposals }), {
+        send(req, res, 200, views.spacePage({ space, tree: await svc.tree(space, req.actor), canEdit, canManage: svc.access.canManage(space, req.actor), proposals }), {
             title: space.name, description: space.description || `${space.name}: a space on OpenVibe.Wiki.`, path: svc.spacePath(space),
             robots: open ? 'index, follow' : 'noindex, nofollow', cache: open ? 'public' : null,
             jsonLd: open ? seo.structuredData.breadcrumbs([{ name: 'Wiki', url: `${config.baseUrl}/` }, { name: space.name, url: `${config.baseUrl}${svc.spacePath(space)}` }]) : null,
         });
-    });
+    }));
 
     function editorsOnly(req, res, space) {
         if (svc.access.canEdit(space, req.actor)) return true;
@@ -170,31 +171,32 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         return false;
     }
 
-    function parentsOf(space, actor) {
+    async function parentsOf(space, actor) {
         const out = [];
         const walk = (nodes) => { for (const n of nodes) { out.push(n.page); walk(n.children); } };
-        walk(svc.tree(space, actor));
+        walk(await svc.tree(space, actor));
         return out;
     }
 
-    router.get('/s/:space/new', (req, res) => {
-        const space = locateSpace(req, res);
+    router.get('/s/:space/new', wrap(async (req, res) => {
+        const space = await locateSpace(req, res);
         if (!space || !editorsOnly(req, res, space)) return;
-        send(req, res, 200, views.editPage({ space, values: { title: String(req.query.title || '').slice(0, 200) }, parents: parentsOf(space, req.actor) }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
-    });
+        send(req, res, 200, views.editPage({ space, values: { title: String(req.query.title || '').slice(0, 200) }, parents: await parentsOf(space, req.actor) }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
+    }));
 
     router.post('/s/:space/new', B('wiki.page.create'), form, wrap(async (req, res) => {
-        const space = locateSpace(req, res);
+        const space = await locateSpace(req, res);
         if (!space || !editorsOnly(req, res, space)) return;
         const b = req.body || {};
         const values = { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, parent_id: b.parent_id, visibility: b.visibility, message: b.message };
-        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents: parentsOf(space, req.actor) }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
+        const parents = await parentsOf(space, req.actor);
+        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
         try {
             const infobox = content.parseInfoboxText(b.infobox);
-            if (b.op === 'preview') return again(200, null, svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
+            if (b.op === 'preview') return again(200, null, await svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
             const cites = await resolveCitations(citationsFromForm(b), platform);
-            const out = svc.createPage(space.id, { title: b.title, body: String(b.body || ''), summary: b.summary || null, infobox, parentId: b.parent_id || null, visibility: b.visibility, citations: cites, message: b.message || null }, req.actor);
-            if (b.op === 'publish') svc.publish(out.page.id, { revision: out.revision.number }, req.actor);
+            const out = await svc.createPage(space.id, { title: b.title, body: String(b.body || ''), summary: b.summary || null, infobox, parentId: b.parent_id || null, visibility: b.visibility, citations: cites, message: b.message || null }, req.actor);
+            if (b.op === 'publish') await svc.publish(out.page.id, { revision: out.revision.number }, req.actor);
             res.redirect(303, views.wpath(space, out.page));
         } catch (err) {
             if (!err.status || err.status >= 500 && err.status !== 503) throw err;
@@ -202,26 +204,26 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         }
     }));
 
-    router.get('/s/:space/settings', (req, res) => {
-        const space = locateSpace(req, res);
+    router.get('/s/:space/settings', wrap(async (req, res) => {
+        const space = await locateSpace(req, res);
         if (!space) return;
         if (!svc.access.canManage(space, req.actor)) return req.actor.subject ? errorPage(req, res, 403, 'Owners only', 'Only an owner of this space can change its settings.') : needSignIn(req, res, 'Sign in as an owner of this space.');
-        send(req, res, 200, views.spaceSettingsPage({ space, roles: svc.roles(space.id, req.actor), flash: req.query.saved ? 'Saved.' : null }), { title: `Settings of ${space.name}`, robots: 'noindex, nofollow' });
-    });
+        send(req, res, 200, views.spaceSettingsPage({ space, roles: await svc.roles(space.id, req.actor), flash: req.query.saved ? 'Saved.' : null }), { title: `Settings of ${space.name}`, robots: 'noindex, nofollow' });
+    }));
 
     router.post('/s/:space/settings', B('wiki.space.update'), form, wrap(async (req, res) => {
-        const space = locateSpace(req, res);
+        const space = await locateSpace(req, res);
         if (!space) return;
         const b = req.body || {};
         try {
-            if (b.op === 'role') svc.setRole(space.id, String(b.subject || ''), b.role ? String(b.role) : null, req.actor);
-            else if (b.op === 'delete') { if (b.confirm !== 'yes') throw new svc.WikiError(422, 'space.confirm', 'Tick the box to confirm'); svc.deleteSpace(space.id, req.actor); return res.redirect(303, '/'); }
-            else { const s = svc.updateSpace(space.id, { name: b.name, description: b.description, visibility: b.visibility }, req.actor); return res.redirect(303, `/s/${encodeURIComponent(s.slug)}/settings?saved=1`); }
+            if (b.op === 'role') await svc.setRole(space.id, String(b.subject || ''), b.role ? String(b.role) : null, req.actor);
+            else if (b.op === 'delete') { if (b.confirm !== 'yes') throw new svc.WikiError(422, 'space.confirm', 'Tick the box to confirm'); await svc.deleteSpace(space.id, req.actor); return res.redirect(303, '/'); }
+            else { const s = await svc.updateSpace(space.id, { name: b.name, description: b.description, visibility: b.visibility }, req.actor); return res.redirect(303, `/s/${encodeURIComponent(s.slug)}/settings?saved=1`); }
             res.redirect(303, `/s/${encodeURIComponent(space.slug)}/settings?saved=1`);
         } catch (err) {
             if (!err.status || err.status >= 500) throw err;
             if (!svc.access.canManage(space, req.actor)) return errorPage(req, res, err.status, 'Owners only', err.message);
-            send(req, res, err.status, views.spaceSettingsPage({ space, roles: svc.roles(space.id, req.actor), error: err.message }), { title: `Settings of ${space.name}`, robots: 'noindex, nofollow' });
+            send(req, res, err.status, views.spaceSettingsPage({ space, roles: await svc.roles(space.id, req.actor), error: err.message }), { title: `Settings of ${space.name}`, robots: 'noindex, nofollow' });
         }
     }));
 
@@ -234,13 +236,13 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         else errorPage(req, res, 403, 'Owners only', 'Only an owner of this space imports pages into it.');
         return false;
     }
-    router.get('/s/:space/import', (req, res) => {
-        const space = locateSpace(req, res);
+    router.get('/s/:space/import', wrap(async (req, res) => {
+        const space = await locateSpace(req, res);
         if (!space || !ownersOnly(req, res, space)) return;
         send(req, res, 200, views.importPage({ space, values: {} }), { title: `Import pages into ${space.name}`, robots: 'noindex, nofollow' });
-    });
+    }));
     router.post('/s/:space/import', B('wiki.page.import'), importForm, wrap(async (req, res) => {
-        const space = locateSpace(req, res);
+        const space = await locateSpace(req, res);
         if (!space || !ownersOnly(req, res, space)) return;
         const b = req.body || {};
         const values = { bundle: String(b.bundle || ''), publish: b.publish === '1', on_existing: b.on_existing, source: b.source, ai_assisted: b.ai_assisted === '1' };
@@ -249,9 +251,9 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
             const parsed = importer.parseBundleText(values.bundle);
             const input = Array.isArray(parsed) ? { pages: parsed } : { ...parsed };
             Object.assign(input, { publish: values.publish, on_existing: values.on_existing || 'fail', source: values.source || input.source || null, ai_assisted: values.ai_assisted });
-            const { bundle } = svc.prepareImport(space.id, input, req.actor);
+            const { bundle } = await svc.prepareImport(space.id, input, req.actor);
             await resolveBundleCitations(bundle, platform);
-            const out = svc.importPages(space.id, bundle, req.actor);
+            const out = await svc.importPages(space.id, bundle, req.actor);
             again(200, null, out);
         } catch (err) {
             if (!err.status || (err.status >= 500 && err.status !== 503)) throw err;
@@ -259,19 +261,20 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         }
     }));
 
-    router.get('/s/:space/proposals', (req, res) => {
-        const space = locateSpace(req, res);
+    router.get('/s/:space/proposals', wrap(async (req, res) => {
+        const space = await locateSpace(req, res);
         if (!space || !editorsOnly(req, res, space)) return;
-        const items = svc.pendingProposals(req.actor).filter((p) => p.space_id === space.id).map((proposal) => ({ proposal, page: svc.pageById(proposal.page_id) }));
+        const items = [];
+        for (const proposal of (await svc.pendingProposals(req.actor)).filter((p) => p.space_id === space.id)) items.push({ proposal, page: await svc.pageById(proposal.page_id) });
         send(req, res, 200, views.proposalsPage({ space, items }), { title: `AI proposals in ${space.name}`, robots: 'noindex, nofollow' });
-    });
+    }));
 
     router.post('/proposals/:id', B('wiki.revision.publish'), form, wrap(async (req, res) => {
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in to review proposals.');
-        const p = svc.getProposal(req.params.id);
+        const p = await svc.getProposal(req.params.id);
         if (!p) return notFound(req, res);
-        svc.reviewProposal(p.id, { decision: (req.body || {}).decision, publish: true }, req.actor);
-        const space = svc.spaceById(p.space_id);
+        await svc.reviewProposal(p.id, { decision: (req.body || {}).decision, publish: true }, req.actor);
+        const space = await svc.spaceById(p.space_id);
         res.redirect(303, `/s/${encodeURIComponent(space.slug)}/proposals`);
     }));
 
@@ -307,13 +310,13 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     router.get('/w/:space/:slug', wrap(async (req, res) => {
         const json = /\.json$/.test(req.params.slug);
         if (json) req.params.slug = req.params.slug.slice(0, -5);
-        const found = locate(req, res, json ? '.json' : '');
+        const found = await locate(req, res, json ? '.json' : '');
         if (!found) return;
         const { space, page } = found;
         const rev = req.query.rev != null ? Number(req.query.rev) : undefined;
         if (rev !== undefined && !Number.isInteger(rev)) return notFound(req, res);
         let v;
-        try { v = svc.view(space, page, req.actor, { revision: rev }); } catch (err) { if (err.status === 404) return notFound(req, res); throw err; }
+        try { v = await svc.view(space, page, req.actor, { revision: rev }); } catch (err) { if (err.status === 404) return notFound(req, res); throw err; }
         const open = page.state === 'published' && svc.access.effectiveVisibility(space, page) === 'public';
         const cache = open && v.isPublishedRevision ? 'public' : null;
         if (json) {
@@ -321,9 +324,16 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
                 .set('X-Robots-Tag', v.isPublishedRevision ? seo.xRobotsTag(v.decision) : 'noindex, nofollow').json(articleData(v, space, page));
             return;
         }
-        const resolve = (t) => svc.resolveLink(t, req.actor);
-        const bodyHtml = svc.renderRevision(space, v.revision, req.actor);
-        const discussion = v.isPublishedRevision ? await discussionFor(space, page, req.actor) : { state: 'not_public' };
+        // Infobox values of type page link to that page: resolved before the (synchronous) view renders.
+        const infoboxLinks = new Map();
+        for (const x of v.infobox) {
+            if (x.type !== 'page' || infoboxLinks.has(x.value)) continue;
+            infoboxLinks.set(x.value, await svc.resolveLink(content.parseTarget(x.value, space.slug) || { space: space.slug, slug: '-', title: x.value }, req.actor));
+        }
+        const [bodyHtml, discussion] = await Promise.all([
+            svc.renderRevision(space, v.revision, req.actor),
+            v.isPublishedRevision ? discussionFor(space, page, req.actor) : { state: 'not_public' },
+        ]);
         const url = svc.pageUrl(space, page);
         const crumbsLd = [{ name: 'Wiki', url: `${config.baseUrl}/` }, { name: space.name, url: `${config.baseUrl}${svc.spacePath(space)}` }, { name: v.revision.fields.title, url }];
         // The gate decides robots for the published revision; any other revision is noindex.
@@ -338,82 +348,82 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
             seo.structuredData.breadcrumbs(crumbsLd),
         ].filter(Boolean) : null;
         const head = seo.metaTags({ decision, title: `${v.revision.fields.title} · OpenVibe.Wiki`, description, siteName: 'OpenVibe.Wiki', type: 'article', jsonLd });
-        send(req, res, 200, views.articlePage(v, { html: bodyHtml, discussion, actor: req.actor, mediaUrl: (id) => platform.media.publicUrl(id), resolve: (title) => resolve(content.parseTarget(title, space.slug) || { space: space.slug, slug: '-', title }), flash: req.query.saved ? 'Saved.' : null }), {
+        send(req, res, 200, views.articlePage(v, { html: bodyHtml, discussion, actor: req.actor, mediaUrl: (id) => platform.media.publicUrl(id), resolve: (title) => infoboxLinks.get(title) || { href: null, exists: false }, flash: req.query.saved ? 'Saved.' : null }), {
             head, path: svc.pagePath(space, page), cache,
         });
     }));
 
-    router.get('/w/:space/:slug/history', (req, res) => {
-        const found = locate(req, res, '/history');
+    router.get('/w/:space/:slug/history', wrap(async (req, res) => {
+        const found = await locate(req, res, '/history');
         if (!found) return;
         const { space, page } = found;
-        send(req, res, 200, views.historyPage({ space, page, list: svc.history(page, { limit: 500, actor: req.actor }), canEdit: svc.access.canEdit(space, req.actor) }), {
+        send(req, res, 200, views.historyPage({ space, page, list: await svc.history(page, { limit: 500, actor: req.actor }), canEdit: svc.access.canEdit(space, req.actor) }), {
             title: `History of ${page.title}`, robots: 'noindex, follow', cache: page.state === 'published' && svc.access.effectiveVisibility(space, page) === 'public' ? 'public' : null,
         });
-    });
+    }));
 
     // The citation inspector: one revision's sources (?rev=N; the published one by default), with the
     // same read rules as the article.
-    router.get('/w/:space/:slug/sources', (req, res) => {
-        const found = locate(req, res, '/sources');
+    router.get('/w/:space/:slug/sources', wrap(async (req, res) => {
+        const found = await locate(req, res, '/sources');
         if (!found) return;
         const { space, page } = found;
         const rev = req.query.rev != null ? Number(req.query.rev) : undefined;
         if (rev !== undefined && !Number.isInteger(rev)) return notFound(req, res);
         let inspected;
-        try { inspected = svc.citationInspector(space, page, req.actor, { revision: rev }); } catch (err) { if (err.status === 404) return notFound(req, res); throw err; }
+        try { inspected = await svc.citationInspector(space, page, req.actor, { revision: rev }); } catch (err) { if (err.status === 404) return notFound(req, res); throw err; }
         send(req, res, 200, views.sourcesPage({ space, page, ...inspected }), {
             title: `Sources of ${inspected.view.revision.fields.title || page.title}`, robots: 'noindex, follow',
             cache: page.state === 'published' && svc.access.effectiveVisibility(space, page) === 'public' ? 'public' : null,
         });
-    });
+    }));
 
-    router.get('/w/:space/:slug/compare', (req, res) => {
-        const found = locate(req, res);
+    router.get('/w/:space/:slug/compare', wrap(async (req, res) => {
+        const found = await locate(req, res);
         if (!found) return;
         const a = Number(req.query.a), b = Number(req.query.b);
         if (!Number.isInteger(a) || !Number.isInteger(b)) return errorPage(req, res, 400, 'Pick two revisions', 'Choose a "from" and a "to" revision to compare.');
         res.redirect(303, `${views.wpath(found.space, found.page)}/diff/${Math.min(a, b)}/${Math.max(a, b)}`);
-    });
+    }));
 
-    router.get('/w/:space/:slug/diff/:a/:b', (req, res) => {
-        const found = locate(req, res, `/diff/${req.params.a}/${req.params.b}`);
+    router.get('/w/:space/:slug/diff/:a/:b', wrap(async (req, res) => {
+        const found = await locate(req, res, `/diff/${req.params.a}/${req.params.b}`);
         if (!found) return;
         const { space, page } = found;
         let diff;
-        try { diff = svc.diff(page, req.params.a, req.params.b, { mode: req.query.mode, actor: req.actor }); } catch (err) { if (err.status === 404 || err.status === 422) return notFound(req, res); throw err; }
+        try { diff = await svc.diff(page, req.params.a, req.params.b, { mode: req.query.mode, actor: req.actor }); } catch (err) { if (err.status === 404 || err.status === 422) return notFound(req, res); throw err; }
         send(req, res, 200, views.diffPage({ space, page, diff }), {
             title: `Changes to ${page.title}`, robots: 'noindex, nofollow', cache: page.state === 'published' && svc.access.effectiveVisibility(space, page) === 'public' ? 'public' : null,
         });
-    });
+    }));
 
     // Editing a missing page (a red link) opens the new-page form with the title filled in.
-    function editTarget(req, res) {
-        const space = svc.findSpace(req.params.space);
-        if (space && !space.deleted_at && svc.access.canReadSpace(space, req.actor) && !svc.findPage(space.id, req.params.slug) && !svc.resolveRedirect(`/w/${req.params.space}/${req.params.slug}`)) {
+    async function editTarget(req, res) {
+        const space = await svc.findSpace(req.params.space);
+        if (space && !space.deleted_at && svc.access.canReadSpace(space, req.actor) && !await svc.findPage(space.id, req.params.slug) && !await svc.resolveRedirect(`/w/${req.params.space}/${req.params.slug}`)) {
             res.redirect(303, `/s/${encodeURIComponent(space.slug)}/new?title=${encodeURIComponent(String(req.query.title || req.params.slug))}`);
             return null;
         }
         return locate(req, res, '/edit');
     }
 
-    router.get('/w/:space/:slug/edit', (req, res) => {
-        const found = editTarget(req, res);
+    router.get('/w/:space/:slug/edit', wrap(async (req, res) => {
+        const found = await editTarget(req, res);
         if (!found) return;
         const { space, page } = found;
         if (!editorsOnly(req, res, space)) return;
         // Start from the newest revision that is not an unapproved AI proposal; concurrency is
         // still checked against the head.
-        const list = svc.history(page, { limit: 500 });
+        const list = await svc.history(page, { limit: 500 });
         const headNumber = list[0].number;
         const start = list.find((r) => !r.proposal || r.proposal.status === 'approved') || list[0];
-        const from = svc.view(space, page, req.actor, { revision: start.number });
+        const from = await svc.view(space, page, req.actor, { revision: start.number });
         const note = start.number !== headNumber ? `The newest revision (${headNumber}) is an AI proposal that has not been approved; this form starts from revision ${start.number}.` : null;
         send(req, res, 200, views.editPage({ space, page, values: views.formValuesFromRevision(from.revision, page), citations: from.citations, baseRevision: start.number, expectedRevision: headNumber, error: note }), { title: `Editing ${page.title}`, robots: 'noindex, nofollow' });
-    });
+    }));
 
     router.post('/w/:space/:slug/edit', B('wiki.page.edit'), form, wrap(async (req, res) => {
-        const found = locate(req, res, '/edit');
+        const found = await locate(req, res, '/edit');
         if (!found) return;
         const { space, page } = found;
         if (!editorsOnly(req, res, space)) return;
@@ -422,15 +432,15 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         const base = Number(b.base_revision) || expected;
         const keep = [].concat(b.keep_citation || []).map(String);
         let baseView = null;
-        try { baseView = Number.isInteger(base) && base > 0 ? svc.view(space, page, req.actor, { revision: base }) : null; } catch { baseView = null; }
+        try { baseView = Number.isInteger(base) && base > 0 ? await svc.view(space, page, req.actor, { revision: base }) : null; } catch { baseView = null; }
         const values = { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, message: b.message, keep };
         const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, page, values, error, preview, citations: baseView ? baseView.citations : [], baseRevision: base, expectedRevision: expected }), { title: `Editing ${page.title}`, robots: 'noindex, nofollow' });
         try {
             const infobox = content.parseInfoboxText(b.infobox);
-            if (b.op === 'preview') return again(200, null, svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
+            if (b.op === 'preview') return again(200, null, await svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
             const cites = await resolveCitations(citationsFromForm(b), platform);
-            const out = svc.editPage(page.id, { expectedRevision: expected, baseRevision: base, title: b.title, body: String(b.body || ''), summary: b.summary || null, infobox, citations: cites, keepCitations: keep, message: b.message || null }, req.actor);
-            if (b.op === 'publish') svc.publish(page.id, { revision: out.revision.number }, req.actor);
+            const out = await svc.editPage(page.id, { expectedRevision: expected, baseRevision: base, title: b.title, body: String(b.body || ''), summary: b.summary || null, infobox, citations: cites, keepCitations: keep, message: b.message || null }, req.actor);
+            if (b.op === 'publish') await svc.publish(page.id, { revision: out.revision.number }, req.actor);
             res.redirect(303, `${views.wpath(space, out.page)}${b.op === 'publish' ? '' : `?rev=${out.revision.number}`}`);
         } catch (err) {
             if (err.code === 'revision.conflict') return again(409, `Someone saved revision ${err.extra ? err.extra.current : ''} while you were editing. Your text is below; open the page in another tab, merge by hand, and save again.`);
@@ -439,52 +449,52 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         }
     }));
 
-    router.get('/w/:space/:slug/revert', (req, res) => {
-        const found = locate(req, res, '/revert');
+    router.get('/w/:space/:slug/revert', wrap(async (req, res) => {
+        const found = await locate(req, res, '/revert');
         if (!found) return;
         const { space, page } = found;
         if (!editorsOnly(req, res, space)) return;
         const to = Number(req.query.to);
-        const head = svc.history(page, { limit: 1 })[0].number;
+        const head = (await svc.history(page, { limit: 1 }))[0].number;
         if (!Number.isInteger(to) || to < 1 || to > head) return notFound(req, res);
         send(req, res, 200, views.revertPage({ space, page, to, head }), { title: `Revert ${page.title}`, robots: 'noindex, nofollow' });
-    });
+    }));
 
     router.post('/w/:space/:slug/revert', B('wiki.page.edit'), form, wrap(async (req, res) => {
-        const found = locate(req, res, '/revert');
+        const found = await locate(req, res, '/revert');
         if (!found) return;
         const { space, page } = found;
         if (!editorsOnly(req, res, space)) return;
         const b = req.body || {};
-        const out = svc.revert(page.id, { toRevision: Number(b.to), expectedRevision: Number(b.expected_revision), message: b.message || null }, req.actor);
+        const out = await svc.revert(page.id, { toRevision: Number(b.to), expectedRevision: Number(b.expected_revision), message: b.message || null }, req.actor);
         res.redirect(303, out.published ? views.wpath(space, out.page) : `${views.wpath(space, out.page)}?rev=${out.revision.number}`);
     }));
 
-    router.get('/w/:space/:slug/publish', (req, res) => {
-        const found = locate(req, res, '/publish');
+    router.get('/w/:space/:slug/publish', wrap(async (req, res) => {
+        const found = await locate(req, res, '/publish');
         if (!found) return;
         if (!editorsOnly(req, res, found.space)) return;
         const rev = Number(req.query.rev);
         if (!Number.isInteger(rev)) return notFound(req, res);
         send(req, res, 200, views.confirmPublishPage({ ...found, rev }), { title: `Publish ${found.page.title}`, robots: 'noindex, nofollow' });
-    });
+    }));
 
-    router.get('/w/:space/:slug/settings', (req, res) => {
-        const found = locate(req, res, '/settings');
+    router.get('/w/:space/:slug/settings', wrap(async (req, res) => {
+        const found = await locate(req, res, '/settings');
         if (!found) return;
         const { space, page } = found;
         if (!editorsOnly(req, res, space)) return;
-        renderPageSettings(req, res, space, page, 200, { flash: req.query.saved ? (req.query.saved === 'verify' ? `Checked attachments against OpenVibe.Media: ${req.query.summary || ''}` : 'Saved.') : null });
-    });
+        await renderPageSettings(req, res, space, page, 200, { flash: req.query.saved ? (req.query.saved === 'verify' ? `Checked attachments against OpenVibe.Media: ${req.query.summary || ''}` : 'Saved.') : null });
+    }));
 
-    function renderPageSettings(req, res, space, page, status, extra = {}) {
-        const view = svc.view(space, page, req.actor, {});
-        const headNumber = svc.history(page, { limit: 1 })[0].number;
-        send(req, res, status, views.pageSettingsPage({ space, page, v: { ...view, headNumber }, parents: parentsOf(space, req.actor), canManage: svc.access.canManage(space, req.actor), ...extra }), { title: `Settings of ${page.title}`, robots: 'noindex, nofollow' });
+    async function renderPageSettings(req, res, space, page, status, extra = {}) {
+        const [view, list, parents] = await Promise.all([svc.view(space, page, req.actor, {}), svc.history(page, { limit: 1 }), parentsOf(space, req.actor)]);
+        const headNumber = list[0].number;
+        send(req, res, status, views.pageSettingsPage({ space, page, v: { ...view, headNumber }, parents, canManage: svc.access.canManage(space, req.actor), ...extra }), { title: `Settings of ${page.title}`, robots: 'noindex, nofollow' });
     }
 
     router.post('/w/:space/:slug/settings', B('wiki.page.update'), form, wrap(async (req, res) => {
-        const found = locate(req, res, '/settings');
+        const found = await locate(req, res, '/settings');
         if (!found) return;
         const { space, page } = found;
         if (!editorsOnly(req, res, space)) return;
@@ -492,51 +502,51 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         const back = (p = page, q = 'saved=1') => res.redirect(303, `${views.wpath(space, p)}/settings?${q}`);
         try {
             switch (b.op) {
-            case 'publish': svc.publish(page.id, { revision: Number(b.revision) }, req.actor); return res.redirect(303, views.wpath(space, page));
+            case 'publish': await svc.publish(page.id, { revision: Number(b.revision) }, req.actor); return res.redirect(303, views.wpath(space, page));
             case 'schedule': {
                 const at = Date.parse(/Z|[+-]\d\d:?\d\d$/.test(String(b.run_at)) ? b.run_at : `${b.run_at}Z`);
-                svc.schedulePublish(page.id, { revision: Number(b.revision), runAt: at }, req.actor);
+                await svc.schedulePublish(page.id, { revision: Number(b.revision), runAt: at }, req.actor);
                 return back();
             }
-            case 'unpublish': svc.unpublish(page.id, req.actor); return back();
-            case 'move': { const p = svc.movePage(page.id, { slug: b.slug, parentId: b.parent_id || null }, req.actor); return back(p); }
+            case 'unpublish': await svc.unpublish(page.id, req.actor); return back();
+            case 'move': { const p = await svc.movePage(page.id, { slug: b.slug, parentId: b.parent_id || null }, req.actor); return back(p); }
             case 'attach': await svc.attachMedia(page.id, { mediaId: b.media_id, alt: b.alt || null, caption: b.caption || null }, req.actor, { describe: platform.media.describe }); return back();
-            case 'detach': svc.detachMedia(page.id, Number(b.attachment_id), req.actor); return back();
+            case 'detach': await svc.detachMedia(page.id, Number(b.attachment_id), req.actor); return back();
             case 'verify': {
                 const results = await svc.verifyMedia(page.id, platform.media.resolve);
                 const count = (k) => results.filter((r) => r.outcome === k).length;
                 return back(page, `saved=verify&summary=${encodeURIComponent(`${count('available')} available, ${count('broken')} broken, ${count('check_failed')} not checked (Media did not answer)`)}`);
             }
-            case 'visibility': svc.setPageVisibility(page.id, { visibility: b.visibility, noindex: b.noindex === '1' }, req.actor); return back();
-            case 'delete': if (b.confirm !== 'yes') throw new svc.WikiError(422, 'page.confirm', 'Tick the box to confirm'); svc.deletePage(page.id, req.actor); return res.redirect(303, `/s/${encodeURIComponent(space.slug)}`);
+            case 'visibility': await svc.setPageVisibility(page.id, { visibility: b.visibility, noindex: b.noindex === '1' }, req.actor); return back();
+            case 'delete': if (b.confirm !== 'yes') throw new svc.WikiError(422, 'page.confirm', 'Tick the box to confirm'); await svc.deletePage(page.id, req.actor); return res.redirect(303, `/s/${encodeURIComponent(space.slug)}`);
             default: throw new svc.WikiError(400, 'request.invalid', 'Unknown action');
             }
         } catch (err) {
             if (!err.status || (err.status >= 500 && err.status !== 503)) throw err;
-            renderPageSettings(req, res, space, svc.pageById(page.id), err.status, { error: err.message });
+            await renderPageSettings(req, res, space, await svc.pageById(page.id), err.status, { error: err.message });
         }
     }));
 
     router.post('/w/:space/:slug/review', B('wiki.revision.publish'), form, wrap(async (req, res) => {
-        const found = locate(req, res, '/review');
+        const found = await locate(req, res, '/review');
         if (!found) return;
         const { space, page } = found;
         if (!editorsOnly(req, res, space)) return;
         const b = req.body || {};
-        svc.reviewRevision(space.id, page.slug, Number(b.revision), { decision: b.decision, note: b.note ? String(b.note).slice(0, 2000) : null }, req.actor);
+        await svc.reviewRevision(space.id, page.slug, Number(b.revision), { decision: b.decision, note: b.note ? String(b.note).slice(0, 2000) : null }, req.actor);
         res.redirect(303, `${views.wpath(space, page)}/history`);
     }));
 
     router.post('/w/:space/:slug/watch', B('wiki.page.watch'), form, wrap(async (req, res) => {
-        const found = locate(req, res, '/watch');
+        const found = await locate(req, res, '/watch');
         if (!found) return;
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in to watch pages.');
-        svc.watch(found.page.id, req.actor, (req.body || {}).on !== '0');
+        await svc.watch(found.page.id, req.actor, (req.body || {}).on !== '0');
         res.redirect(303, views.wpath(found.space, found.page));
     }));
 
     router.post('/w/:space/:slug/discuss', B('wiki.discussion.comment'), form, wrap(async (req, res) => {
-        const found = locate(req, res, '/discuss');
+        const found = await locate(req, res, '/discuss');
         if (!found) return;
         const { space, page } = found;
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in to comment.');

@@ -3,8 +3,8 @@ Description=OpenVibe.Wiki — wiki spaces, revisions, citations and discussion (
 # Network (openvibe-network) signs the tokens this service verifies. Wiki starts without it and
 # keeps retrying the JWKS fetch: public pages work, sign-in and token calls answer 503 meanwhile.
 # Events, Community, Sources and Media are optional: each degrades to an explicit failure state.
-After=network.target
-Wants=openvibe-network.service
+After=network.target postgresql.service pgbouncer.service valkey-server.service
+Wants=openvibe-network.service postgresql.service pgbouncer.service valkey-server.service
 
 [Service]
 Type=simple

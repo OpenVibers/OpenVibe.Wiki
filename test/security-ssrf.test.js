@@ -34,19 +34,19 @@ const INTERNAL = [
     try {
         const owner = { kind: 'user', subject: H.subject(), staff: false };
         const tok = H.userToken({ subject: owner.subject, username: 'owner' });
-        const space = h.svc.createSpace({ name: 'Refs', slug: 'refs' }, owner);
+        const space = await h.svc.createSpace({ name: 'Refs', slug: 'refs' }, owner);
         const okCite = [{ url: 'https://example.org/a', retrievedAt: '2026-09-20T00:00:00Z' }];
-        const page = h.svc.createPage(space.id, { title: 'Cited Page', body: `${H.LONG} ${INTERNAL.map((u) => `[x](${u})`).join(' ')}`, citations: okCite }, owner).page;
-        h.svc.publish(page.id, {}, owner);
+        const page = (await h.svc.createPage(space.id, { title: 'Cited Page', body: `${H.LONG} ${INTERNAL.map((u) => `[x](${u})`).join(' ')}`, citations: okCite }, owner)).page;
+        await h.svc.publish(page.id, {}, owner);
 
         await check('internal citation URLs are refused or stored, never fetched, through every path that handles them', async () => {
             for (const url of INTERNAL) {
                 // Through the API (attach to a revision), the service (a new revision) and the edit form.
                 await H.req(h, 'POST', `/api/v1/pages/${page.id}/revisions/1/citations`, { token: tok, body: { citations: [{ url, retrieved_at: '2026-09-20T00:00:00Z' }] } });
-                try { h.svc.editPage(page.id, { expectedRevision: h.db.prepare('SELECT max(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(page.id).n, body: `${H.LONG} see ${url}`, summary: 'cite', citations: [{ url, retrievedAt: '2026-09-20T00:00:00Z' }] }, owner); } catch { /* refused: fine */ }
+                try { await h.svc.editPage(page.id, { expectedRevision: h.db.prepare('SELECT max(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(page.id).n, body: `${H.LONG} see ${url}`, summary: 'cite', citations: [{ url, retrievedAt: '2026-09-20T00:00:00Z' }] }, owner); } catch { /* refused: fine */ }
             }
-            const n = h.db.prepare('SELECT max(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(page.id).n;
-            try { h.svc.publish(page.id, { revision: n }, owner); } catch { /* the gate may refuse: fine */ }
+            const n = (await h.db.prepare('SELECT max(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(page.id)).n;
+            try { await h.svc.publish(page.id, { revision: n }, owner); } catch { /* the gate may refuse: fine */ }
             for (const p of ['/w/refs/cited-page', '/w/refs/cited-page/sources', '/w/refs/cited-page/history', `/api/v1/pages/${page.id}`, `/api/v1/pages/${page.id}/revisions/${n}/citations`,
                 `/api/v1/pages/${page.id}/revisions/1/citations`, '/feed.atom', '/feed.json', '/llms.txt', '/sitemaps/pages-1.xml']) {
                 await H.req(h, 'GET', p, { cookie: H.cookieFor(tok) });

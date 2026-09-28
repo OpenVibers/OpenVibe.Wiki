@@ -28,14 +28,16 @@ function createMachine({ svc, config }) {
         }));
     });
 
-    function pageEntries() {
-        return svc.publishedPublic().map(({ space, page, decision }) => ({
+    const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
+
+    async function pageEntries() {
+        return (await svc.publishedPublic()).map(({ space, page, decision }) => ({
             loc: svc.pageUrl(space, page), lastmod: page.revision_published_at, decision,
         }));
     }
 
-    function spaceEntries() {
-        return svc.listSpaces({ kind: 'anonymous' }).filter((s) => s.visibility === 'public').map((s) => {
+    async function spaceEntries() {
+        return (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public').map((s) => {
             const url = seo.canonicalUrl(origin, svc.spacePath(s));
             // A space index is navigation, not an article: no word or source minimum.
             const decision = seo.evaluate({ state: 'published', visibility: 'public', canonicalUrl: url, wordCount: 0 }, { policy: { minWords: 0, requireSources: false }, now: Date.now() });
@@ -43,22 +45,22 @@ function createMachine({ svc, config }) {
         });
     }
 
-    router.get('/sitemap.xml', (_req, res) => {
-        const pages = seo.sitemap(pageEntries(), { maxUrls: PER_SITEMAP });
+    router.get('/sitemap.xml', wrap(async (_req, res) => {
+        const pages = seo.sitemap(await pageEntries(), { maxUrls: PER_SITEMAP });
         const maps = [{ loc: `${origin}/sitemaps/spaces.xml` }];
         pages.files.forEach((_f, i) => maps.push({ loc: `${origin}/sitemaps/pages-${i + 1}.xml` }));
         cache(res).type('application/xml').send(seo.sitemapIndex(maps));
-    });
-    router.get('/sitemaps/spaces.xml', (_req, res) => cache(res).type('application/xml').send(seo.sitemap(spaceEntries()).files[0]));
-    router.get('/sitemaps/pages-:n.xml', (req, res) => {
-        const files = seo.sitemap(pageEntries(), { maxUrls: PER_SITEMAP }).files;
+    }));
+    router.get('/sitemaps/spaces.xml', wrap(async (_req, res) => cache(res).type('application/xml').send(seo.sitemap(await spaceEntries()).files[0])));
+    router.get('/sitemaps/pages-:n.xml', wrap(async (req, res) => {
+        const files = seo.sitemap(await pageEntries(), { maxUrls: PER_SITEMAP }).files;
         const n = Number(req.params.n);
         if (!Number.isInteger(n) || n < 1 || n > files.length) return res.status(404).type('text/plain').send('Not found');
         cache(res).type('application/xml').send(files[n - 1]);
-    });
+    }));
 
-    function feedItems() {
-        return svc.recentChanges(50).map(({ space, page, rev, decision }) => ({
+    async function feedItems() {
+        return (await svc.recentChanges(50)).map(({ space, page, rev, decision }) => ({
             id: `tag:openvibe.wiki,2026:page/${page.id}/revision/${page.published_revision}`,
             url: svc.pageUrl(space, page),
             title: rev.fields.title,
@@ -76,22 +78,22 @@ function createMachine({ svc, config }) {
      * change readers cannot see — or the Unix epoch when there is no public space at all. The feed is
      * linked from every page, so an empty one is a valid feed with zero entries, not a 404.
      */
-    function emptyFeedUpdated() {
-        const times = svc.listSpaces({ kind: 'anonymous' }).filter((s) => s.visibility === 'public').map((s) => s.updated_at);
+    async function emptyFeedUpdated() {
+        const times = (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public').map((s) => s.updated_at);
         return new Date(times.length ? Math.max(...times) : 0).toISOString();
     }
 
-    router.get('/feed.atom', (_req, res) => {
-        const items = feedItems();
-        const updated = items.some((i) => i.decision.listable) ? null : emptyFeedUpdated();
+    router.get('/feed.atom', wrap(async (_req, res) => {
+        const items = await feedItems();
+        const updated = items.some((i) => i.decision.listable) ? null : await emptyFeedUpdated();
         cache(res).type('application/atom+xml').send(seo.atomFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.atom`, id: `${origin}/feed.atom`, ...(updated ? { updated } : {}) }, items));
-    });
-    router.get('/feed.json', (_req, res) => {
-        cache(res).type('application/feed+json').send(JSON.stringify(seo.jsonFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.json`, description: 'Public wiki pages by the time their current revision was published.' }, feedItems())));
-    });
+    }));
+    router.get('/feed.json', wrap(async (_req, res) => {
+        cache(res).type('application/feed+json').send(JSON.stringify(seo.jsonFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.json`, description: 'Public wiki pages by the time their current revision was published.' }, await feedItems())));
+    }));
 
-    router.get('/llms.txt', (_req, res) => {
-        const spaces = svc.listSpaces({ kind: 'anonymous' }).filter((s) => s.visibility === 'public');
+    router.get('/llms.txt', wrap(async (_req, res) => {
+        const spaces = (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public');
         cache(res, 3600).type('text/plain').send(sharedSeo.llmsTxt({
             name: 'OpenVibe.Wiki',
             summary: 'Wiki spaces of the OpenVibe network: page trees, immutable revisions, citations attached to the revision that used them, infoboxes and internal links.',
@@ -105,7 +107,7 @@ function createMachine({ svc, config }) {
                 ] },
             ],
         }));
-    });
+    }));
 
     return router;
 }

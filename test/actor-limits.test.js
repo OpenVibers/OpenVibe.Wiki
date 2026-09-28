@@ -52,19 +52,19 @@ const { actor, serviceItself } = require('../server/http/actor-limits');
         // an edit has its own budget (30 a minute), shared by the API and the edit form; nothing is stored past it
         clock = Date.UTC(2026, 8, 27, 12, 5, 0);
         const owner = { kind: 'user', subject: alice, staff: false };
-        const space = h.svc.createSpace({ name: 'Limits', slug: 'limits' }, owner);
-        const { page } = h.svc.createPage(space.id, { title: 'Counted', body: H.LONG }, owner);
-        h.svc.setRole(space.id, bob, 'editor', owner);
-        const head = () => h.db.prepare('SELECT MAX(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(page.id).n;
+        const space = await h.svc.createSpace({ name: 'Limits', slug: 'limits' }, owner);
+        const { page } = await h.svc.createPage(space.id, { title: 'Counted', body: H.LONG }, owner);
+        await h.svc.setRole(space.id, bob, 'editor', owner);
+        const head = async () => (await h.db.prepare('SELECT MAX(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(page.id)).n;
         for (let i = 0; i < 30; i++) {
-            r = await H.req(h, 'POST', `/api/v1/pages/${page.id}/revisions`, { token: aliceTok, body: { expected_revision: head(), body: `${H.LONG} Edit ${i}.` } });
+            r = await H.req(h, 'POST', `/api/v1/pages/${page.id}/revisions`, { token: aliceTok, body: { expected_revision: await head(), body: `${H.LONG} Edit ${i}.` } });
             assert.ok(r.status === 200 || r.status === 201, `edit ${i + 1}: ${r.text}`);
         }
-        const stored = head();
+        const stored = await head();
         r = await H.req(h, 'POST', '/w/limits/counted/edit', { cookie: H.cookieFor(aliceTok), form: { expected_revision: stored, title: 'Counted', body: `${H.LONG} One more.` } });
         assert.deepStrictEqual([r.status, r.json && r.json.code, r.headers.get('retry-after')], [429, 'rate_limited', '60'], 'the form shares the API budget');
         assert.ok(r.json.detail.includes('wiki.page.edit'), r.json.detail);
-        assert.strictEqual(head(), stored, 'nothing stored');
+        assert.strictEqual(await head(), stored, 'nothing stored');
         r = await H.req(h, 'POST', `/api/v1/pages/${page.id}/revisions`, { token: bobTok, body: { expected_revision: stored, body: `${H.LONG} From bob.` } });
         assert.ok(r.status === 200 || r.status === 201, `another editor still edits: ${r.text}`);
 

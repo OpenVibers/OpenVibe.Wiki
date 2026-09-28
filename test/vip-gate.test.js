@@ -13,27 +13,16 @@ const STRANGER = H.subject();
 const VIP_URL = 'http://127.0.0.1:4620/api/v1/policies/evaluate';
 
 (async () => {
-    // Migration: a database made before `vip` (the old CHECK) is widened in place; rows stay; idempotent.
+    // The schema: `vip` is a visibility PostgreSQL accepts, and anything else is still refused by the CHECK
+    // (on SQLite a database made before `vip` was widened in place; migrations/0001 has it from the start).
     {
-        const fs = require('fs');
-        const os = require('os');
-        const path = require('path');
-        const { openDb, createStores, widenVisibilityChecks, SCHEMA } = require('../server/db');
-        const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-vipmig-')), 'wiki.db');
-        const old = openDb(file);
-        old.exec(SCHEMA.split("CHECK (visibility IN ('public','members','vip','private'))").join("CHECK (visibility IN ('public','members','private'))"));
-        old.prepare("INSERT INTO wiki_spaces (id, slug, name, kind, visibility, owner, created_by, created_at, updated_at) VALUES ('spc_1', 'old', 'Old', 'user', 'members', ?, ?, 1, 1)").run(OWNER, OWNER);
-        assert.throws(() => old.prepare("UPDATE wiki_spaces SET visibility = 'vip' WHERE id = 'spc_1'").run(), /CHECK constraint/);
-        old.close();
-        const db = openDb(file);
-        createStores(db);
-        db.prepare("UPDATE wiki_spaces SET visibility = 'vip' WHERE id = 'spc_1'").run();
-        assert.strictEqual(db.prepare("SELECT visibility FROM wiki_spaces WHERE id = 'spc_1'").get().visibility, 'vip', 'widened; the row kept');
-        assert.throws(() => db.prepare("UPDATE wiki_spaces SET visibility = 'secret' WHERE id = 'spc_1'").run(), /CHECK constraint/, 'still checked');
-        assert.deepStrictEqual(widenVisibilityChecks(db), [], 'idempotent');
-        assert.strictEqual(db.pragma('integrity_check', { simple: true }), 'ok');
-        db.close();
-        fs.rmSync(path.dirname(file), { recursive: true, force: true });
+        const { testDb } = require('./db-helper');
+        const { db, close } = await testDb();
+        await db.prepare("INSERT INTO wiki_spaces (id, slug, name, kind, visibility, owner, created_by, created_at, updated_at) VALUES ('spc_1', 'old', 'Old', 'user', 'members', ?, ?, 1, 1)").run(OWNER, OWNER);
+        await db.prepare("UPDATE wiki_spaces SET visibility = 'vip' WHERE id = 'spc_1'").run();
+        assert.strictEqual((await db.prepare("SELECT visibility FROM wiki_spaces WHERE id = 'spc_1'").get()).visibility, 'vip');
+        await assert.rejects(db.prepare("UPDATE wiki_spaces SET visibility = 'secret' WHERE id = 'spc_1'").run(), /check constraint/i, 'still checked');
+        await close();
     }
 
     const asks = [];
@@ -51,14 +40,14 @@ const VIP_URL = 'http://127.0.0.1:4620/api/v1/policies/evaluate';
     const cookie = (sub) => H.cookieFor(H.userToken({ subject: sub }));
     try {
         const cite = [{ url: 'https://example.org/a', retrievedAt: '2026-09-20T00:00:00Z' }];
-        const club = h.svc.createSpace({ name: 'Members club', slug: 'club', visibility: 'vip' }, owner);
-        const secret = h.svc.createPage(club.id, { title: 'Club secret', body: H.LONG, citations: cite }, owner).page;
-        h.svc.publish(secret.id, {}, owner);
-        const open = h.svc.createSpace({ name: 'Open notes', slug: 'open' }, owner);
-        const perk = h.svc.createPage(open.id, { title: 'Perk page', body: H.LONG, citations: cite, visibility: 'vip' }, owner).page;
-        h.svc.publish(perk.id, {}, owner);
-        const pub = h.svc.createPage(open.id, { title: 'Public page', body: H.LONG, citations: cite }, owner).page;
-        h.svc.publish(pub.id, {}, owner);
+        const club = await h.svc.createSpace({ name: 'Members club', slug: 'club', visibility: 'vip' }, owner);
+        const secret = (await h.svc.createPage(club.id, { title: 'Club secret', body: H.LONG, citations: cite }, owner)).page;
+        await h.svc.publish(secret.id, {}, owner);
+        const open = await h.svc.createSpace({ name: 'Open notes', slug: 'open' }, owner);
+        const perk = (await h.svc.createPage(open.id, { title: 'Perk page', body: H.LONG, citations: cite, visibility: 'vip' }, owner)).page;
+        await h.svc.publish(perk.id, {}, owner);
+        const pub = (await h.svc.createPage(open.id, { title: 'Public page', body: H.LONG, citations: cite }, owner)).page;
+        await h.svc.publish(pub.id, {}, owner);
 
         // Anonymous: the join prompt (403, never publicly cached), no body.
         let r = await H.req(h, 'GET', '/w/club/club-secret');
@@ -118,7 +107,7 @@ const VIP_URL = 'http://127.0.0.1:4620/api/v1/policies/evaluate';
         assert.ok(!(await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.includes('club-secret'));
         assert.ok(!(await H.req(h, 'GET', '/feed.atom')).text.includes('club-secret'));
         assert.ok(!(await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.includes('perk-page'));
-        const evs = H.outbox(h);
+        const evs = await H.outbox(h);
         assert.ok(!evs.some((e) => e.event_type === 'wiki.index_document.upserted' && (e.subject.id === secret.id || e.subject.id === perk.id)), 'no Search document');
         assert.ok(evs.some((e) => e.event_type === 'wiki.page.published' && e.subject.id === secret.id && e.payload.visibility === 'vip'));
 
@@ -130,7 +119,7 @@ const VIP_URL = 'http://127.0.0.1:4620/api/v1/policies/evaluate';
         vipDown = false;
 
         // Official spaces have no VIP owner.
-        assert.throws(() => h.svc.createSpace({ name: 'Staff club', slug: 'staff-club', kind: 'official', visibility: 'vip' }, { kind: 'system', service: 'svc:wiki' }), /no VIP owner/);
+        await assert.rejects(async () => await h.svc.createSpace({ name: 'Staff club', slug: 'staff-club', kind: 'official', visibility: 'vip' }, { kind: 'system', service: 'svc:wiki' }), /no VIP owner/);
     } finally {
         await h.stop();
     }

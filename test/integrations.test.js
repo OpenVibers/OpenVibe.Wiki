@@ -76,7 +76,7 @@ const ITEM = 'itm_01J8Z6Q3KX0000000000000001';
         sourcesUp = false;
         r = await H.req(h, 'POST', '/api/v1/spaces/mt/pages', { token: tok, body: { title: 'Down', body: H.LONG, citations: [{ source_item_id: ITEM }] } });
         assert.strictEqual(r.status, 503);
-        assert.strictEqual(h.svc.findPage(h.svc.findSpace('mt').id, 'down'), null, 'nothing is written without the source');
+        assert.strictEqual(await h.svc.findPage((await h.svc.findSpace('mt')).id, 'down'), null, 'nothing is written without the source');
         sourcesUp = true;
         await H.req(h, 'POST', `/api/v1/pages/${pageId}/publish`, { token: tok, body: {} });
 
@@ -108,8 +108,8 @@ const ITEM = 'itm_01J8Z6Q3KX0000000000000001';
         const resolves = calls.filter((c) => c.url === '/api/v1/comments/threads/resolve');
         assert.strictEqual(resolves.length, 1);
         assert.deepStrictEqual(JSON.parse(resolves[0].body).ref, { service: 'wiki', type: 'page', id: pageId, label: 'Cited' });
-        assert.strictEqual(h.db.prepare('SELECT thread_id FROM wiki_discussion_refs WHERE entity_id = ?').get(pageId).thread_id, '7');
-        assert.deepStrictEqual(h.db.prepare('PRAGMA table_info(wiki_discussion_refs)').all().map((c) => c.name).sort(), ['entity_id', 'ref', 'resolved_at', 'thread_id'], 'no copy of comment content');
+        assert.strictEqual((await h.db.prepare('SELECT thread_id FROM wiki_discussion_refs WHERE entity_id = ?').get(pageId)).thread_id, '7');
+        assert.deepStrictEqual((await h.db.prepare("SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'wiki_discussion_refs'").all()).map((c) => c.name).sort(), ['entity_id', 'ref', 'resolved_at', 'thread_id'], 'no copy of comment content');
         r = await H.req(h, 'POST', '/w/mt/cited/discuss', { cookie: H.cookieFor(tok), form: { message: 'Thanks' } });
         assert.strictEqual(r.status, 303);
         const post = calls.find((c) => c.url === '/api/v1/comments/threads/7/comments');
@@ -119,11 +119,11 @@ const ITEM = 'itm_01J8Z6Q3KX0000000000000001';
         assert.strictEqual(r.status, 401, 'anonymous visitors do not post through Wiki');
 
         // Events: the relay publishes the outbox with the service token.
-        const pending = h.platform.outbox.pending();
+        const pending = await h.platform.outbox.pending();
         assert.ok(pending > 0);
         const flushed = await h.platform.outbox.flush();
         assert.strictEqual(flushed.sent, pending);
-        assert.strictEqual(h.platform.outbox.pending(), 0);
+        assert.strictEqual(await h.platform.outbox.pending(), 0);
         const ev = calls.filter((c) => c.host === 'events.internal');
         assert.ok(ev.length >= 1);
         assert.strictEqual(ev[0].headers.authorization, 'Bearer stub-token');

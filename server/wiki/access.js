@@ -18,6 +18,10 @@
  * records the answers on the actor (actor.vipAllowed, actor.vipDenied). The synchronous checks below then
  * read them. Anything not prepared is not readable (fail closed), so VIP content never leaks into a list,
  * a link preview or a feed that did not ask.
+ * Roles are read the same way (PostgreSQL, ADR-035): loadRoles(actor) reads every role the actor's subject holds
+ * (one query, cached on the actor as actor.wikiRoles) before any check, so the checks stay synchronous and a
+ * filter over pages never sees a promise. A check on an actor whose roles were not loaded throws (a bug, never
+ * a silent refusal or grant). The service loads them at the top of every method that takes an actor.
  * Roles: owner (everything, incl. roles and settings), editor (write revisions, publish, revert,
  * review AI proposals), viewer (read a private space). Network staff (admin, global_mod) act as
  * owner of official spaces; they get no silent access to user spaces.
@@ -40,7 +44,27 @@ function effectiveVisibility(space, page) {
 }
 
 function createAccess(db, { vip = null } = {}) {
-    const roleOf = db.prepare('SELECT role FROM wiki_permissions WHERE space_id = ? AND subject = ?');
+    const rolesOfSubject = db.prepare('SELECT space_id, role FROM wiki_permissions WHERE subject = ?');
+    const rolesOfSpace = db.prepare('SELECT subject, role FROM wiki_permissions WHERE space_id = ?');
+
+    /** Read (or re-read with fresh: true) every role the actor holds; idempotent and cheap to call again. */
+    async function loadRoles(actor, { fresh = false } = {}) {
+        if (!actor || actor.kind === 'system' || !actor.subject) return actor;
+        if (actor.wikiRoles && !fresh) return actor;
+        const rows = await rolesOfSubject.all(actor.subject);
+        Object.defineProperty(actor, 'wikiRoles', { value: new Map(rows.map((r) => [r.space_id, r.role])), writable: true, configurable: true, enumerable: false });
+        return actor;
+    }
+
+    /** Actors for subjects of one space (watchers), with that space's roles already loaded. */
+    async function subjectActors(space) {
+        const roles = new Map((await rolesOfSpace.all(space.id)).map((r) => [r.subject, r.role]));
+        return (subject) => {
+            const a = { kind: 'user', subject, staff: false };
+            Object.defineProperty(a, 'wikiRoles', { value: new Map(roles.has(subject) ? [[space.id, roles.get(subject)]] : []), enumerable: false });
+            return a;
+        };
+    }
 
     /** 'owner' | 'editor' | 'viewer' | null */
     function role(space, actor) {
@@ -50,8 +74,8 @@ function createAccess(db, { vip = null } = {}) {
         if (actor.kind === 'user' && actor.staff && space.kind === 'official') return 'owner';
         if (!subject) return null;
         if (space.owner === subject) return 'owner';
-        const r = roleOf.get(space.id, subject);
-        return r ? r.role : null;
+        if (!actor.wikiRoles) throw new Error('wiki access: roles not loaded for this actor (await access.loadRoles(actor) first)');
+        return actor.wikiRoles.get(space.id) || null;
     }
 
     function isPerson(actor) { return !!(actor && actor.subject && /^usr_/.test(actor.subject)); }
@@ -68,6 +92,8 @@ function createAccess(db, { vip = null } = {}) {
     const api = {
         VISIBILITIES,
         role,
+        loadRoles,
+        subjectActors,
         isPerson,
         effectiveVisibility,
         canReadSpace(space, actor) {
@@ -121,9 +147,9 @@ function createAccess(db, { vip = null } = {}) {
             return { reason: (actor.vipDenied && actor.vipDenied.get(vipKey(space, page))) || (actor.subject ? 'denied' : 'not_signed_in'),
                 owner: space.owner || null, joinUrl: vip ? vip.joinUrl(space.owner || null) : null };
         },
-        /** Would this subject (a watcher) be allowed to read the page? Staff status is not known here. */
-        subjectCanRead(space, page, subject) {
-            return api.canReadPage(space, page, { kind: 'user', subject, staff: false });
+        /** Would this subject (a watcher) be allowed to read the page? Staff status is not known here. actorFor comes from subjectActors(space). */
+        subjectCanRead(space, page, subject, actorFor) {
+            return api.canReadPage(space, page, actorFor(subject));
         },
     };
     return api;

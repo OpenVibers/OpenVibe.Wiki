@@ -38,13 +38,13 @@ for (const bad of ['Site | url | javascript:alert(1)', 'N | number | lots', 'D |
     const h = await H.boot();
     const me = { kind: 'user', subject: H.subject() };
     try {
-        const s = h.svc.createSpace({ name: '<b>Space</b>', slug: 'xss' }, me);
-        const { page } = h.svc.createPage(s.id, {
+        const s = await h.svc.createSpace({ name: '<b>Space</b>', slug: 'xss' }, me);
+        const { page } = await h.svc.createPage(s.id, {
             title: '<script>alert(1)</script> title', body: `Body ${H.LONG}`, summary: '"><script>alert(2)</script>',
             infobox: [{ label: '<i>L</i>', type: 'text', value: '<img src=x onerror=alert(3)>' }],
             citations: [{ url: 'https://example.org/"><script>', title: '<script>alert(4)</script>', retrievedAt: '2026-09-01' }],
         }, me);
-        h.svc.publish(page.id, {}, me);
+        await h.svc.publish(page.id, {}, me);
         const r = await H.req(h, 'GET', `/w/xss/${page.slug}`);
         assert.strictEqual(r.status, 200);
         const body = r.text.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '').replace(/<script>\s*window\.__OV_PAGE[\s\S]*?<\/script>/, '').replace(/<script>\(function\(\)\{try\{var r=localStorage[\s\S]*?<\/script>/, '');

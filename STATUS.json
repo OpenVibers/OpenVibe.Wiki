@@ -4,12 +4,25 @@
   "code": true,
   "wave": "W16",
   "plan": "OpenVibe End-to-End Realignment & Implementation Plan, revision 3 (20 Sep 2026)",
-  "runtime": "node 22, express, better-sqlite3",
+  "runtime": "node 22, express, PostgreSQL 18 (openvibe-sdk/db, async) + Valkey 9",
   "port": 4800,
   "domain": "openvibe.wiki",
-  "contracts": "openvibe-contracts v0.64.0",
-  "packages": ["openvibe-publishing v0.4.0", "openvibe-shared v1.25.0", "openvibe-sdk v0.12.0"],
-  "capabilities": ["wiki.space.create", "wiki.page.create", "wiki.page.read", "wiki.revision.propose", "wiki.revision.publish", "wiki.revision.revert", "wiki.citation.attach", "wiki.search.query"],
+  "contracts": "openvibe-contracts v0.76.0",
+  "packages": [
+    "openvibe-publishing v1.0.0",
+    "openvibe-shared v1.25.0",
+    "openvibe-sdk v0.19.0"
+  ],
+  "capabilities": [
+    "wiki.space.create",
+    "wiki.page.create",
+    "wiki.page.read",
+    "wiki.revision.propose",
+    "wiki.revision.publish",
+    "wiki.revision.revert",
+    "wiki.citation.attach",
+    "wiki.search.query"
+  ],
   "capabilitiesRegistered": true,
   "deployed": true,
   "deployment": "Public at https://openvibe.wiki since 2026-09-23 (~03:00 UTC): deployed with `sudo ovhost deploy wiki`, /opt/openvibe.wiki, unit openvibe-wiki on 127.0.0.1:4800 behind the openvibe.wiki nginx vhost, principal wiki. On 2026-09-23 production held 1 space and the 10 seed pages (1 revision each), 0 person reviews, so every page was noindex and nothing public was in Search. Restore drill passed 2026-09-23.",
@@ -30,5 +43,6 @@
     "/api/v1 by capability",
     "SDK outbox events and Search index documents",
     "per-actor limits (openvibe-sdk/limits)"
-  ]
+  ],
+  "database": "PostgreSQL ov_wiki (ADR-035), schema migrations/0001_initial.sql; the SQLite file of earlier releases is imported once by scripts/migrate-to-postgres.js and kept read-only 7 days"
 }

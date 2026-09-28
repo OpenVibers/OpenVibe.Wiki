@@ -23,9 +23,9 @@ const { SYSTEM } = require('../server/wiki/seed');
     const anchors = (html, host) => html.match(new RegExp(`<a href="https://${host.replace('.', '\\.')}[^"]*"[^>]*>`, 'g')) || [];
     try {
         // Community space: every outbound link is nofollow ugc.
-        const user = h.svc.createSpace({ name: 'Community', slug: 'community' }, { kind: 'user', subject: me });
-        const up = h.svc.createPage(user.id, { title: 'Links', body, infobox, citations: cite }, { kind: 'user', subject: me }).page;
-        h.svc.publish(up.id, {}, { kind: 'user', subject: me });
+        const user = await h.svc.createSpace({ name: 'Community', slug: 'community' }, { kind: 'user', subject: me });
+        const up = (await h.svc.createPage(user.id, { title: 'Links', body, infobox, citations: cite }, { kind: 'user', subject: me })).page;
+        await h.svc.publish(up.id, {}, { kind: 'user', subject: me });
         let html = (await H.req(h, 'GET', '/w/community/links')).text;
         const userLinks = [...anchors(html, 'spam.example'), ...anchors(html, 'cited.example'), ...anchors(html, 'infobox.example')];
         assert.strictEqual(userLinks.length, 4, userLinks.join('\n'));
@@ -37,9 +37,9 @@ const { SYSTEM } = require('../server/wiki/seed');
         assert.ok(anchors(html, 'spam.example').every((a) => /rel="nofollow ugc noopener"/.test(a)));
 
         // Official space: staff vouch for their links.
-        const off = h.svc.createSpace({ name: 'Official', slug: 'official', kind: 'official' }, SYSTEM);
-        const op = h.svc.createPage(off.id, { title: 'Links', body, infobox, citations: cite }, { kind: 'user', subject: me, staff: true }).page;
-        h.svc.publish(op.id, {}, { kind: 'user', subject: me, staff: true });
+        const off = await h.svc.createSpace({ name: 'Official', slug: 'official', kind: 'official' }, SYSTEM);
+        const op = (await h.svc.createPage(off.id, { title: 'Links', body, infobox, citations: cite }, { kind: 'user', subject: me, staff: true })).page;
+        await h.svc.publish(op.id, {}, { kind: 'user', subject: me, staff: true });
         html = (await H.req(h, 'GET', '/w/official/links')).text;
         assert.ok(anchors(html, 'spam.example').every((a) => /rel="noopener"/.test(a)) && anchors(html, 'spam.example').length === 2);
         assert.ok(anchors(html, 'cited.example').every((a) => /rel="noopener nofollow"/.test(a)));
@@ -53,7 +53,7 @@ const { SYSTEM } = require('../server/wiki/seed');
         }
         let r = await H.req(h, 'POST', `/api/v1/pages/${up.id}/revisions`, { token: tok, body: { expected_revision: 1, summary: 'x'.repeat(5000) } });
         assert.strictEqual(r.status, 422);
-        assert.throws(() => h.svc.propose({ space: 'community', title: 'Proposed', body: H.LONG, summary: { html: '<b>' }, workflow: { id: 'wiki.generate_page', runId: 'run_1' } }, { kind: 'service', service: 'svc:ai' }), (e) => e.status === 422 && e.code === 'page.invalid_summary');
+        await assert.rejects(async () => await h.svc.propose({ space: 'community', title: 'Proposed', body: H.LONG, summary: { html: '<b>' }, workflow: { id: 'wiki.generate_page', runId: 'run_1' } }, { kind: 'service', service: 'svc:ai' }), (e) => e.status === 422 && e.code === 'page.invalid_summary');
         r = await H.req(h, 'POST', '/api/v1/spaces/community/pages', { token: tok, body: { title: 'Summarised', body: H.LONG, summary: '  One   short sentence.  ' } });
         assert.strictEqual(r.status, 201);
         assert.strictEqual(r.json.revision.summary, 'One short sentence.');
@@ -66,7 +66,7 @@ const { SYSTEM } = require('../server/wiki/seed');
             assert.strictEqual(r.status, 403, `${actorType}: ${r.text}`);
             assert.strictEqual(r.json.code, 'proposal.service_only');
         }
-        assert.strictEqual(h.svc.findPage(user.id, 'planted'), null);
+        assert.strictEqual(await h.svc.findPage(user.id, 'planted'), null);
         r = await H.req(h, 'POST', '/api/v1/proposals', { token: H.serviceToken({ client: 'ai', cap: ['wiki.revision.propose'] }), body: proposal });
         assert.strictEqual(r.status, 201, r.text);
         await h.stop();
@@ -78,10 +78,10 @@ const { SYSTEM } = require('../server/wiki/seed');
             assert.strictEqual((await H.req(limited, 'GET', '/search?q=again')).status, 429);
             assert.strictEqual((await H.req(limited, 'GET', '/')).status, 200);
             const owner = { kind: 'user', subject: H.subject() };
-            const sp = limited.svc.createSpace({ name: 'Diffs', slug: 'diffs' }, owner);
-            const pg = limited.svc.createPage(sp.id, { title: 'Long', body: 'a b c' }, owner).page;
-            limited.svc.editPage(pg.id, { expectedRevision: 1, body: 'x y z' }, owner);
-            limited.svc.publish(pg.id, {}, owner);
+            const sp = await limited.svc.createSpace({ name: 'Diffs', slug: 'diffs' }, owner);
+            const pg = (await limited.svc.createPage(sp.id, { title: 'Long', body: 'a b c' }, owner)).page;
+            await limited.svc.editPage(pg.id, { expectedRevision: 1, body: 'x y z' }, owner);
+            await limited.svc.publish(pg.id, {}, owner);
             for (let i = 0; i < 15; i++) {
                 assert.strictEqual((await H.req(limited, 'GET', '/w/diffs/long/diff/1/2')).status, 200);
                 assert.strictEqual((await H.req(limited, 'GET', `/api/v1/pages/${pg.id}/diff?from=1&to=2`)).status, 200);

@@ -25,7 +25,7 @@ const H = require('./helpers');
         const vis = u.pathname.match(/^\/api\/v1\/comments\/threads\/(\d+)\/visibility$/);
         if (vis && method === 'PUT') {
             const headers = Object.fromEntries(new Headers(init.headers || {}).entries());
-            calls.push({ thread: vis[1], body: JSON.parse(init.body), headers, inTransaction: h.db.inTransaction });
+            calls.push({ thread: vis[1], body: JSON.parse(init.body), headers, inTransaction: h.db.inTransaction() });
             if (communityDown) return json(503, { code: 'unavailable' });
             return json(200, { thread: { id: Number(vis[1]), visibility: JSON.parse(init.body).visibility } });
         }
@@ -58,7 +58,7 @@ const H = require('./helpers');
         // Rendering the public page resolves its thread (id 1).
         r = await H.req(h, 'GET', '/w/talk/discussed');
         assert.strictEqual(r.status, 200);
-        assert.strictEqual(h.db.prepare('SELECT thread_id FROM wiki_discussion_refs WHERE entity_id = ?').get(pageId).thread_id, '1');
+        assert.strictEqual((await h.db.prepare('SELECT thread_id FROM wiki_discussion_refs WHERE entity_id = ?').get(pageId)).thread_id, '1');
 
         // Unpublished: hidden. After the commit, with a moderate token.
         r = await H.req(h, 'POST', `/api/v1/pages/${pageId}/unpublish`, { token: tok, body: {} });
@@ -115,7 +115,7 @@ const H = require('./helpers');
         assert.strictEqual(r.status, 200, r.text);
         await settle(7);
         assert.strictEqual(calls.length, 7);
-        assert.strictEqual(h.svc.pageById(pageId).state, 'unpublished');
+        assert.strictEqual((await h.svc.pageById(pageId)).state, 'unpublished');
         communityDown = false;
         r = await H.req(h, 'POST', `/api/v1/pages/${pageId}/publish`, { token: tok, body: {} });
         await settle(8);

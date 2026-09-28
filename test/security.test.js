@@ -11,15 +11,15 @@ const H = require('./helpers');
     const owner = { kind: 'user', subject: H.subject(), staff: false };
     const mallory = { kind: 'user', subject: H.subject(), staff: false };
     try {
-        const space = h.svc.createSpace({ name: 'Handbook', slug: 'handbook' }, owner);
-        const { page } = h.svc.createPage(space.id, { title: 'Onboarding', body: H.LONG }, owner);
-        h.svc.publish(page.id, {}, owner);
-        h.svc.updateSpace(space.id, { slug: 'guide' }, owner);
+        const space = await h.svc.createSpace({ name: 'Handbook', slug: 'handbook' }, owner);
+        const { page } = await h.svc.createPage(space.id, { title: 'Onboarding', body: H.LONG }, owner);
+        await h.svc.publish(page.id, {}, owner);
+        await h.svc.updateSpace(space.id, { slug: 'guide' }, owner);
 
         // Another person cannot take the retired slug, by creating a space or by renaming theirs.
-        assert.throws(() => h.svc.createSpace({ name: 'Handbook', slug: 'handbook' }, mallory), (e) => e.status === 409 && e.code === 'space.slug_retired');
-        const own = h.svc.createSpace({ name: 'Mine', slug: 'mine' }, mallory);
-        assert.throws(() => h.svc.updateSpace(own.id, { slug: 'handbook' }, mallory), (e) => e.status === 409 && e.code === 'space.slug_retired');
+        await assert.rejects(async () => await h.svc.createSpace({ name: 'Handbook', slug: 'handbook' }, mallory), (e) => e.status === 409 && e.code === 'space.slug_retired');
+        const own = await h.svc.createSpace({ name: 'Mine', slug: 'mine' }, mallory);
+        await assert.rejects(async () => await h.svc.updateSpace(own.id, { slug: 'handbook' }, mallory), (e) => e.status === 409 && e.code === 'space.slug_retired');
         const r = await H.req(h, 'POST', '/api/v1/spaces', { token: H.userToken({ subject: mallory.subject }), body: { name: 'Handbook', slug: 'handbook' } });
         assert.strictEqual(r.status, 409);
 
@@ -28,7 +28,7 @@ const H = require('./helpers');
         assert.strictEqual((await H.req(h, 'GET', '/w/handbook/onboarding')).headers.get('location'), '/w/guide/onboarding');
 
         // The space itself may take its old slug back.
-        h.svc.updateSpace(space.id, { slug: 'handbook' }, owner);
+        await h.svc.updateSpace(space.id, { slug: 'handbook' }, owner);
         assert.strictEqual((await H.req(h, 'GET', '/w/handbook/onboarding')).status, 200);
         console.log('security: ok');
     } finally {

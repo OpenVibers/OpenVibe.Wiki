@@ -10,6 +10,7 @@ const path = require('path');
 const { serviceAuth } = require('openvibe-contracts');
 const { load } = require('../server/config');
 const { start } = require('../server/index');
+const { testDb } = require('./db-helper');
 
 const ISSUER = 'https://network.test';
 const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048, publicKeyEncoding: { type: 'spki', format: 'pem' }, privateKeyEncoding: { type: 'pkcs8', format: 'pem' } });
@@ -32,14 +33,20 @@ function serviceToken({ client = 'ai', cap = [], aud = 'openvibe.wiki', exp = 30
     return serviceAuth.signServiceToken({ iss: ISSUER, sub: sub || `svc:${client}`, actor_type: actorType, aud: [aud], cap, ns: [], iat: now, exp: now + exp, jti: `tok_${crypto.randomBytes(8).toString('hex')}`, ...app, ...extra }, privateKey);
 }
 
-const quiet = { log() {}, warn() {}, error() {} };
+const quiet = process.env.WIKI_TEST_LOG ? console : { log() {}, warn() {}, error() {} };
 
 /**
  * A running Wiki. opts.env overrides env vars; opts.fetch is the stub for outbound calls
  * (Community, Sources, Media, Events, Network token endpoint).
  */
-async function boot({ env = {}, fetch: fetchImpl, dbPath, now, workers = false, tokens, rateLimits = false, limitsNow = null, log = quiet } = {}) {
+/**
+ * A running Wiki on a database of its own (PGlite by default; WIKI_TEST_STORE=pg: the PostgreSQL + PgBouncer
+ * containers). opts.db: boot on an existing handle (a restart keeps the data); h.stop() closes what boot opened.
+ */
+async function boot({ env = {}, fetch: fetchImpl, dbPath, db: givenDb = null, now, workers = false, tokens, rateLimits = false, limitsNow = null, log = quiet } = {}) {
     const dir = dbPath ? path.dirname(dbPath) : fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-test-'));
+    const owned = givenDb ? null : await testDb();
+    const db = givenDb || owned.db;
     const config = load({
         NODE_ENV: 'test', PORT: '0', HOST: '127.0.0.1', BASE_URL: 'http://wiki.test',
         WIKI_DB_PATH: dbPath || path.join(dir, 'wiki.db'),
@@ -47,12 +54,13 @@ async function boot({ env = {}, fetch: fetchImpl, dbPath, now, workers = false, 
         ...env,
     });
     const h = await start({
-        config, publicKey, log, listen: true, workers, rateLimits, now, limitsNow,
+        config, db, publicKey, log, listen: true, workers, rateLimits, now, limitsNow,
         fetchImpl: fetchImpl || (async (url) => { throw new Error(`unexpected outbound fetch ${url}`); }),
         tokens: tokens || { getToken: async () => 'stub-token', authHeaders: async () => ({ Authorization: 'Bearer stub-token' }), invalidate() {} },
     });
     const base = `http://127.0.0.1:${h.server.address().port}`;
-    return { ...h, base, dir, dbPath: config.dbPath };
+    const stop = async ({ keepDb = false } = {}) => { await h.stop(); if (owned && !keepDb) await owned.close(); };
+    return { ...h, stop, base, dir, dbPath: config.dbPath, closeDb: owned ? owned.close : async () => {} };
 }
 
 async function req(h, method, p, { token, body, form, headers = {}, cookie } = {}) {
@@ -77,8 +85,8 @@ async function req(h, method, p, { token, body, form, headers = {}, cookie } = {
 const cookieFor = (token) => `ov_token=${token}`;
 
 /** Every envelope in the outbox, oldest first. */
-function outbox(h) {
-    return h.db.prepare('SELECT envelope FROM wiki_event_outbox ORDER BY id').all().map((r) => JSON.parse(r.envelope));
+async function outbox(h) {
+    return (await h.db.prepare('SELECT envelope FROM wiki_event_outbox ORDER BY id').all()).map((r) => (typeof r.envelope === 'string' ? JSON.parse(r.envelope) : r.envelope));
 }
 
 const LONG = 'This page has enough words to pass the thin content rule of the indexability gate, which the tests set to twenty words so that a short paragraph is enough for a published page to be indexable.';

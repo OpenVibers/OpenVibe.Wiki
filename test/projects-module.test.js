@@ -22,29 +22,29 @@ const { summarize, createProjectsModule } = require('../server/integrations/proj
         return { ok: true, status: 201, json: async () => ({}) };
     };
     const projects = createProjectsModule({ db: h.db, config: { networkInternalUrl: 'http://network.test' }, tokens: h.platform.tokenClient, fetchImpl, log: H.quiet });
-    const dirty = () => h.db.prepare('SELECT subject FROM wiki_module_dirty ORDER BY subject').all().map((r) => r.subject);
+    const dirty = async () => (await h.db.prepare('SELECT subject FROM wiki_module_dirty ORDER BY subject').all()).map((r) => r.subject);
     try {
         let r = await H.req(h, 'POST', '/api/v1/spaces', { token: tok(ann), body: { name: 'Garden', slug: 'garden', visibility: 'public' } });
         assert.strictEqual(r.status, 201, r.text);
         r = await H.req(h, 'POST', '/api/v1/spaces', { token: tok(ann), body: { name: 'Diary', slug: 'diary', visibility: 'private' } });
         assert.strictEqual(r.status, 201, r.text);
-        assert.deepStrictEqual(dirty(), [ann], 'creating a space marks its owner');
+        assert.deepStrictEqual(await dirty(), [ann], 'creating a space marks its owner');
         r = await H.req(h, 'PUT', `/api/v1/spaces/garden/roles/${bob}`, { token: tok(ann), body: { role: 'editor' } });
         assert.strictEqual(r.status, 200, r.text);
         r = await H.req(h, 'PUT', `/api/v1/spaces/garden/roles/${cat}`, { token: tok(ann), body: { role: 'viewer' } });
         assert.strictEqual(r.status, 200, r.text);
-        assert.deepStrictEqual(summarize(h.db, ann), { spaces: [{ slug: 'garden', name: 'Garden', role: 'owner' }], private_count: 1 });
-        assert.deepStrictEqual(summarize(h.db, bob), { spaces: [{ slug: 'garden', name: 'Garden', role: 'editor' }], private_count: 0 });
-        assert.ok(modules.validateData('wiki.projects', summarize(h.db, ann)).valid, 'matches the namespace schema');
+        assert.deepStrictEqual(await summarize(h.db, ann), { spaces: [{ slug: 'garden', name: 'Garden', role: 'owner' }], private_count: 1 });
+        assert.deepStrictEqual(await summarize(h.db, bob), { spaces: [{ slug: 'garden', name: 'Garden', role: 'editor' }], private_count: 0 });
+        assert.ok(modules.validateData('wiki.projects', await summarize(h.db, ann)).valid, 'matches the namespace schema');
 
         assert.strictEqual(await projects.drain(), 2, 'ann and bob; cat is only a viewer');
         assert.deepStrictEqual(puts.map((p) => p.subject).sort(), [ann, bob].sort());
-        assert.deepStrictEqual(dirty(), [], 'every mark cleared');
+        assert.deepStrictEqual(await dirty(), [], 'every mark cleared');
 
         // Bob loses his role: he is marked although he is no longer in the space's list.
         r = await H.req(h, 'PUT', `/api/v1/spaces/garden/roles/${bob}`, { token: tok(ann), body: { role: null } });
         assert.strictEqual(r.status, 200, r.text);
-        assert.ok(dirty().includes(bob));
+        assert.ok((await dirty()).includes(bob));
         await projects.drain();
         assert.deepStrictEqual(puts.at(-1), { subject: bob, data: { spaces: [], private_count: 0 } }, 'his record empties');
 
@@ -55,7 +55,7 @@ const { summarize, createProjectsModule } = require('../server/integrations/proj
         await projects.drain();
         assert.strictEqual(puts.length, before + 1);
         assert.strictEqual(puts.at(-1).data.spaces[0].name, 'Big Garden');
-        h.db.prepare('INSERT INTO wiki_module_dirty (subject, marked_at) VALUES (?, 1)').run(ann);
+        await h.db.prepare('INSERT INTO wiki_module_dirty (subject, marked_at) VALUES (?, 1)').run(ann);
         await projects.drain();
         assert.strictEqual(puts.length, before + 1, 'unchanged: not written again');
         assert.strictEqual(projects.stats().unchanged >= 2, true);

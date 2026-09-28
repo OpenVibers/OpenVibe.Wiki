@@ -23,22 +23,22 @@ const H = require('./helpers');
         const ann = { kind: 'user', subject: H.subject(), staff: false };
         const bob = { kind: 'user', subject: H.subject(), staff: false };
         const cite = [{ url: 'https://example.org/a', retrievedAt: '2026-09-20T00:00:00Z' }];
-        const annSpace = h.svc.createSpace({ name: 'Ann Space', slug: 'ann-space' }, ann);
-        const annPage = h.svc.createPage(annSpace.id, { title: 'Ann Page', body: H.LONG, citations: cite }, ann).page;
-        h.svc.publish(annPage.id, {}, ann);
-        const annPrivate = h.svc.createPage(annSpace.id, { title: 'Ann Private', body: H.LONG, citations: cite, visibility: 'private' }, ann).page;
-        const bobSpace = h.svc.createSpace({ name: 'Bob Space', slug: 'bob-space' }, bob);
-        const bobPage = h.svc.createPage(bobSpace.id, { title: 'Bob Page', body: H.LONG, citations: cite }, bob).page;
-        h.svc.publish(bobPage.id, {}, bob);
-        const proposal = h.svc.propose({ space: annSpace.id, pageId: annPage.id, title: 'Ann Page', body: `${H.LONG} proposed`, summary: 'ai', citations: cite, workflow: { id: 'wf.test', runId: 'run_1' } }, { kind: 'system' });
+        const annSpace = await h.svc.createSpace({ name: 'Ann Space', slug: 'ann-space' }, ann);
+        const annPage = (await h.svc.createPage(annSpace.id, { title: 'Ann Page', body: H.LONG, citations: cite }, ann)).page;
+        await h.svc.publish(annPage.id, {}, ann);
+        const annPrivate = (await h.svc.createPage(annSpace.id, { title: 'Ann Private', body: H.LONG, citations: cite, visibility: 'private' }, ann)).page;
+        const bobSpace = await h.svc.createSpace({ name: 'Bob Space', slug: 'bob-space' }, bob);
+        const bobPage = (await h.svc.createPage(bobSpace.id, { title: 'Bob Page', body: H.LONG, citations: cite }, bob)).page;
+        await h.svc.publish(bobPage.id, {}, bob);
+        const proposal = await h.svc.propose({ space: annSpace.id, pageId: annPage.id, title: 'Ann Page', body: `${H.LONG} proposed`, summary: 'ai', citations: cite, workflow: { id: 'wf.test', runId: 'run_1' } }, { kind: 'system' });
         const proposalId = proposal.id || (proposal.proposal && proposal.proposal.id);
         const bobTok = H.userToken({ subject: bob.subject, username: 'bob' });
         const annTok = H.userToken({ subject: ann.subject, username: 'ann' });
 
-        const tables = h.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'wiki_%' AND name NOT IN ('wiki_event_outbox', 'wiki_module_dirty', 'wiki_module_pushes')").all().map((r) => r.name);
-        const snapshot = () => Object.fromEntries(tables.map((t) => [t, h.db.prepare(`SELECT * FROM ${t}`).all()]));
-        const same = (before, label) => {
-            const after = snapshot();
+        const tables = (await h.db.prepare("SELECT table_name AS name FROM information_schema.tables WHERE table_schema = current_schema() AND table_name LIKE 'wiki_%' AND table_name NOT IN ('wiki_event_outbox', 'wiki_module_dirty', 'wiki_module_pushes')").all()).map((r) => r.name);
+        const snapshot = async () => Object.fromEntries(await Promise.all(tables.map(async (t) => [t, await h.db.prepare(`SELECT * FROM ${t}`).all()])));
+        const same = async (before, label) => {
+            const after = await snapshot();
             for (const t of tables) assert.deepStrictEqual(after[t], before[t], `${label}: ${t} changed`);
         };
         const api = (method, p, body, token = bobTok) => H.req(h, method, `/api/v1${p}`, { token, body });
@@ -46,7 +46,7 @@ const H = require('./helpers');
         const refused = (r, what) => assert.ok([401, 403, 404, 409].includes(r.status) || (r.status === 303 && !/\/w\/ann-space/.test(r.headers.get('location') || '')), `${what}: ${r.status} ${r.text.slice(0, 160)}`);
 
         await check('API: Bob, owner of his own space, cannot touch Ann\'s page or space by id', async () => {
-            const before = snapshot();
+            const before = await snapshot();
             for (const id of [annPage.id, annPrivate.id]) {
                 refused(await api('PATCH', `/pages/${id}`, { title: 'pwned', slug: 'pwned', visibility: 'public', noindex: true }), `PATCH ${id}`);
                 refused(await api('DELETE', `/pages/${id}`), `DELETE ${id}`);
@@ -68,11 +68,11 @@ const H = require('./helpers');
             refused(await api('POST', `/proposals/${proposalId}/review`, { decision: 'approve' }), 'review Ann\'s proposal');
             refused(await api('GET', `/pages/${annPrivate.id}`), 'read the private page');
             refused(await api('GET', `/proposals/${proposalId}`), 'read Ann\'s proposal');
-            same(before, 'API');
+            await same(before, 'API');
         });
 
         await check('forms: Bob cannot post to Ann\'s pages, nor reach them through his own space\'s slug', async () => {
-            const before = snapshot();
+            const before = await snapshot();
             for (const sp of ['ann-space', 'bob-space']) {
                 for (const slug of ['ann-page', 'ann-private']) {
                     refused(await form(`/w/${sp}/${slug}/edit`, { body: `${H.LONG} pwned`, summary: 'x', expected_revision: '1' }), `edit ${sp}/${slug}`);
@@ -85,7 +85,7 @@ const H = require('./helpers');
             refused(await form('/s/ann-space/new', { title: 'Bob in Ann', body: H.LONG }), 'new page in Ann\'s space');
             refused(await form('/s/ann-space/import', { bundle: '{}' }), 'import form');
             refused(await form(`/proposals/${proposalId}`, { decision: 'approve' }), 'proposal form');
-            same(before, 'forms');
+            await same(before, 'forms');
             const r = await H.req(h, 'GET', '/w/bob-space/ann-private', { cookie: H.cookieFor(bobTok) });
             assert.strictEqual(r.status, 404, 'Ann\'s slug under Bob\'s space is not her page');
         });
@@ -94,9 +94,9 @@ const H = require('./helpers');
             assert.strictEqual((await api('PATCH', '/spaces/ann-space', { name: 'Ann Space 2' }, annTok)).status, 200);
             const f = await form('/s/ann-space/settings', { name: 'Ann Space 3', visibility: 'public' }, annTok);
             assert.ok([200, 303].includes(f.status), `the settings form works for its owner: ${f.status} ${f.text.slice(0, 160)}`);
-            assert.strictEqual(h.db.prepare("SELECT name FROM wiki_spaces WHERE slug = 'ann-space'").get().name, 'Ann Space 3');
+            assert.strictEqual((await h.db.prepare("SELECT name FROM wiki_spaces WHERE slug = 'ann-space'").get()).name, 'Ann Space 3');
             assert.strictEqual((await api('GET', `/pages/${annPrivate.id}`, undefined, annTok)).status, 200);
-            const cur = h.db.prepare('SELECT max(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(annPage.id).n;
+            const cur = (await h.db.prepare('SELECT max(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(annPage.id)).n;
             const r = await api('POST', `/pages/${annPage.id}/revisions`, { expected_revision: cur, body: `${H.LONG} by ann`, citations: cite }, annTok);
             assert.ok([200, 201].includes(r.status), `${r.status} ${r.text.slice(0, 200)}`);
         });

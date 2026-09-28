@@ -33,23 +33,23 @@ const { getPaths, crawl } = require('./security-crawl');
     let failures = 0;
     const check = async (name, fn) => { try { await fn(); console.log(`  ✓ ${name}`); } catch (e) { failures++; console.log(`  ✗ ${name}\n    ${String(e.stack || e.message).split('\n').slice(0, 10).join('\n    ')}`); } };
     try {
-        const vault = h.svc.createSpace({ name: SECRET.spaceName, slug: 'vault', visibility: 'private' }, owner);
-        h.svc.setRole(vault.id, friend, 'viewer', owner);
-        const hidden = h.svc.createPage(vault.id, { title: SECRET.hiddenTitle, body: body(SECRET.hiddenWords), citations: cite }, owner).page;
-        h.svc.publish(hidden.id, {}, owner);
+        const vault = await h.svc.createSpace({ name: SECRET.spaceName, slug: 'vault', visibility: 'private' }, owner);
+        await h.svc.setRole(vault.id, friend, 'viewer', owner);
+        const hidden = (await h.svc.createPage(vault.id, { title: SECRET.hiddenTitle, body: body(SECRET.hiddenWords), citations: cite }, owner)).page;
+        await h.svc.publish(hidden.id, {}, owner);
 
-        const open = h.svc.createSpace({ name: 'Open Space', slug: 'open' }, owner);
-        const control = h.svc.createPage(open.id, { title: 'Open Page', body: body('open-control-words'), citations: cite }, owner).page;
-        h.svc.publish(control.id, {}, owner);
+        const open = await h.svc.createSpace({ name: 'Open Space', slug: 'open' }, owner);
+        const control = (await h.svc.createPage(open.id, { title: 'Open Page', body: body('open-control-words'), citations: cite }, owner)).page;
+        await h.svc.publish(control.id, {}, owner);
         // Restricted from the start (a page that was public once was legitimately public then).
-        const priv = h.svc.createPage(open.id, { title: SECRET.privateTitle, body: body(SECRET.privateWords), citations: cite, visibility: 'private' }, owner).page;
-        h.svc.publish(priv.id, {}, owner);
-        const members = h.svc.createPage(open.id, { title: 'Members Page', body: body(SECRET.membersWords), citations: cite, visibility: 'members' }, owner).page;
-        h.svc.publish(members.id, {}, owner);
-        const draft = h.svc.createPage(open.id, { title: SECRET.draftTitle, body: body(SECRET.draftWords), citations: cite }, owner).page;
+        const priv = (await h.svc.createPage(open.id, { title: SECRET.privateTitle, body: body(SECRET.privateWords), citations: cite, visibility: 'private' }, owner)).page;
+        await h.svc.publish(priv.id, {}, owner);
+        const members = (await h.svc.createPage(open.id, { title: 'Members Page', body: body(SECRET.membersWords), citations: cite, visibility: 'members' }, owner)).page;
+        await h.svc.publish(members.id, {}, owner);
+        const draft = (await h.svc.createPage(open.id, { title: SECRET.draftTitle, body: body(SECRET.draftWords), citations: cite }, owner)).page;
         // A published page with a second, unpublished revision.
-        h.svc.editPage(control.id, { expectedRevision: 1, body: body(SECRET.rev2Words), summary: 'wip', citations: cite }, owner);
-        const proposal = h.svc.propose({ space: vault.id, pageId: hidden.id, title: SECRET.hiddenTitle, body: body(SECRET.proposalWords), summary: 'ai', citations: cite, workflow: { id: 'wf.test', runId: 'run_1' } }, { kind: 'system' });
+        await h.svc.editPage(control.id, { expectedRevision: 1, body: body(SECRET.rev2Words), summary: 'wip', citations: cite }, owner);
+        const proposal = await h.svc.propose({ space: vault.id, pageId: hidden.id, title: SECRET.hiddenTitle, body: body(SECRET.proposalWords), summary: 'ai', citations: cite, workflow: { id: 'wf.test', runId: 'run_1' } }, { kind: 'system' });
         const pageIds = [hidden.id, priv.id, draft.id, members.id, proposal.id || proposal.proposal && proposal.proposal.id];
 
         const ownerTok = H.userToken({ subject: owner.subject, username: 'owner' });
@@ -91,7 +91,7 @@ const { getPaths, crawl } = require('./security-crawl');
         });
 
         await check('public events and Search index documents carry none of it (internal events are first-party only)', async () => {
-            const text = JSON.stringify(H.outbox(h).filter((e) => e.visibility === 'public' || e.event_type === 'wiki.index_document.upserted'));
+            const text = JSON.stringify((await H.outbox(h)).filter((e) => e.visibility === 'public' || e.event_type === 'wiki.index_document.upserted'));
             assert.ok(text.includes('open-control-words') || text.includes('Open Page'), 'the public page is there (control)');
             const hits = Object.entries(SECRET).filter(([, w]) => text.includes(w)).map(([k]) => k);
             assert.deepStrictEqual(hits, []);

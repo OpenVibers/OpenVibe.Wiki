@@ -16,12 +16,12 @@ const NS = 'wiki.projects';
 const MAX_SPACES = 50;
 
 /** The record for one person: { spaces: [{ slug, name, role }], private_count }. */
-function summarize(db, subject) {
-    const rows = db.prepare(`SELECT s.slug, s.name, s.visibility,
+async function summarize(db, subject) {
+    const rows = await db.prepare(`SELECT s.slug, s.name, s.visibility,
             CASE WHEN p.role = 'owner' OR s.owner = @subject THEN 'owner' ELSE p.role END AS role
         FROM wiki_spaces s LEFT JOIN wiki_permissions p ON p.space_id = s.id AND p.subject = @subject
         WHERE s.deleted_at IS NULL AND (s.owner = @subject OR p.role IN ('owner', 'editor'))
-        ORDER BY role = 'owner' DESC, s.name COLLATE NOCASE`).all({ subject });
+        ORDER BY (CASE WHEN p.role = 'owner' OR s.owner = @subject THEN 0 ELSE 1 END), lower(s.name), s.id`).all({ subject });
     const pub = rows.filter((r) => r.visibility === 'public');
     return {
         spaces: pub.slice(0, MAX_SPACES).map((r) => ({ slug: r.slug, name: String(r.name).slice(0, 120), role: r.role })),
@@ -48,16 +48,16 @@ function createProjectsModule({ db, config, tokens, fetchImpl = globalThis.fetch
         draining = true;
         let written = 0;
         try {
-            for (const { subject, marked_at: markedAt } of db.prepare('SELECT subject, marked_at FROM wiki_module_dirty ORDER BY marked_at LIMIT ?').all(limit)) {
+            for (const { subject, marked_at: markedAt } of await db.prepare('SELECT subject, marked_at FROM wiki_module_dirty ORDER BY marked_at, subject LIMIT ?').all(limit)) {
                 const clear = () => db.prepare('DELETE FROM wiki_module_dirty WHERE subject = ? AND marked_at = ?').run(subject, markedAt);
-                const data = summarize(db, subject);
+                const data = await summarize(db, subject);
                 const hash = crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex').slice(0, 32);
-                const last = db.prepare('SELECT hash FROM wiki_module_pushes WHERE subject = ?').get(subject);
-                if ((last && last.hash === hash) || (!last && !data.spaces.length && !data.private_count)) { stats.unchanged++; clear(); continue; }
+                const last = await db.prepare('SELECT hash FROM wiki_module_pushes WHERE subject = ?').get(subject);
+                if ((last && last.hash === hash) || (!last && !data.spaces.length && !data.private_count)) { stats.unchanged++; await clear(); continue; }
                 try { await put(subject, data); } catch (err) { stats.failed++; stats.lastError = err.message; continue; }
-                db.prepare(`INSERT INTO wiki_module_pushes (subject, hash, pushed_at) VALUES (?, ?, ?)
+                await db.prepare(`INSERT INTO wiki_module_pushes (subject, hash, pushed_at) VALUES (?, ?, ?)
                     ON CONFLICT (subject) DO UPDATE SET hash = excluded.hash, pushed_at = excluded.pushed_at`).run(subject, hash, now());
-                clear();
+                await clear();
                 stats.written++; written++;
             }
         } finally { draining = false; }

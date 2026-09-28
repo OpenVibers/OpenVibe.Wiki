@@ -60,27 +60,27 @@ function atom(text) {
         assert.deepStrictEqual(f.entries, []);
 
         // Published, but nothing listable: an unreviewed AI-assisted import, a private page, a draft.
-        const space = h.svc.createSpace({ name: 'Notes', slug: 'notes' }, owner);
+        const space = await h.svc.createSpace({ name: 'Notes', slug: 'notes' }, owner);
         const cite = [{ url: 'https://example.org/a', retrievedAt: '2026-09-20T00:00:00Z' }];
-        const seeded = h.svc.createPage(space.id, { title: 'Imported page', body: H.LONG, citations: cite, authorship: IMPORTED }, SYSTEM).page;
-        h.svc.publish(seeded.id, {}, SYSTEM);
-        const hidden = h.svc.createPage(space.id, { title: 'Private page', body: H.LONG, citations: cite, visibility: 'private' }, owner).page;
-        h.svc.publish(hidden.id, {}, owner);
-        h.svc.createPage(space.id, { title: 'Draft page', body: H.LONG, citations: cite }, owner);
-        const secret = h.svc.createSpace({ name: 'Secret', slug: 'secret', visibility: 'private' }, owner);
-        const inSecret = h.svc.createPage(secret.id, { title: 'Hidden plans', body: H.LONG, citations: cite }, owner).page;
-        h.svc.publish(inSecret.id, {}, owner);
+        const seeded = (await h.svc.createPage(space.id, { title: 'Imported page', body: H.LONG, citations: cite, authorship: IMPORTED }, SYSTEM)).page;
+        await h.svc.publish(seeded.id, {}, SYSTEM);
+        const hidden = (await h.svc.createPage(space.id, { title: 'Private page', body: H.LONG, citations: cite, visibility: 'private' }, owner)).page;
+        await h.svc.publish(hidden.id, {}, owner);
+        await h.svc.createPage(space.id, { title: 'Draft page', body: H.LONG, citations: cite }, owner);
+        const secret = await h.svc.createSpace({ name: 'Secret', slug: 'secret', visibility: 'private' }, owner);
+        const inSecret = (await h.svc.createPage(secret.id, { title: 'Hidden plans', body: H.LONG, citations: cite }, owner)).page;
+        await h.svc.publish(inSecret.id, {}, owner);
         r = await H.req(h, 'GET', '/feed.atom');
         assert.strictEqual(r.status, 200);
         f = atom(r.text);
         assert.deepStrictEqual(f.entries, []);
-        assert.strictEqual(f.updated, new Date(h.svc.findSpace('notes').updated_at).toISOString(), 'the last change to a public space');
+        assert.strictEqual(f.updated, new Date((await h.svc.findSpace('notes')).updated_at).toISOString(), 'the last change to a public space');
         assert.ok(!/imported-page|private-page|draft-page|hidden-plans/.test(r.text), 'nothing unlisted leaks into the feed');
         assert.deepStrictEqual((await H.req(h, 'GET', '/feed.json')).json.items, []);
 
         // A listable page: one entry, and the feed's <updated> is that entry's.
-        const open = h.svc.createPage(space.id, { title: 'Open page', body: H.LONG, citations: cite }, owner).page;
-        h.svc.publish(open.id, {}, owner);
+        const open = (await h.svc.createPage(space.id, { title: 'Open page', body: H.LONG, citations: cite }, owner)).page;
+        await h.svc.publish(open.id, {}, owner);
         f = atom((await H.req(h, 'GET', '/feed.atom')).text);
         assert.deepStrictEqual(f.entries.map((e) => e.href), ['http://wiki.test/w/notes/open-page']);
         assert.strictEqual(f.updated, f.entries[0].updated);

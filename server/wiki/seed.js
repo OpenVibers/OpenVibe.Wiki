@@ -23,11 +23,11 @@ const IMPORTED = {
     },
 };
 
-function seed(svc, data, { publish = true, log = console } = {}) {
+async function seed(svc, data, { publish = true, log = console } = {}) {
     if (!data || !data.space || !Array.isArray(data.pages)) throw new TypeError('seed data needs { space, pages }');
-    let space = svc.findSpace(data.space.slug);
+    let space = await svc.findSpace(data.space.slug);
     if (!space) {
-        space = svc.createSpace({ slug: data.space.slug, name: data.space.name, description: data.space.description, kind: data.space.kind || 'official', visibility: data.space.visibility || 'public' }, SYSTEM);
+        space = await svc.createSpace({ slug: data.space.slug, name: data.space.name, description: data.space.description, kind: data.space.kind || 'official', visibility: data.space.visibility || 'public' }, SYSTEM);
         log.log(`[seed] created space ${space.slug}`);
     }
     const bySlug = new Map();
@@ -39,27 +39,27 @@ function seed(svc, data, { publish = true, log = console } = {}) {
         const next = [];
         for (const p of pending) {
             const slug = pageSlug(p.title);
-            const existing = svc.findPage(space.id, slug);
+            const existing = await svc.findPage(space.id, slug);
             if (existing) { bySlug.set(slug, existing); skipped.push(p.title); continue; }
             let parentId = null;
             if (p.parent) {
-                const parent = bySlug.get(pageSlug(p.parent)) || svc.findPage(space.id, pageSlug(p.parent));
+                const parent = bySlug.get(pageSlug(p.parent)) || await svc.findPage(space.id, pageSlug(p.parent));
                 if (!parent) { next.push(p); continue; }
                 parentId = parent.id;
             }
-            const out = svc.createPage(space.id, {
+            const out = await svc.createPage(space.id, {
                 title: p.title, body: p.body, summary: p.summary || null, infobox: p.infobox || [], parentId,
                 citations: (p.citations || []).map((c) => ({ url: c.url, title: c.title || null, retrievedAt: c.retrievedAt, quote: c.quote ? { text: c.quote } : null, licenseNote: c.licenseNote || null })),
                 message: 'Seed import', authorship: IMPORTED,
             }, SYSTEM);
-            if (publish) svc.publish(out.page.id, { revision: out.revision.number }, SYSTEM);
-            bySlug.set(slug, svc.pageById(out.page.id));
+            if (publish) await svc.publish(out.page.id, { revision: out.revision.number }, SYSTEM);
+            bySlug.set(slug, await svc.pageById(out.page.id));
             created.push(p.title);
         }
         pending = next;
     }
     if (pending.length) throw new Error(`seed: parents not found for ${pending.map((p) => p.title).join(', ')}`);
-    return { space: svc.findSpace(data.space.slug), created, skipped };
+    return { space: await svc.findSpace(data.space.slug), created, skipped };
 }
 
 module.exports = { seed, SYSTEM, IMPORTED };

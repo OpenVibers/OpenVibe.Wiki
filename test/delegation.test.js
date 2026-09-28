@@ -35,13 +35,13 @@ const CAPS = ['wiki.space.create', 'wiki.page.create', 'wiki.page.read'];
                 assert.strictEqual(r.status, 403, `${type} read as the victim`);
             }
         }
-        assert.strictEqual(h.db.prepare("SELECT COUNT(*) AS n FROM wiki_pages WHERE title LIKE 'Planted%'").get().n, 0);
+        assert.strictEqual((await h.db.prepare("SELECT COUNT(*) AS n FROM wiki_pages WHERE title LIKE 'Planted%'").get()).n, 0);
 
         // An app acts for its on_behalf_of person (the header is optional and must match).
         const appTok = token(APP, 'app', { on_behalf_of: appUser });
         r = await H.req(h, 'POST', '/api/v1/spaces', { token: appTok, body: { name: 'App user space', slug: 'app-user' } });
         assert.strictEqual(r.status, 201, r.text);
-        assert.strictEqual(h.svc.findSpace('app-user').owner, appUser);
+        assert.strictEqual((await h.svc.findSpace('app-user')).owner, appUser);
         r = await H.req(h, 'POST', '/api/v1/spaces/app-user/pages', { token: appTok, headers: { 'X-OV-Subject': appUser }, body: { title: 'Mine', body: H.LONG } });
         assert.strictEqual(r.status, 201, r.text);
         r = await H.req(h, 'GET', `/api/v1/pages/${secretId}`, { token: appTok });

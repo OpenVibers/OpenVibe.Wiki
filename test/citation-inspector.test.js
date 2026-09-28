@@ -16,24 +16,24 @@ const stripScripts = (html) => html.replace(/<script[\s\S]*?<\/script>/g, '');
     const owner = { kind: 'user', subject: H.subject(), staff: false };
     const cookie = H.cookieFor(H.userToken({ subject: owner.subject }));
     try {
-        const space = h.svc.createSpace({ name: 'Bread', slug: 'bread' }, owner);
-        const { page } = h.svc.createPage(space.id, {
+        const space = await h.svc.createSpace({ name: 'Bread', slug: 'bread' }, owner);
+        const { page } = await h.svc.createPage(space.id, {
             title: 'Rye', body: H.LONG,
             citations: [
                 { url: 'https://flour.example/rye', title: 'Rye flour', retrievedAt: '2026-09-01T00:00:00Z', licenseNote: 'CC BY 4.0', quote: { text: 'Rye has less gluten.' } },
                 { url: 'https://old.example/bread', title: 'Old bread book', retrievedAt: '2026-08-15T00:00:00Z' },
             ],
         }, owner);
-        h.svc.publish(page.id, {}, owner);
-        const r1 = h.svc.citationsOf(page, 1);
+        await h.svc.publish(page.id, {}, owner);
+        const r1 = await h.svc.citationsOf(page, 1);
         // Revision 2 keeps the first source, drops the second and adds a third.
-        h.svc.editPage(page.id, {
+        await h.svc.editPage(page.id, {
             expectedRevision: 1, body: `${H.LONG} Sourdough helps.`, keepCitations: [r1[0].id],
             citations: [{ url: 'https://sour.example/dough', title: 'Sourdough notes', retrievedAt: '2026-09-10T12:00:00Z' }],
         }, owner);
-        h.svc.publish(page.id, {}, owner);
+        await h.svc.publish(page.id, {}, owner);
         // Revision 3 is an unpublished draft citing something not public yet.
-        h.svc.editPage(page.id, { expectedRevision: 2, body: `${H.LONG} Draft.`, citations: [{ url: 'https://secret.example/draft', title: 'Unpublished source', retrievedAt: '2026-09-20T00:00:00Z' }] }, owner);
+        await h.svc.editPage(page.id, { expectedRevision: 2, body: `${H.LONG} Draft.`, citations: [{ url: 'https://secret.example/draft', title: 'Unpublished source', retrievedAt: '2026-09-20T00:00:00Z' }] }, owner);
 
         // Linked from the article and the history page.
         let r = await H.req(h, 'GET', '/w/bread/rye');
@@ -71,28 +71,28 @@ const stripScripts = (html) => html.replace(/<script[\s\S]*?<\/script>/g, '');
         assert.ok(r.text.includes('secret.example/draft'));
 
         // A renamed page redirects to its inspector.
-        h.svc.movePage(page.id, { slug: 'rye-bread' }, owner);
+        await h.svc.movePage(page.id, { slug: 'rye-bread' }, owner);
         r = await H.req(h, 'GET', '/w/bread/rye/sources?rev=1');
         assert.strictEqual(r.status, 301);
         assert.strictEqual(r.headers.get('location'), '/w/bread/rye-bread/sources?rev=1');
 
         // Same read rules as the article: private pages, members spaces, drafts and deleted pages.
-        h.svc.setPageVisibility(page.id, { visibility: 'private' }, owner);
+        await h.svc.setPageVisibility(page.id, { visibility: 'private' }, owner);
         r = await H.req(h, 'GET', '/w/bread/rye-bread/sources');
         assert.strictEqual(r.status, 404);
         assert.strictEqual(r.headers.get('cache-control'), 'private, no-store');
         assert.ok(!r.text.includes('flour.example'));
         assert.strictEqual((await H.req(h, 'GET', '/w/bread/rye-bread/sources', { cookie })).status, 200, 'the owner still inspects it');
-        h.svc.setPageVisibility(page.id, { visibility: 'public' }, owner);
-        h.svc.updateSpace(space.id, { visibility: 'members' }, owner);
+        await h.svc.setPageVisibility(page.id, { visibility: 'public' }, owner);
+        await h.svc.updateSpace(space.id, { visibility: 'members' }, owner);
         assert.strictEqual((await H.req(h, 'GET', '/w/bread/rye-bread/sources')).status, 404, 'anonymous: members space');
         r = await H.req(h, 'GET', '/w/bread/rye-bread/sources', { cookie: H.cookieFor(H.userToken()) });
         assert.strictEqual(r.status, 200, 'any signed-in account reads a members space');
         assert.strictEqual(r.headers.get('cache-control'), 'private, no-store');
-        h.svc.updateSpace(space.id, { visibility: 'public' }, owner);
-        const draft = h.svc.createPage(space.id, { title: 'Spelt', body: H.LONG, citations: [{ url: 'https://spelt.example/', retrievedAt: '2026-09-02' }] }, owner).page;
+        await h.svc.updateSpace(space.id, { visibility: 'public' }, owner);
+        const draft = (await h.svc.createPage(space.id, { title: 'Spelt', body: H.LONG, citations: [{ url: 'https://spelt.example/', retrievedAt: '2026-09-02' }] }, owner)).page;
         assert.strictEqual((await H.req(h, 'GET', '/w/bread/spelt/sources')).status, 404, 'a draft page');
-        h.svc.deletePage(draft.id, owner);
+        await h.svc.deletePage(draft.id, owner);
         assert.strictEqual((await H.req(h, 'GET', '/w/bread/spelt/sources')).status, 410);
         console.log('citation inspector ok');
     } finally {

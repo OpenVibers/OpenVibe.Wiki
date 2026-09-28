@@ -55,12 +55,12 @@ const MED = (n) => `med_01J8Z6Q3KX0000000000000${String(n).padStart(3, '0')}`;
         assert.strictEqual(r.json.attachment.state, 'available');
         assert.strictEqual(r.json.attachment.attached_by, A);
         assert.strictEqual((await attach(tokA, pageId, MED(2))).status, 201, 'unlisted objects are readable by anyone with the id');
-        const origins = h.db.prepare('SELECT media_id, attached_by, media_owner, media_visibility FROM wiki_attachment_origins WHERE page_id = ? ORDER BY attachment_id').all(pageId);
+        const origins = await h.db.prepare('SELECT media_id, attached_by, media_owner, media_visibility FROM wiki_attachment_origins WHERE page_id = ? ORDER BY attachment_id').all(pageId);
         assert.deepStrictEqual(origins, [
             { media_id: MED(1), attached_by: A, media_owner: A, media_visibility: 'public' },
             { media_id: MED(2), attached_by: A, media_owner: C, media_visibility: 'unlisted' },
         ]);
-        assert.throws(() => h.db.prepare('UPDATE wiki_attachment_origins SET attached_by = ?').run(B), /immutable/);
+        await assert.rejects(async () => await h.db.prepare('UPDATE wiki_attachment_origins SET attached_by = ?').run(B), /immutable/);
         r = await attach(tokA, pageId, MED(4));
         assert.strictEqual(r.status, 409);
         assert.strictEqual(r.json.code, 'media.not_ready');
@@ -76,7 +76,7 @@ const MED = (n) => `med_01J8Z6Q3KX0000000000000${String(n).padStart(3, '0')}`;
         assert.strictEqual(r.status, 201, r.text);
         r = await H.req(h, 'GET', `/api/v1/pages/${pageId}`, { token: tokB });
         assert.deepStrictEqual(r.json.attachments.map((a) => [a.media_id, a.attached_by, a.state]), [[MED(1), A, 'available'], [MED(2), A, 'available']]);
-        assert.strictEqual(h.db.prepare('SELECT COUNT(*) AS n FROM wiki_page_attachments WHERE entity_id = ?').get(pageId).n, 2);
+        assert.strictEqual((await h.db.prepare('SELECT COUNT(*) AS n FROM wiki_page_attachments WHERE entity_id = ?').get(pageId)).n, 2);
 
         // 3. B cannot attach an object only A can read — the same answer as an id that does not exist.
         const refused = await attach(tokB, pageId, MED(3));
@@ -106,7 +106,7 @@ const MED = (n) => `med_01J8Z6Q3KX0000000000000${String(n).padStart(3, '0')}`;
         assert.strictEqual(r.status, 503);
         mediaUp = true;
         await assert.rejects(h.svc.attachMedia(pageId, { mediaId: MED(1) }, { kind: 'user', subject: A }, {}), (e) => e.status === 503, 'no Media configured: nothing is attached');
-        assert.strictEqual(h.db.prepare('SELECT COUNT(*) AS n FROM wiki_page_attachments WHERE entity_id = ?').get(pageId).n, 2, 'nothing refused was attached');
+        assert.strictEqual((await h.db.prepare('SELECT COUNT(*) AS n FROM wiki_page_attachments WHERE entity_id = ?').get(pageId)).n, 2, 'nothing refused was attached');
 
         // 4. Media deletes one object and makes the other private: after the check, the public page
         //    shows the explicit states and no image.

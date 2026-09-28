@@ -10,7 +10,7 @@
  */
 const { createClient } = require('openvibe-sdk/core');
 const { createServiceTokenClient } = require('openvibe-sdk/auth');
-const { createEventsClient, createOutbox } = require('openvibe-sdk/events');
+const { createEventsClient, createPgOutbox } = require('openvibe-sdk/events');
 const { createDiscussionClient } = require('openvibe-publishing/discussion');
 
 class IntegrationError extends Error {
@@ -42,11 +42,20 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
         onWarning: (msg) => log.warn(`[Wiki] ${msg}`),
     });
     const events = createEventsClient(sdk, { source: 'wiki' });
-    const outbox = createOutbox(db, {
+    // The PostgreSQL outbox (openvibe-sdk/events): rows are written in the change's own transaction
+    // (outbox.enqueue(db, …) joins the ambient transaction); several processes relay one table safely (leases).
+    const outbox = createPgOutbox(db, {
         events, table: 'wiki_event_outbox', intervalMs: config.eventsRelayIntervalMs, now,
         onError: (err) => log.warn(`[Wiki] event relay: ${err && err.message}`),
     });
-    outbox.ensureSchema();
+    // Counts for metrics (read synchronously at scrape time), refreshed by readiness and a timer.
+    const outboxCounts = { pending: 0, rejected: 0 };
+    outbox.refreshCounts = async () => {
+        const [pending, rejected] = await Promise.all([outbox.pending(), outbox.rejected()]);
+        Object.assign(outboxCounts, { pending, rejected });
+        return { ...outboxCounts };
+    };
+    outbox.counts = () => ({ ...outboxCounts });
 
     async function getJson(url, audience, { headers = {}, timeoutMs = 5000 } = {}) {
         let res;

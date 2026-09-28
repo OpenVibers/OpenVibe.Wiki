@@ -35,7 +35,7 @@ const stripScripts = (html) => html.replace(/<script[\s\S]*?<\/script>/g, '');
         r = await H.req(h, 'POST', '/s/board-games/new', { cookie, form: { op: 'preview', title: 'Chess', body, infobox: 'Players | number | 2\nInvented | text | unknown' } });
         assert.strictEqual(r.status, 200);
         assert.ok(r.text.includes('Preview (not saved)'));
-        assert.strictEqual(h.svc.findPage(h.svc.findSpace('board-games').id, 'chess'), null);
+        assert.strictEqual(await h.svc.findPage((await h.svc.findSpace('board-games')).id, 'chess'), null);
         // Invalid infobox rows come back with the text intact.
         r = await H.req(h, 'POST', '/s/board-games/new', { cookie, form: { op: 'save', title: 'Chess', body, infobox: 'Players | number | two' } });
         assert.strictEqual(r.status, 422);

@@ -37,10 +37,10 @@ const SECRETS = {
     const check = async (name, fn) => { try { await fn(); console.log(`  ✓ ${name}`); } catch (e) { failures++; console.log(`  ✗ ${name}\n    ${String(e.stack || e.message).split('\n').slice(0, 10).join('\n    ')}`); } };
     try {
         const owner = { kind: 'user', subject: H.subject(), staff: false };
-        const space = h.svc.createSpace({ name: 'Notes', slug: 'notes' }, owner);
+        const space = await h.svc.createSpace({ name: 'Notes', slug: 'notes' }, owner);
         const cite = [{ url: 'https://example.org/a', retrievedAt: '2026-09-20T00:00:00Z' }];
-        const page = h.svc.createPage(space.id, { title: 'Open page', body: H.LONG, citations: cite }, owner).page;
-        h.svc.publish(page.id, {}, owner);
+        const page = (await h.svc.createPage(space.id, { title: 'Open page', body: H.LONG, citations: cite }, owner)).page;
+        await h.svc.publish(page.id, {}, owner);
         const people = {
             anonymous: null,
             user: H.userToken({ subject: H.subject(), username: 'someone' }),
@@ -89,7 +89,7 @@ const SECRETS = {
         });
 
         await check('the events outbox carries neither', async () => {
-            const text = JSON.stringify(H.outbox(h));
+            const text = JSON.stringify(await H.outbox(h));
             for (const [k, v] of Object.entries(SECRETS)) assert.ok(!text.includes(v), `outbox carries ${k}`);
         });
     } finally {

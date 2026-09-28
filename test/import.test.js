@@ -9,7 +9,7 @@
 const assert = require('assert');
 const H = require('./helpers');
 
-const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
+const count = async (h, table) => (await h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()).n;
 
 (async () => {
     const h = await H.boot();
@@ -33,7 +33,7 @@ const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).g
         await H.req(h, 'POST', '/api/v1/spaces', { token: tokEditor, body: { name: 'Secret', slug: 'secret', visibility: 'private' } });
 
         // Only an owner, acting as a person, imports.
-        const pagesBefore = count(h, 'wiki_pages');
+        const pagesBefore = await count(h, 'wiki_pages');
         r = await imp(tokEditor, bundle);
         assert.strictEqual(r.status, 403, 'an editor is not an owner');
         assert.strictEqual(r.json.code, 'import.forbidden');
@@ -43,7 +43,7 @@ const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).g
         assert.strictEqual(r.status, 403, 'a service acting as itself is no owner');
         r = await imp(H.serviceToken({ client: 'ai', cap: ['wiki.page.read'] }), bundle);
         assert.strictEqual(r.status, 403, 'the route needs wiki.page.create');
-        assert.strictEqual(count(h, 'wiki_pages'), pagesBefore);
+        assert.strictEqual(await count(h, 'wiki_pages'), pagesBefore);
 
         // Invalid and oversized bundles are refused before anything is written.
         const refusals = [
@@ -73,12 +73,12 @@ const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).g
         r = await imp(tokOwner, { pages: Array.from({ length: 150 }, (_x, i) => ({ title: `Page ${i}`, body: 'y'.repeat(15000) })) });
         assert.strictEqual(r.status, 413, 'a bundle over 2 MB');
         assert.strictEqual(r.json.code, 'request.too_large');
-        assert.strictEqual(count(h, 'wiki_pages'), pagesBefore, 'nothing was written by a refused bundle');
+        assert.strictEqual(await count(h, 'wiki_pages'), pagesBefore, 'nothing was written by a refused bundle');
 
         // Atomicity: the third page is invalid (an infobox value that is not a number; a parent that
         // is nowhere) → none of the pages, revisions, citations or events exist afterwards.
-        const snapshot = () => ['wiki_pages', 'wiki_page_revisions', 'wiki_citations', 'wiki_page_links', 'wiki_event_outbox', 'wiki_watchers'].map((t) => count(h, t));
-        const before = snapshot();
+        const snapshot = async () => Promise.all(['wiki_pages', 'wiki_page_revisions', 'wiki_citations', 'wiki_page_links', 'wiki_event_outbox', 'wiki_watchers'].map((t) => count(h, t)));
+        const before = await snapshot();
         for (const broken of [
             { pages: [...bundle.pages.slice(0, 2), { title: 'Spelt', body: 'x', infobox: [{ label: 'Weight', type: 'number', value: 'heavy' }] }] },
             { pages: [...bundle.pages.slice(0, 2), { title: 'Spelt', body: 'x', parent: 'Nowhere' }] },
@@ -87,7 +87,7 @@ const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).g
         ]) {
             r = await imp(tokOwner, broken);
             assert.ok(r.status === 422, `${r.status} ${r.text.slice(0, 200)}`);
-            assert.deepStrictEqual(snapshot(), before, `all or nothing: ${r.json.code}`);
+            assert.deepStrictEqual(await snapshot(), before, `all or nothing: ${r.json.code}`);
         }
 
         // Success: drafts, attributed to the importer, links and citations recorded, events emitted.
@@ -95,19 +95,19 @@ const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).g
         assert.strictEqual(r.status, 201, r.text);
         assert.deepStrictEqual(r.json.created.map((p) => [p.slug, p.state, p.revision]), [['bread', 'draft', 1], ['private-notes', 'draft', 1], ['rye', 'draft', 1]], 'parents first');
         assert.strictEqual(r.json.published, false);
-        const space = h.svc.findSpace('bakery');
-        const rye = h.svc.findPage(space.id, 'rye');
-        const bread = h.svc.findPage(space.id, 'bread');
+        const space = await h.svc.findSpace('bakery');
+        const rye = await h.svc.findPage(space.id, 'rye');
+        const bread = await h.svc.findPage(space.id, 'bread');
         assert.strictEqual(rye.parent_id, bread.id, 'the parent came from the bundle');
-        assert.strictEqual(h.svc.findPage(space.id, 'private-notes').visibility, 'private');
-        const rev = h.stores.revisions.get(rye.id, 1);
+        assert.strictEqual((await h.svc.findPage(space.id, 'private-notes')).visibility, 'private');
+        const rev = await h.stores.revisions.get(rye.id, 1);
         assert.strictEqual(rev.author, owner);
         assert.deepStrictEqual(rev.meta.authorship, { mode: 'imported', authors: [owner], importedFrom: { label: 'the old bakery wiki', originalAuthor: null } });
-        assert.strictEqual(h.svc.citationsOf(rye, 1)[0].url, 'https://flour.example/rye');
-        assert.ok(h.db.prepare('SELECT 1 FROM wiki_page_links WHERE from_page_id = ? AND target_slug = ?').get(bread.id, 'spelt'), 'links recorded (red link to Spelt)');
-        const created = H.outbox(h).filter((e) => e.event_type === 'wiki.revision.created' && [rye.id, bread.id].includes(e.subject.id));
+        assert.strictEqual((await h.svc.citationsOf(rye, 1))[0].url, 'https://flour.example/rye');
+        assert.ok(await h.db.prepare('SELECT 1 FROM wiki_page_links WHERE from_page_id = ? AND target_slug = ?').get(bread.id, 'spelt'), 'links recorded (red link to Spelt)');
+        const created = (await H.outbox(h)).filter((e) => e.event_type === 'wiki.revision.created' && [rye.id, bread.id].includes(e.subject.id));
         assert.strictEqual(created.length, 2);
-        assert.ok(h.db.prepare('SELECT 1 FROM wiki_watchers WHERE page_id = ? AND subject = ?').get(rye.id, owner), 'the importer watches the pages');
+        assert.ok(await h.db.prepare('SELECT 1 FROM wiki_watchers WHERE page_id = ? AND subject = ?').get(rye.id, owner), 'the importer watches the pages');
         // Drafts: invisible to readers, visible to editors; the markdown is rendered by the usual sanitiser.
         assert.strictEqual((await H.req(h, 'GET', '/w/bakery/rye')).status, 404);
         r = await H.req(h, 'GET', '/w/bakery/rye', { cookie: H.cookieFor(tokEditor) });
@@ -121,18 +121,18 @@ const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).g
         r = await imp(tokOwner, again);
         assert.strictEqual(r.status, 409);
         assert.strictEqual(r.json.code, 'import.pages_exist');
-        assert.strictEqual(h.svc.findPage(space.id, 'spelt'), null);
+        assert.strictEqual(await h.svc.findPage(space.id, 'spelt'), null);
         r = await imp(tokOwner, { ...again, on_existing: 'skip', publish: true });
         assert.strictEqual(r.status, 201, r.text);
         assert.deepStrictEqual(r.json.skipped, [{ slug: 'rye', title: 'Rye', reason: 'exists' }]);
         assert.deepStrictEqual(r.json.created.map((p) => [p.slug, p.state]), [['spelt', 'published']]);
-        assert.strictEqual(h.stores.revisions.headNumber(rye.id), 1, 'the existing page was left alone');
+        assert.strictEqual(await h.stores.revisions.headNumber(rye.id), 1, 'the existing page was left alone');
         // Published through the import: readable, indexed like any page (upsert event).
         assert.strictEqual((await H.req(h, 'GET', '/w/bakery/spelt')).status, 200);
-        const spelt = h.svc.findPage(space.id, 'spelt');
+        const spelt = await h.svc.findPage(space.id, 'spelt');
         assert.strictEqual(spelt.parent_id, bread.id, 'a parent that already exists in the space');
-        assert.ok(H.outbox(h).some((e) => e.event_type === 'wiki.page.published' && e.subject.id === spelt.id));
-        assert.ok(H.outbox(h).some((e) => e.event_type === 'wiki.index_document.upserted' && e.subject.id === spelt.id));
+        assert.ok((await H.outbox(h)).some((e) => e.event_type === 'wiki.page.published' && e.subject.id === spelt.id));
+        assert.ok((await H.outbox(h)).some((e) => e.event_type === 'wiki.index_document.upserted' && e.subject.id === spelt.id));
 
         // AI-assisted bundles stay noindex until a person reviews each page.
         r = await imp(tokOwner, { ai_assisted: true, publish: true, source: 'a model', pages: [{ title: 'Barley', body: `Barley bread. ${H.LONG}`, citations: [{ url: 'https://barley.example/', retrievedAt: '2026-09-04' }] }] });
@@ -160,8 +160,8 @@ const count = (h, table) => h.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).g
         assert.strictEqual(r.status, 403);
         r = await H.req(h, 'POST', '/s/bakery/import', { cookie, headers: { Origin: 'https://evil.example' }, form: { bundle: JSON.stringify([{ title: 'Csrf', body: 'x' }]) } });
         assert.strictEqual(r.status, 403, 'cross-site form posts are refused');
-        assert.strictEqual(h.svc.findPage(space.id, 'nope'), null);
-        assert.strictEqual(h.svc.findPage(space.id, 'csrf'), null);
+        assert.strictEqual(await h.svc.findPage(space.id, 'nope'), null);
+        assert.strictEqual(await h.svc.findPage(space.id, 'csrf'), null);
         console.log('import ok');
     } finally {
         await h.stop();

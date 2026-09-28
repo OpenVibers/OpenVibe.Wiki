@@ -9,25 +9,30 @@
  * Events outbox relay, the Media attachment check) run only when asked (`workers: true`).
  */
 const { load } = require('./config');
-const { openDb, createStores } = require('./db');
+const { openDb, migrate, createStores } = require('./db');
 const { createPlatform } = require('./integrations/platform');
 const { createWikiService } = require('./wiki/service');
 const { createKeyStore } = require('./auth/keys');
 const { createViewerResolver } = require('./auth/viewer');
 const { createApp } = require('./app');
 
-async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null } = {}) {
+async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null } = {}) {
     config = config || load();
-    const db = openDb(config.dbPath);
+    // PostgreSQL (ADR-035): migrate on the owner's direct connection, then serve on the pooled runtime role.
+    // Tests hand in a migrated database of their own (test/db-helper.js).
+    const db = givenDb || openDb(config, { log });
+    if (!givenDb) await migrate(config, { serving: db, log });
     const stores = createStores(db, { now });
+    // Valkey (ADR-035): shared, never-authoritative state (per-actor limit counters). Optional.
+    const valkey = config.valkey.url ? require('openvibe-sdk/valkey').createValkey({ url: config.valkey.url, prefix: config.valkey.prefix, log }) : null;
     const platform = createPlatform({ config, db, fetchImpl, tokens, now, log });
     const svc = createWikiService({ db, stores, outbox: platform.outbox, config, community: platform.community, vip: platform.vip, now, log });
-    const reconciled = svc.reconcileIndex();
+    const reconciled = await svc.reconcileIndex();
     if (reconciled.sent) log.log(`[Wiki] re-sent ${reconciled.sent} Search document(s) whose indexability changed`);
     const keys = createKeyStore({ config, fetchImpl, log, publicKey });
     keys.ensure().catch(() => {});
     const viewers = createViewerResolver({ keys, config });
-    const app = createApp({ config, svc, viewers, platform, keys, db, log, rateLimits, fetchImpl, limitsNow });
+    const app = createApp({ config, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow });
 
     const timers = [];
     if (workers) {
@@ -44,6 +49,7 @@ async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fe
             timers.push(setInterval(() => svc.verifyAllMedia(platform.media.resolve).catch((err) => log.warn(`[Wiki] media check: ${err.message}`)), config.mediaVerifyIntervalMs));
         }
         if (platform.eventsConfigured) platform.outbox.start();
+        timers.push(setInterval(() => platform.outbox.refreshCounts().catch(() => {}), 30 * 1000));
         // wiki.projects on Network (Contracts 0.41.0): people whose spaces or roles changed, every minute.
         const projects = require('./integrations/projects-module').createProjectsModule({ db, config, tokens: platform.tokenClient, fetchImpl, now, log });
         if (projects.enabled) timers.push(setInterval(() => projects.drain().catch((err) => log.warn(`[Wiki] wiki.projects: ${err.message}`)), 60 * 1000));
@@ -61,7 +67,8 @@ async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fe
         for (const t of timers) clearInterval(t);
         await platform.outbox.stop();
         if (server) await new Promise((resolve) => server.close(resolve));
-        db.close();
+        if (!givenDb) await db.close();
+        if (valkey) await valkey.close().catch(() => {});
     }
     return { app, db, svc, stores, platform, keys, viewers, server, config, stop };
 }

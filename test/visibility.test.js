@@ -9,33 +9,33 @@ const assert = require('assert');
 const contracts = require('openvibe-contracts');
 const H = require('./helpers');
 
-function lastIndexEvent(h, pageId) {
-    return H.outbox(h).filter((e) => e.event_type.startsWith('wiki.index_document.') && e.subject.id === pageId).pop();
+async function lastIndexEvent(h, pageId) {
+    return (await H.outbox(h)).filter((e) => e.event_type.startsWith('wiki.index_document.') && e.subject.id === pageId).pop();
 }
 
 (async () => {
     const h = await H.boot();
     const owner = { kind: 'user', subject: H.subject(), staff: false };
     try {
-        const space = h.svc.createSpace({ name: 'Notes', slug: 'notes' }, owner);
+        const space = await h.svc.createSpace({ name: 'Notes', slug: 'notes' }, owner);
         const cite = [{ url: 'https://example.org/a', retrievedAt: '2026-09-20T00:00:00Z' }];
-        const { page } = h.svc.createPage(space.id, { title: 'Open page', body: H.LONG, citations: cite }, owner);
-        const other = h.svc.createPage(space.id, { title: 'Second page', body: H.LONG, citations: cite }, owner).page;
+        const { page } = await h.svc.createPage(space.id, { title: 'Open page', body: H.LONG, citations: cite }, owner);
+        const other = (await h.svc.createPage(space.id, { title: 'Second page', body: H.LONG, citations: cite }, owner)).page;
 
         // Draft: not in sitemap, feed or index; direct URL is 404 for anonymous visitors.
         let r = await H.req(h, 'GET', '/sitemaps/pages-1.xml');
         assert.ok(!r.text.includes('/w/notes/open-page'));
         assert.strictEqual((await H.req(h, 'GET', '/w/notes/open-page')).status, 404);
-        assert.strictEqual(lastIndexEvent(h, page.id), undefined, 'a draft never reaches Search');
+        assert.strictEqual((await lastIndexEvent(h, page.id)), undefined, 'a draft never reaches Search');
 
         // Published: sitemap, feeds, index upsert, public cache.
-        h.svc.publish(page.id, {}, owner);
-        h.svc.publish(other.id, {}, owner);
+        await h.svc.publish(page.id, {}, owner);
+        await h.svc.publish(other.id, {}, owner);
         r = await H.req(h, 'GET', '/sitemaps/pages-1.xml');
         assert.ok(r.text.includes('http://wiki.test/w/notes/open-page'));
         assert.ok((await H.req(h, 'GET', '/feed.atom')).text.includes('http://wiki.test/w/notes/open-page'));
         assert.ok((await H.req(h, 'GET', '/feed.json')).json.items.some((i) => i.url === 'http://wiki.test/w/notes/open-page'));
-        let ev = lastIndexEvent(h, page.id);
+        let ev = (await lastIndexEvent(h, page.id));
         assert.strictEqual(ev.event_type, 'wiki.index_document.upserted');
         assert.strictEqual(ev.payload.visibility, 'public');
         assert.strictEqual(ev.payload.indexability.decision, 'index');
@@ -48,9 +48,9 @@ function lastIndexEvent(h, pageId) {
         assert.strictEqual(r.headers.get('cache-control'), 'private, no-store');
 
         // Private page: leaves sitemap, feeds and Search (tombstone at a higher revision), 404 + private for anonymous.
-        const before = lastIndexEvent(h, page.id).payload.revision;
-        h.svc.setPageVisibility(page.id, { visibility: 'private' }, owner);
-        ev = lastIndexEvent(h, page.id);
+        const before = (await lastIndexEvent(h, page.id)).payload.revision;
+        await h.svc.setPageVisibility(page.id, { visibility: 'private' }, owner);
+        ev = (await lastIndexEvent(h, page.id));
         assert.strictEqual(ev.event_type, 'wiki.index_document.deleted');
         assert.ok(ev.payload.revision > before, 'the tombstone outranks the last document');
         assert.ok(!(await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.includes('open-page'));
@@ -70,47 +70,47 @@ function lastIndexEvent(h, pageId) {
         // Search (the wiki's own) does not return it to anonymous callers.
         assert.ok(!(await H.req(h, 'GET', '/api/v1/search?q=Open')).json.results.some((x) => x.id === page.id));
         // The product event for a non-public change is internal.
-        const upd = H.outbox(h).filter((e) => e.event_type === 'wiki.page.updated' && e.subject.id === page.id).pop();
+        const upd = (await H.outbox(h)).filter((e) => e.event_type === 'wiki.page.updated' && e.subject.id === page.id).pop();
         assert.strictEqual(upd.visibility, 'internal');
 
         // Space goes members-only: its public pages leave the index too.
-        h.svc.updateSpace(space.id, { visibility: 'members' }, owner);
-        assert.strictEqual(lastIndexEvent(h, other.id).event_type, 'wiki.index_document.deleted');
+        await h.svc.updateSpace(space.id, { visibility: 'members' }, owner);
+        assert.strictEqual((await lastIndexEvent(h, other.id)).event_type, 'wiki.index_document.deleted');
         assert.strictEqual((await H.req(h, 'GET', '/w/notes/second-page')).status, 404, 'anonymous cannot read a members page');
         r = await H.req(h, 'GET', '/w/notes/second-page', { cookie: H.cookieFor(H.userToken()) });
         assert.strictEqual(r.status, 200, 'any signed-in account reads a members page');
         assert.strictEqual(r.headers.get('cache-control'), 'private, no-store');
         assert.ok(!(await H.req(h, 'GET', '/sitemaps/spaces.xml')).text.includes('/s/notes'));
-        h.svc.updateSpace(space.id, { visibility: 'public' }, owner);
-        assert.strictEqual(lastIndexEvent(h, other.id).event_type, 'wiki.index_document.upserted', 'back in the index when public again');
+        await h.svc.updateSpace(space.id, { visibility: 'public' }, owner);
+        assert.strictEqual((await lastIndexEvent(h, other.id)).event_type, 'wiki.index_document.upserted', 'back in the index when public again');
 
         // Rename: every old address 301s to the current one (chains collapse).
-        h.svc.movePage(other.id, { slug: 'second' }, owner);
-        h.svc.movePage(other.id, { slug: 'third' }, owner);
+        await h.svc.movePage(other.id, { slug: 'second' }, owner);
+        await h.svc.movePage(other.id, { slug: 'third' }, owner);
         r = await H.req(h, 'GET', '/w/notes/second-page/history');
         assert.strictEqual(r.status, 301);
         assert.strictEqual(r.headers.get('location'), '/w/notes/third/history');
         r = await H.req(h, 'GET', '/w/notes/second');
         assert.strictEqual(r.headers.get('location'), '/w/notes/third');
-        ev = lastIndexEvent(h, other.id);
+        ev = (await lastIndexEvent(h, other.id));
         assert.strictEqual(ev.payload.canonical_url, 'http://wiki.test/w/notes/third');
         // A renamed space redirects its pages as well.
-        h.svc.updateSpace(space.id, { slug: 'jottings' }, owner);
+        await h.svc.updateSpace(space.id, { slug: 'jottings' }, owner);
         r = await H.req(h, 'GET', '/w/notes/third');
         assert.strictEqual(r.status, 301);
         assert.strictEqual(r.headers.get('location'), '/w/jottings/third');
         assert.strictEqual((await H.req(h, 'GET', '/s/notes')).headers.get('location'), '/s/jottings');
 
         // Delete: 410 at the current and the old addresses, tombstone, gone from sitemap.
-        h.svc.deletePage(other.id, owner);
+        await h.svc.deletePage(other.id, owner);
         assert.strictEqual((await H.req(h, 'GET', '/w/jottings/third')).status, 410);
         assert.strictEqual((await H.req(h, 'GET', '/w/notes/second-page')).status, 410);
-        assert.strictEqual(lastIndexEvent(h, other.id).event_type, 'wiki.index_document.deleted');
-        assert.ok(H.outbox(h).some((e) => e.event_type === 'wiki.page.deleted' && e.subject.id === other.id));
+        assert.strictEqual((await lastIndexEvent(h, other.id)).event_type, 'wiki.index_document.deleted');
+        assert.ok((await H.outbox(h)).some((e) => e.event_type === 'wiki.page.deleted' && e.subject.id === other.id));
         assert.ok(!(await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.includes('third'));
 
         // Contracts: every envelope and every Search document validates.
-        const all = H.outbox(h);
+        const all = await H.outbox(h);
         for (const env of all) {
             const v = contracts.validate('events.event-envelope@1', env);
             assert.ok(v.valid, `${env.event_type}: ${JSON.stringify(v.errors)}`);

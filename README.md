@@ -26,13 +26,13 @@ its publication state; the packages supply the mechanics.
 
 ## Owns
 
-The ten authority tables of §15.13, in Wiki's own SQLite database (`WIKI_DB_PATH`):
+The ten authority tables of §15.13, in Wiki's own PostgreSQL database (`ov_wiki` on the host's data role, ADR-035; schema in [migrations/](migrations/)):
 
 | Table | What | Mechanics |
 |---|---|---|
 | `wiki_spaces` | spaces: official / user, public / members / private | Wiki |
 | `wiki_pages` | canonical page identity, slug, tree (`parent_id`), publication state, published revision | Wiki |
-| `wiki_page_revisions` | immutable revisions (UPDATE/DELETE abort in SQLite triggers) | `openvibe-publishing/revisions`, prefix `wiki_page` |
+| `wiki_page_revisions` | immutable revisions (UPDATE/DELETE refused by PL/pgSQL triggers) | `openvibe-publishing/revisions`, prefix `wiki_page` |
 | `wiki_page_links` | `[[links]]` of every revision (backlinks, red links) | Wiki |
 | `wiki_page_redirects` | every historical path of a page or space (301; 410 when gone) | `openvibe-publishing/seo`, prefix `wiki_page` |
 | `wiki_citations` | sources per (page, revision), append-only | `openvibe-publishing/citations`, prefix `wiki` |
@@ -260,18 +260,23 @@ fnm exec --using=22.22.1 npm install
 cp .env.example .env
 fnm exec --using=22.22.1 npm run seed     # the official "OpenVibe" space
 fnm exec --using=22.22.1 npm run dev      # http://localhost:4800
-fnm exec --using=22.22.1 npm test         # every test/*.test.js on temp databases, no network
+fnm exec --using=22.22.1 npm test         # every test/*.test.js on PGlite (PostgreSQL in-process), no network
+eval "$(node_modules/openvibe-sdk/scripts/test-services.sh up)" && npm run test:pg   # the same through PgBouncer
 ```
 
+Without `DATABASE_URL`, development uses an embedded PGlite database in `data/pglite`.
+
 Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
-[deploy/systemd/openvibe-wiki.service](deploy/systemd/openvibe-wiki.service), database
-`/var/lib/openvibe-wiki/wiki.db`, nginx [deploy/nginx/openvibe.wiki.conf](deploy/nginx/openvibe.wiki.conf).
+[deploy/systemd/openvibe-wiki.service](deploy/systemd/openvibe-wiki.service), database `ov_wiki`
+(`DATABASE_URL` through PgBouncer; migrations on `DATABASE_DIRECT_URL`), nginx [deploy/nginx/openvibe.wiki.conf](deploy/nginx/openvibe.wiki.conf).
 
 ## Depends on
 
-- `openvibe-publishing` v0.4.0, `openvibe-contracts` v0.64.0, `openvibe-shared` v1.25.0 (chrome,
-  release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.12.0 (auth, events
-  outbox, per-actor limits) — pinned release tarballs.
+- PostgreSQL 18 and Valkey 9 (OpenVibe.Host `roles/data/`, ADR-035): every read and write is async through
+  `openvibe-sdk/db`; Valkey holds the per-actor limit counters (optional: without `VALKEY_URL` they count per process).
+- `openvibe-publishing` v1.0.0 (async PostgreSQL stores), `openvibe-contracts` v0.76.0, `openvibe-shared` v1.25.0
+  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.19.0 (db, auth, PostgreSQL
+  events outbox, per-actor limits, testing) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.VIP (VIP spaces and pages), OpenVibe.Search (consumer of
   the index events). All but the Network key are optional at runtime and degrade to explicit failure
@@ -341,7 +346,10 @@ references and the gaps that remain: [docs/threat-review.md](docs/threat-review.
 Production deploys with `sudo ovhost deploy wiki` on the host (strategy `git-checkout`: fetch,
 fast-forward `/opt/openvibe.wiki`, install on a lockfile change, restart, wait for `/api/ready`).
 The unit is `openvibe-wiki.service` on `127.0.0.1:4800`, the env file `/etc/openvibe/wiki.env`. The database is
-`/var/lib/openvibe-wiki/wiki.db`; nginx serves `openvibe.wiki` from
+`ov_wiki` on the host's data role (`sudo /opt/openvibe.host/roles/data/add-service.sh wiki` writes its settings);
+the release migrates it at boot. The one-time move from SQLite is `scripts/migrate-to-postgres.js` (openvibe-sdk
+`runSqliteMigration`: import, verification, and a rehearsal mode `--pglite`), run while the service is stopped;
+the old `/var/lib/openvibe-wiki/wiki.db` stays read-only for 7 days as the rollback. nginx serves `openvibe.wiki` from
 [deploy/nginx/openvibe.wiki.conf](deploy/nginx/openvibe.wiki.conf).
 Rollback: ovhost puts the previous sha back by itself when `/api/ready` does not answer 2xx after the
 restart; afterwards `sudo ovhost rollback wiki --to <sha>`. Nothing blocks a rollback: the schema

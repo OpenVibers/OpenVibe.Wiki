@@ -22,8 +22,10 @@ const { createActorLimits } = require('./http/actor-limits');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const VERSION = require('../package.json').version;
 
-function createApp({ config, svc, viewers, platform, keys, db, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null }) {
+function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null }) {
     const app = express();
+    // Every resolved actor carries its wiki roles (read once per request), so the synchronous access checks work.
+    const viewers = { ...baseViewers, resolve: async (req, opts) => svc.loadRoles(await baseViewers.resolve(req, opts)) };
     app.disable('x-powered-by');
     app.set('trust proxy', config.trustProxy);
     // One W3C trace across services (openvibe-shared/trace): calls made while serving a request carry its traceparent.
@@ -33,7 +35,7 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     const metrics = require('openvibe-shared/metrics').instrument(app, { service: 'wiki', release: release.release });
     metrics.registry.gauge({
         name: 'wiki_event_outbox', help: 'Events in the outbox by state', labelNames: ['state'],
-        collect: () => [{ labels: { state: 'pending' }, value: platform.outbox.pending() }, { labels: { state: 'rejected' }, value: platform.outbox.rejected() }],
+        collect: () => { const c = platform.outbox.counts(); return [{ labels: { state: 'pending' }, value: c.pending }, { labels: { state: 'rejected' }, value: c.rejected }]; },
     });
 
     app.use((req, res, next) => {
@@ -70,14 +72,21 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     const ready = createReadiness({
         service: 'wiki', release: release.release,
         checks: [
-            { name: 'db', required: true, check: () => db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name = 'wiki_pages'").get().n === 1 || 'wiki tables missing' },
+            // A real round trip, naming the store that answered (postgresql / pglite), and the schema present.
+            { name: 'db', required: true, check: async () => {
+                const r = await db.ready();
+                if (!r.ok) return r.error;
+                const n = await db.value("SELECT count(*)::int FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'wiki_pages'");
+                return n === 1 ? { ok: true, detail: r.detail } : 'wiki tables missing (migrations did not run)';
+            } },
+            { name: 'valkey', required: false, check: async () => (valkey ? valkey.ready() : { skipped: 'VALKEY_URL not set: per-actor limits count in this process only' }) },
             { name: 'network_jwks', required: false, check: () => { if (keys.loaded()) return true; keys.ensure().catch(() => {}); return 'Network signing key not loaded yet: sign-in and token calls answer 503'; } },
             { name: 'events_relay', required: false, check: () => (platform.eventsConfigured ? true : 'EVENTS_URL or the service principal is not configured: events wait in the outbox') },
             { name: 'community', required: false, check: () => platform.community.configured || 'not configured: discussions show as unavailable' },
             { name: 'sources', required: false, check: () => platform.sources.configured || 'not configured: Sources item citations are refused (URL citations work)' },
             { name: 'media', required: false, check: () => platform.media.configured || 'not configured: attachments are not checked against Media' },
         ],
-        details: () => ({ outbox: { pending: platform.outbox.pending(), rejected: platform.outbox.rejected() } }),
+        details: async () => ({ outbox: await platform.outbox.refreshCounts() }),
     });
     app.get('/api/ready', ready.handler);
 
@@ -89,7 +98,7 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     app.use('/api/', limiter(60000, 300));
     // Per-actor limits (http/actor-limits.js) on /api/v1 and the editing forms, counted once each router
     // resolved req.actor; the per-address limits here stay. limitsNow: the limiter's clock (tests).
-    const limits = createActorLimits({ config, now: limitsNow || (() => Date.now()), registry: metrics.registry, log, enabled: rateLimits });
+    const limits = createActorLimits({ config, now: limitsNow || (() => Date.now()), registry: metrics.registry, log, enabled: rateLimits, valkey });
     app.use('/api/v1', createApi({ svc, viewers, platform, config, log, limits }));
     app.use('/api', (req, res) => require('openvibe-contracts').http.sendProblem(res, 404, 'route.not_found', { detail: 'Not found' }));
 
