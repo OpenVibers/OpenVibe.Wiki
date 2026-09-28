@@ -7,27 +7,28 @@
   "runtime": "node 22, express, better-sqlite3",
   "port": 4800,
   "domain": "openvibe.wiki",
-  "contracts": "openvibe-contracts v0.33.0",
-  "packages": [
-    "openvibe-publishing v0.2.1",
-    "openvibe-shared v1.5.1",
-    "openvibe-sdk v0.5.0"
-  ],
-  "capabilities": [
-    "wiki.space.create",
-    "wiki.page.create",
-    "wiki.page.read",
-    "wiki.revision.propose",
-    "wiki.revision.publish",
-    "wiki.revision.revert",
-    "wiki.citation.attach",
-    "wiki.search.query"
-  ],
+  "contracts": "openvibe-contracts v0.64.0",
+  "packages": ["openvibe-publishing v0.4.0", "openvibe-shared v1.22.0", "openvibe-sdk v0.12.0"],
+  "capabilities": ["wiki.space.create", "wiki.page.create", "wiki.page.read", "wiki.revision.propose", "wiki.revision.publish", "wiki.revision.revert", "wiki.citation.attach", "wiki.search.query"],
   "capabilitiesRegistered": true,
   "deployed": true,
-  "deployment": "Public at https://openvibe.wiki since 2026-09-23 (~03:00 UTC): /opt/openvibe.wiki at c1e6ff5, unit openvibe-wiki on 127.0.0.1:4800 behind the openvibe.wiki nginx vhost, principal wiki. Production content: 1 space, the 10 seed pages (1 revision each), 0 person reviews, so every page is noindex and nothing public is in Search yet. Restore drill passed 2026-09-23.",
+  "deployment": "Public at https://openvibe.wiki since 2026-09-23 (~03:00 UTC): deployed with `sudo ovhost deploy wiki`, /opt/openvibe.wiki, unit openvibe-wiki on 127.0.0.1:4800 behind the openvibe.wiki nginx vhost, principal wiki. On 2026-09-23 production held 1 space and the 10 seed pages (1 revision each), 0 person reviews, so every page was noindex and nothing public was in Search. Restore drill passed 2026-09-23.",
   "onOpenVibeSites": false,
   "seed": "official space \"openvibe\" (10 pages summarised with AI assistance from the repositories' README/STATUS files, cited; noindex until a person reviews each; 0 of 10 reviewed as of 2026-09-23)",
-  "updated": "2026-09-23",
-  "deployedAt": "2026-09-23"
+  "updated": "2026-09-28",
+  "deployedAt": "2026-09-23",
+  "features": [
+    "spaces with page trees and roles",
+    "immutable revisions with diff, revert and scheduled publication",
+    "citations and infobox values bound to the revision that used them",
+    "public, signed-in, VIP (OpenVibe.VIP), private and members-only visibility",
+    "Media attachments with a broken-asset state",
+    "Community discussion threads by reference",
+    "AI proposals that need a person's approval",
+    "space import bundles (owners only)",
+    "feeds, sitemaps and server-rendered pages useful without JavaScript",
+    "/api/v1 by capability",
+    "SDK outbox events and Search index documents",
+    "per-actor limits (openvibe-sdk/limits)"
+  ]
 }

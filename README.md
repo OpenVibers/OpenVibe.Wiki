@@ -237,7 +237,7 @@ applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 
 The ids were proposed in [docs/capabilities-proposal/](docs/capabilities-proposal/) (the plan's
 `wiki.search` becomes the three-segment `wiki.search.query`) and are released in openvibe-contracts
-v0.17.0 with the service manifest (this repo pins v0.33.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
+v0.17.0 with the service manifest (this repo pins v0.64.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
 The proposal for `wiki.revision.publish` also lists the revision review route, which the released
 capability names since v0.32.0 (as `wiki.page.create` does the space import route).
 
@@ -269,13 +269,32 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 
 ## Depends on
 
-- `openvibe-publishing` v0.2.1, `openvibe-contracts` v0.33.0, `openvibe-shared` v1.5.1 (chrome,
-  release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.5.0 (auth, events
-  outbox) — pinned release tarballs.
+- `openvibe-publishing` v0.4.0, `openvibe-contracts` v0.64.0, `openvibe-shared` v1.22.0 (chrome,
+  release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.12.0 (auth, events
+  outbox, per-actor limits) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
-  OpenVibe.Sources, OpenVibe.Media, OpenVibe.Search (consumer of the index events). All but the
-  Network key are optional at runtime and degrade to explicit failure states.
+  OpenVibe.Sources, OpenVibe.Media, OpenVibe.VIP (VIP spaces and pages), OpenVibe.Search (consumer of
+  the index events). All but the Network key are optional at runtime and degrade to explicit failure
+  states.
 - OpenVibe.AI for proposals (not wired to Wiki yet: the proposal API is the seam).
+
+## Capabilities
+
+Implemented here (the service manifest's `capabilities`, audience `openvibe.wiki`, one per route;
+routes under [API](#api-apiv1)): `wiki.space.create`, `wiki.page.create`, `wiki.page.read`,
+`wiki.revision.propose`, `wiki.revision.publish`, `wiki.revision.revert`, `wiki.citation.attach` and
+`wiki.search.query`.
+
+Called elsewhere, as the service principal `svc:wiki` (client credentials, one token per audience;
+[server/integrations/platform.js](server/integrations/platform.js)):
+
+| Service | Grant | Why |
+|---|---|---|
+| OpenVibe.Events | `events.event.publish` | the outbox relay |
+| OpenVibe.Community | `community.comment.write`, `community.comment.moderate` | comment threads by reference; hiding the thread of a page that stops being public |
+| OpenVibe.Sources | `sources.item.read` | citations that name a Sources item |
+| OpenVibe.Media | `media.object.read` (namespace `WIKI_MEDIA_APP`) | attached objects and their re-verification |
+| OpenVibe.VIP | `vip.resource.policy.evaluate` | who may read a `vip` space or page |
 
 ## Acceptance (tested in `test/`)
 
@@ -299,6 +318,34 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 - every event is a valid `events.event-envelope@1` and every index document a valid
   `search.index-document@1` (`visibility.test.js`); the proposals validate against the contracts
   schemas (`proposals.test.js`); user text is escaped everywhere (`content.test.js`)
+
+## Security
+
+Reporting a vulnerability: [SECURITY.md](SECURITY.md). The written threat review, with code
+references and the gaps that remain: [docs/threat-review.md](docs/threat-review.md).
+
+- **Auth.** People use a Network JWT (Bearer or the `ov_token` cookie; cross-site cookie writes are
+  refused); services use client-credentials tokens for audience `openvibe.wiki`, one capability per
+  route, and content writes need the person in `X-OV-Subject`, whose space role applies. Visitors
+  without SSO read public content only; AI proposals need a person's approval.
+- **Private data.** Private, members-only, VIP and deleted pages leave sitemaps, feeds and Search
+  (tombstones) and are served `Cache-Control: private`; a VIP refusal is never cached; Media objects
+  the reader may not see are withheld. User text is escaped everywhere.
+- **Egress.** Wiki calls only its configured Network, Events, Community, Sources, Media and VIP hosts;
+  it never fetches a URL a user chose.
+- **Secrets.** `OV_OAUTH_CLIENT_SECRET` lives in `/etc/openvibe/wiki.env` (0600). nginx answers
+  `/metrics` with 404 and caps import bodies.
+
+## Deploy
+
+Production deploys with `sudo ovhost deploy wiki` on the host (strategy `git-checkout`: fetch,
+fast-forward `/opt/openvibe.wiki`, install on a lockfile change, restart, wait for `/api/ready`).
+The unit is `openvibe-wiki.service` on `127.0.0.1:4800`, the env file `/etc/openvibe/wiki.env`. The database is
+`/var/lib/openvibe-wiki/wiki.db`; nginx serves `openvibe.wiki` from
+[deploy/nginx/openvibe.wiki.conf](deploy/nginx/openvibe.wiki.conf).
+Rollback: ovhost puts the previous sha back by itself when `/api/ready` does not answer 2xx after the
+restart; afterwards `sudo ovhost rollback wiki --to <sha>`. Nothing blocks a rollback: the schema
+code only adds tables and columns.
 
 ## Launch rule
 
