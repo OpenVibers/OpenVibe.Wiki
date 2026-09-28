@@ -37,10 +37,14 @@ const content = require('../wiki/content');
 const { actorMiddleware, resolveCitations, resolveBundleCitations, citationsFromForm } = require('./common');
 const importer = require('../wiki/import');
 
-function createPages({ svc, viewers, platform, config, log = console }) {
+function createPages({ svc, viewers, platform, config, log = console, limits }) {
     const router = express.Router();
     const form = express.urlencoded({ extended: false, limit: '600kb' });
     router.use(actorMiddleware(viewers, { services: false }));
+    // Per-actor limits on the editing forms (http/actor-limits.js): each form shares its budget with the
+    // API route that does the same thing, counted before the form body is read. Reading pages is left
+    // to the per-address limits.
+    const B = (name) => limits.budget(name);
 
     // VIP (WS-K task 8): before any handler's synchronous access check, ask VIP about the space and page this
     // URL names (and a space's VIP-only pages, for its tree). The JSON export is sensitive: VIP asks Billing.
@@ -134,7 +138,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to start a space.');
         send(req, res, 200, views.newSpacePage({ staff: req.actor.staff }), { title: 'Start a space', robots: 'noindex, nofollow' });
     });
-    router.post('/new-space', form, wrap(async (req, res) => {
+    router.post('/new-space', B('wiki.space.create'), form, wrap(async (req, res) => {
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to start a space.');
         const b = req.body || {};
         try {
@@ -179,7 +183,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         send(req, res, 200, views.editPage({ space, values: { title: String(req.query.title || '').slice(0, 200) }, parents: parentsOf(space, req.actor) }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
     });
 
-    router.post('/s/:space/new', form, wrap(async (req, res) => {
+    router.post('/s/:space/new', B('wiki.page.create'), form, wrap(async (req, res) => {
         const space = locateSpace(req, res);
         if (!space || !editorsOnly(req, res, space)) return;
         const b = req.body || {};
@@ -205,7 +209,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         send(req, res, 200, views.spaceSettingsPage({ space, roles: svc.roles(space.id, req.actor), flash: req.query.saved ? 'Saved.' : null }), { title: `Settings of ${space.name}`, robots: 'noindex, nofollow' });
     });
 
-    router.post('/s/:space/settings', form, wrap(async (req, res) => {
+    router.post('/s/:space/settings', B('wiki.space.update'), form, wrap(async (req, res) => {
         const space = locateSpace(req, res);
         if (!space) return;
         const b = req.body || {};
@@ -235,7 +239,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         if (!space || !ownersOnly(req, res, space)) return;
         send(req, res, 200, views.importPage({ space, values: {} }), { title: `Import pages into ${space.name}`, robots: 'noindex, nofollow' });
     });
-    router.post('/s/:space/import', importForm, wrap(async (req, res) => {
+    router.post('/s/:space/import', B('wiki.page.import'), importForm, wrap(async (req, res) => {
         const space = locateSpace(req, res);
         if (!space || !ownersOnly(req, res, space)) return;
         const b = req.body || {};
@@ -262,7 +266,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         send(req, res, 200, views.proposalsPage({ space, items }), { title: `AI proposals in ${space.name}`, robots: 'noindex, nofollow' });
     });
 
-    router.post('/proposals/:id', form, wrap(async (req, res) => {
+    router.post('/proposals/:id', B('wiki.revision.publish'), form, wrap(async (req, res) => {
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in to review proposals.');
         const p = svc.getProposal(req.params.id);
         if (!p) return notFound(req, res);
@@ -408,7 +412,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         send(req, res, 200, views.editPage({ space, page, values: views.formValuesFromRevision(from.revision, page), citations: from.citations, baseRevision: start.number, expectedRevision: headNumber, error: note }), { title: `Editing ${page.title}`, robots: 'noindex, nofollow' });
     });
 
-    router.post('/w/:space/:slug/edit', form, wrap(async (req, res) => {
+    router.post('/w/:space/:slug/edit', B('wiki.page.edit'), form, wrap(async (req, res) => {
         const found = locate(req, res, '/edit');
         if (!found) return;
         const { space, page } = found;
@@ -446,7 +450,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         send(req, res, 200, views.revertPage({ space, page, to, head }), { title: `Revert ${page.title}`, robots: 'noindex, nofollow' });
     });
 
-    router.post('/w/:space/:slug/revert', form, wrap(async (req, res) => {
+    router.post('/w/:space/:slug/revert', B('wiki.page.edit'), form, wrap(async (req, res) => {
         const found = locate(req, res, '/revert');
         if (!found) return;
         const { space, page } = found;
@@ -479,7 +483,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         send(req, res, status, views.pageSettingsPage({ space, page, v: { ...view, headNumber }, parents: parentsOf(space, req.actor), canManage: svc.access.canManage(space, req.actor), ...extra }), { title: `Settings of ${page.title}`, robots: 'noindex, nofollow' });
     }
 
-    router.post('/w/:space/:slug/settings', form, wrap(async (req, res) => {
+    router.post('/w/:space/:slug/settings', B('wiki.page.update'), form, wrap(async (req, res) => {
         const found = locate(req, res, '/settings');
         if (!found) return;
         const { space, page } = found;
@@ -513,7 +517,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         }
     }));
 
-    router.post('/w/:space/:slug/review', form, wrap(async (req, res) => {
+    router.post('/w/:space/:slug/review', B('wiki.revision.publish'), form, wrap(async (req, res) => {
         const found = locate(req, res, '/review');
         if (!found) return;
         const { space, page } = found;
@@ -523,7 +527,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         res.redirect(303, `${views.wpath(space, page)}/history`);
     }));
 
-    router.post('/w/:space/:slug/watch', form, wrap(async (req, res) => {
+    router.post('/w/:space/:slug/watch', B('wiki.page.watch'), form, wrap(async (req, res) => {
         const found = locate(req, res, '/watch');
         if (!found) return;
         if (!req.actor.subject) return needSignIn(req, res, 'Sign in to watch pages.');
@@ -531,7 +535,7 @@ function createPages({ svc, viewers, platform, config, log = console }) {
         res.redirect(303, views.wpath(found.space, found.page));
     }));
 
-    router.post('/w/:space/:slug/discuss', form, wrap(async (req, res) => {
+    router.post('/w/:space/:slug/discuss', B('wiki.discussion.comment'), form, wrap(async (req, res) => {
         const found = locate(req, res, '/discuss');
         if (!found) return;
         const { space, page } = found;

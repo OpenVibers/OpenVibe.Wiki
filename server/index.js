@@ -16,7 +16,7 @@ const { createKeyStore } = require('./auth/keys');
 const { createViewerResolver } = require('./auth/viewer');
 const { createApp } = require('./app');
 
-async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true } = {}) {
+async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null } = {}) {
     config = config || load();
     const db = openDb(config.dbPath);
     const stores = createStores(db, { now });
@@ -27,7 +27,7 @@ async function start({ config, now = () => Date.now(), fetchImpl = globalThis.fe
     const keys = createKeyStore({ config, fetchImpl, log, publicKey });
     keys.ensure().catch(() => {});
     const viewers = createViewerResolver({ keys, config });
-    const app = createApp({ config, svc, viewers, platform, keys, db, log, rateLimits, fetchImpl });
+    const app = createApp({ config, svc, viewers, platform, keys, db, log, rateLimits, fetchImpl, limitsNow });
 
     const timers = [];
     if (workers) {

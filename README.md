@@ -183,6 +183,39 @@ Rate limits per address (besides nginx's): sign-in 60 per 15 min, API 300/min, f
 10 min, `/search` 60/min, diffs 30/min, imports 20/hour. Outbound links in community spaces carry
 `rel="nofollow ugc noopener"`. The threat review is [docs/threat-review.md](docs/threat-review.md).
 
+### Per-actor limits
+
+`/api/v1` and the editing forms also limit who calls them, once `req.actor` is resolved and before
+any work (for a form, before its body is read): `server/http/actor-limits.js`, openvibe-sdk/limits,
+roadmap WS-R task 4. Counted: a person as `user:usr_…` (their own token or cookie, or named by a
+service in `X-OV-Subject`, or an app's `on_behalf_of`); a first-party service relaying a signed-out
+visitor by the address it forwards; a service or app acting as itself (an AI workflow's proposals)
+by its principal; a signed-out caller by address. A first-party service reading for itself is not
+counted on reads. Past a limit: `429` problem+json `rate_limited` with `Retry-After`, one `[Limits]`
+log line and `wiki_rate_limited_total{limit,window}`. A form and the API route that do the same thing
+share one budget.
+
+| Routes (API and form) | Per caller, a minute / an hour |
+|---|---|
+| API reads | `WIKI_LIMITS_MINUTE` / `WIKI_LIMITS_HOUR` (120 / 3000) |
+| Space create (`POST /spaces`, `/new-space`) | 10 / 60 |
+| Space settings and roles (`PATCH /spaces/:space`, `PUT …/roles/:subject`, `/s/:space/settings`) | 30 / 300 |
+| Page create (`POST /spaces/:space/pages`, `/s/:space/new`) | 30 / 300 |
+| Page edit and revert (`POST /pages/:id/revisions`, `/revert`, `/w/…/edit`, `/w/…/revert`) | 30 / 600 |
+| Page move, visibility, delete (`PATCH`/`DELETE /pages/:id`, `/w/…/settings`) | 30 / 300 |
+| Publish, schedule, unpublish, reviews (API and forms), proposal review | 30 / 300 |
+| Citations attach | 30 / 300 |
+| AI proposals (`POST /proposals`) | 60 / 1200 |
+| Import (API and form) | 5 / 20 |
+| Media attach and verify | 20 / 200 |
+| Watch | 60 / 600 |
+| Discussion comment (`/w/…/discuss`, sent to Community) | 20 / 300 |
+| API search and diffs | 30 / 600 each |
+
+Never limited per actor: `/api/health`, `/api/ready`, `/release.json`, `/metrics`, sign-in, and the
+pages people read (the per-address limits above bound them). `test/actor-limits.test.js`; the other
+tests boot with `rateLimits: false`, which turns off both kinds.
+
 ## API `/api/v1`
 
 People use their Network user JWT (Bearer, or the `ov_token` cookie; cross-site cookie writes are

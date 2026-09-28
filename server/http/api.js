@@ -78,7 +78,7 @@ function serializeTree(nodes, svc, space) {
 
 function int(v) { const n = Number(v); return Number.isInteger(n) ? n : undefined; }
 
-function createApi({ svc, viewers, platform, config, log = console }) {
+function createApi({ svc, viewers, platform, config, log = console, limits }) {
     const router = express.Router();
     const ownOrigin = new URL(config.baseUrl).origin;
     router.use(http.middleware());
@@ -98,6 +98,10 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         next();
     });
     router.use(actorMiddleware(viewers));
+    // Per-actor limits (http/actor-limits.js), once req.actor is resolved: every read takes the defaults;
+    // each write below names its budget after its capability guard, before the handler does any work.
+    router.use(limits.reads('wiki.read'));
+    const B = (name) => limits.budget(name);
     const R = (fn, status) => run(fn, status, log);
     // VIP (WS-K task 8): ask VIP about the space or page a route names before its synchronous access check.
     const prepare = (req, pairs, next) => (req.actor && req.actor.subject ? svc.access.prepareVip(req.actor, pairs).then(() => next(), next) : next());
@@ -125,15 +129,15 @@ function createApi({ svc, viewers, platform, config, log = console }) {
 
     // Spaces
     router.get('/spaces', R((req) => ({ spaces: svc.listSpaces(req.actor).map(serializeSpace) })));
-    router.post('/spaces', guard('wiki.space.create'), R((req) => ({ space: serializeSpace(svc.createSpace(req.body || {}, req.actor)) }), 201));
+    router.post('/spaces', guard('wiki.space.create'), B('wiki.space.create'), R((req) => ({ space: serializeSpace(svc.createSpace(req.body || {}, req.actor)) }), 201));
     router.get('/spaces/:space', R((req) => {
         const space = svc.getSpace(req.params.space, req.actor);
         return { space: serializeSpace(space), pages: serializeTree(svc.tree(space, req.actor), svc, space) };
     }));
-    router.patch('/spaces/:space', guard('wiki.space.create'), R((req) => ({ space: serializeSpace(svc.updateSpace(req.params.space, req.body || {}, req.actor)) })));
+    router.patch('/spaces/:space', guard('wiki.space.create'), B('wiki.space.update'), R((req) => ({ space: serializeSpace(svc.updateSpace(req.params.space, req.body || {}, req.actor)) })));
     router.get('/spaces/:space/roles', R((req) => ({ roles: svc.roles(req.params.space, req.actor) })));
-    router.put('/spaces/:space/roles/:subject', guard('wiki.space.create'), R((req) => ({ roles: svc.setRole(req.params.space, req.params.subject, (req.body || {}).role == null ? null : String(req.body.role), req.actor) })));
-    router.post('/spaces/:space/pages', guard('wiki.page.create'), R(async (req) => {
+    router.put('/spaces/:space/roles/:subject', guard('wiki.space.create'), B('wiki.space.update'), R((req) => ({ roles: svc.setRole(req.params.space, req.params.subject, (req.body || {}).role == null ? null : String(req.body.role), req.actor) })));
+    router.post('/spaces/:space/pages', guard('wiki.page.create'), B('wiki.page.create'), R(async (req) => {
         const b = req.body || {};
         const cites = await resolveCitations(b.citations, platform);
         const out = svc.createPage(req.params.space, { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, parentId: b.parent_id || null, visibility: b.visibility, citations: cites, message: b.message }, req.actor);
@@ -141,7 +145,7 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         return { page: serializePage(out.page, svc, space), revision: serializeRevision(out.revision), citations: svc.citationsOf(out.page, out.revision.number).map(serializeCitation) };
     }, 201));
 
-    router.post('/spaces/:space/import', guard('wiki.page.create'), R(async (req) => {
+    router.post('/spaces/:space/import', guard('wiki.page.create'), B('wiki.page.import'), R(async (req) => {
         const { space, bundle } = svc.prepareImport(req.params.space, req.body, req.actor);
         await resolveBundleCitations(bundle, platform);
         const out = svc.importPages(space.id, bundle, req.actor);
@@ -164,7 +168,7 @@ function createApi({ svc, viewers, platform, config, log = console }) {
             discussion_thread: v.discussion ? v.discussion.threadId : null,
         };
     }));
-    router.patch('/pages/:id', guard('wiki.page.create'), R((req) => {
+    router.patch('/pages/:id', guard('wiki.page.create'), B('wiki.page.update'), R((req) => {
         const b = req.body || {};
         let page = svc.pageById(req.params.id);
         if (!page) throw new svc.WikiError(404, 'page.not_found', 'No such page');
@@ -172,7 +176,7 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         if (b.visibility !== undefined || b.noindex !== undefined) page = svc.setPageVisibility(page.id, { visibility: b.visibility, noindex: b.noindex }, req.actor).page;
         return { page: serializePage(page, svc, svc.spaceById(page.space_id)) };
     }));
-    router.delete('/pages/:id', guard('wiki.page.create'), R((req) => {
+    router.delete('/pages/:id', guard('wiki.page.create'), B('wiki.page.update'), R((req) => {
         const out = svc.deletePage(req.params.id, req.actor);
         return { page: serializePage(out.page, svc, svc.spaceById(out.page.space_id)) };
     }));
@@ -181,7 +185,7 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         if (page.state !== 'published' && !svc.access.canEdit(space, req.actor)) throw new svc.WikiError(404, 'page.not_found', 'No such page');
         return { revisions: svc.history(page, { limit: req.query.limit, before: req.query.before, actor: req.actor }).map((r) => ({ ...serializeRevision(r), body: undefined, published: r.published, citation_count: r.citationCount, proposal: r.proposal ? { id: r.proposal.id, status: r.proposal.status } : null })) };
     }));
-    router.post('/pages/:id/revisions', guard('wiki.page.create'), R(async (req) => {
+    router.post('/pages/:id/revisions', guard('wiki.page.create'), B('wiki.page.edit'), R(async (req) => {
         const b = req.body || {};
         const cites = await resolveCitations(b.citations, platform);
         const out = svc.editPage(req.params.id, {
@@ -196,7 +200,7 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         const v = svc.view(space, page, req.actor, { revision: int(req.params.n) });
         return { revision: serializeRevision(v.revision), citations: v.citations.map(serializeCitation), infobox: v.infobox };
     }));
-    router.get('/pages/:id/diff', guard('wiki.page.read'), R((req) => {
+    router.get('/pages/:id/diff', guard('wiki.page.read'), B('wiki.page.diff'), R((req) => {
         const { page, space } = readable(req, req.params.id);
         if (page.state !== 'published' && !svc.access.canEdit(space, req.actor)) throw new svc.WikiError(404, 'page.not_found', 'No such page');
         return { diff: svc.diff(page, int(req.query.from), int(req.query.to), { mode: req.query.mode, actor: req.actor }) };
@@ -206,48 +210,48 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         svc.view(space, page, req.actor, { revision: int(req.params.n) });
         return { citations: svc.citationsOf(page, int(req.params.n)).map(serializeCitation) };
     }));
-    router.post('/pages/:id/revisions/:n/citations', guard('wiki.citation.attach'), R(async (req) => {
+    router.post('/pages/:id/revisions/:n/citations', guard('wiki.citation.attach'), B('wiki.citation.attach'), R(async (req) => {
         const cites = await resolveCitations((req.body || {}).citations, platform);
         return { citations: svc.attachCitations(req.params.id, int(req.params.n), cites, req.actor).map(serializeCitation) };
     }, 201));
-    router.post('/pages/:id/revisions/:n/review', guard('wiki.revision.publish'), R((req) => {
+    router.post('/pages/:id/revisions/:n/review', guard('wiki.revision.publish'), B('wiki.revision.publish'), R((req) => {
         const { page, space } = pageAndSpace(req.params.id);
         const b = req.body || {};
         const out = svc.reviewRevision(space.id, page.slug, int(req.params.n), { decision: b.decision, note: b.note == null ? null : String(b.note) }, req.actor);
         return { review: out.review, page: serializePage(out.page, svc, space), action: out.action, indexable: out.indexable, reasons: out.reasons };
     }, 201));
-    router.post('/pages/:id/publish', guard('wiki.revision.publish'), R((req) => {
+    router.post('/pages/:id/publish', guard('wiki.revision.publish'), B('wiki.revision.publish'), R((req) => {
         const out = svc.publish(req.params.id, { revision: int((req.body || {}).revision) }, req.actor);
         return { page: serializePage(out.page, svc, svc.spaceById(out.page.space_id)), action: out.action };
     }));
-    router.post('/pages/:id/schedule', guard('wiki.revision.publish'), R((req) => {
+    router.post('/pages/:id/schedule', guard('wiki.revision.publish'), B('wiki.revision.publish'), R((req) => {
         const b = req.body || {};
         const out = svc.schedulePublish(req.params.id, { revision: int(b.revision), runAt: b.run_at }, req.actor);
         return { job: out.job, created: out.created };
     }, (out) => (out.created ? 201 : 200)));
-    router.post('/pages/:id/unpublish', guard('wiki.revision.publish'), R((req) => {
+    router.post('/pages/:id/unpublish', guard('wiki.revision.publish'), B('wiki.revision.publish'), R((req) => {
         const out = svc.unpublish(req.params.id, req.actor);
         return { page: serializePage(out.page, svc, svc.spaceById(out.page.space_id)), action: out.action };
     }));
-    router.post('/pages/:id/revert', guard('wiki.revision.revert'), R((req) => {
+    router.post('/pages/:id/revert', guard('wiki.revision.revert'), B('wiki.page.edit'), R((req) => {
         const b = req.body || {};
         const out = svc.revert(req.params.id, { toRevision: int(b.to_revision), expectedRevision: int(b.expected_revision), message: b.message, publish: b.publish }, req.actor);
         return { page: serializePage(out.page, svc, svc.spaceById(out.page.space_id)), revision: serializeRevision(out.revision), published: out.published };
     }, 201));
-    router.post('/pages/:id/media', guard('wiki.page.create'), R(async (req) => {
+    router.post('/pages/:id/media', guard('wiki.page.create'), B('wiki.media.attach'), R(async (req) => {
         const b = req.body || {};
         const a = await svc.attachMedia(req.params.id, { mediaId: b.media_id, alt: b.alt, caption: b.caption }, req.actor, { describe: platform.media.describe });
         return { attachment: serializeAttachment(a) };
     }, 201));
-    router.post('/pages/:id/media/verify', guard('wiki.page.create'), R(async (req) => {
+    router.post('/pages/:id/media/verify', guard('wiki.page.create'), B('wiki.media.attach'), R(async (req) => {
         const { space } = pageAndSpace(req.params.id);
         if (!svc.access.canEdit(space, req.actor)) throw new svc.WikiError(403, 'page.forbidden', 'Only editors of this space can check media');
         return { results: await svc.verifyMedia(req.params.id, platform.media.resolve) };
     }));
-    router.put('/pages/:id/watch', R((req) => svc.watch(req.params.id, req.actor, (req.body || {}).watching !== false)));
+    router.put('/pages/:id/watch', B('wiki.page.watch'), R((req) => svc.watch(req.params.id, req.actor, (req.body || {}).watching !== false)));
 
     // AI proposals
-    router.post('/proposals', guard('wiki.revision.propose'), R(async (req) => {
+    router.post('/proposals', guard('wiki.revision.propose'), B('wiki.revision.propose'), R(async (req) => {
         const b = req.body || {};
         const cites = await resolveCitations(b.citations, platform);
         const wf = b.workflow || {};
@@ -266,12 +270,12 @@ function createApi({ svc, viewers, platform, config, log = console }) {
         }
         return { proposal: p };
     }));
-    router.post('/proposals/:id/review', guard('wiki.revision.publish'), R((req) => {
+    router.post('/proposals/:id/review', guard('wiki.revision.publish'), B('wiki.revision.publish'), R((req) => {
         const b = req.body || {};
         return svc.reviewProposal(req.params.id, { decision: b.decision, note: b.note, publish: b.publish !== false }, req.actor);
     }));
 
-    router.get('/search', guard('wiki.search.query'), R((req) => ({
+    router.get('/search', guard('wiki.search.query'), B('wiki.search.query'), R((req) => ({
         results: svc.search(req.query.q, req.actor, { space: req.query.space || null, limit: req.query.limit }).map((r) => ({ ...serializePage(r.page, svc, r.space), summary: r.summary })),
     })));
 

@@ -17,11 +17,12 @@ const { createSessionRoutes } = require('./auth/session');
 const { createApi } = require('./http/api');
 const { createPages } = require('./http/pages');
 const { createMachine } = require('./http/machine');
+const { createActorLimits } = require('./http/actor-limits');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const VERSION = require('../package.json').version;
 
-function createApp({ config, svc, viewers, platform, keys, db, log = console, rateLimits = true, fetchImpl = globalThis.fetch }) {
+function createApp({ config, svc, viewers, platform, keys, db, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null }) {
     const app = express();
     app.disable('x-powered-by');
     app.set('trust proxy', config.trustProxy);
@@ -86,7 +87,10 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     // and tens of MB (openvibe-publishing/diff caps the search at 4000 edits): per address, not per crawl.
     app.get(['/w/:space/:slug/diff/:a/:b', '/api/v1/pages/:id/diff'], limiter(60000, 30));
     app.use('/api/', limiter(60000, 300));
-    app.use('/api/v1', createApi({ svc, viewers, platform, config, log }));
+    // Per-actor limits (http/actor-limits.js) on /api/v1 and the editing forms, counted once each router
+    // resolved req.actor; the per-address limits here stay. limitsNow: the limiter's clock (tests).
+    const limits = createActorLimits({ config, now: limitsNow || (() => Date.now()), registry: metrics.registry, log, enabled: rateLimits });
+    app.use('/api/v1', createApi({ svc, viewers, platform, config, log, limits }));
     app.use('/api', (req, res) => require('openvibe-contracts').http.sendProblem(res, 404, 'route.not_found', { detail: 'Not found' }));
 
     // This site's own pinned copy of the OpenVibe Frame's browser files (openvibe-shared/serve).
@@ -106,7 +110,7 @@ function createApp({ config, svc, viewers, platform, keys, db, log = console, ra
     app.post(['/new-space', '/s/*', '/w/*', '/proposals/*'], limiter(10 * 60000, 120));
     // Search scans the text of every published page (LIKE): a person's pace, not a crawler's.
     app.get('/search', limiter(60000, 60));
-    const pages = createPages({ svc, viewers, platform, config, log });
+    const pages = createPages({ svc, viewers, platform, config, log, limits });
     app.use(pages.router);
 
     app.use((req, res) => pages.errorPage(req, res, 404, 'Page not found', 'Nothing lives at that address.'));
