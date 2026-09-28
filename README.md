@@ -269,7 +269,7 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 
 ## Depends on
 
-- `openvibe-publishing` v0.4.0, `openvibe-contracts` v0.64.0, `openvibe-shared` v1.22.0 (chrome,
+- `openvibe-publishing` v0.4.0, `openvibe-contracts` v0.64.0, `openvibe-shared` v1.25.0 (chrome,
   release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.12.0 (auth, events
   outbox, per-actor limits) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
