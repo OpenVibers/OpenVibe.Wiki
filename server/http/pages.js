@@ -332,7 +332,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         }
         const [bodyHtml, discussion] = await Promise.all([
             svc.renderRevision(space, v.revision, req.actor),
-            v.isPublishedRevision ? discussionFor(space, page, req.actor) : { state: 'not_public' },
+            v.isPublishedRevision ? await discussionFor(space, page, req.actor) : { state: 'not_public' },
         ]);
         const url = svc.pageUrl(space, page);
         const crumbsLd = [{ name: 'Wiki', url: `${config.baseUrl}/` }, { name: space.name, url: `${config.baseUrl}${svc.spacePath(space)}` }, { name: v.revision.fields.title, url }];
@@ -404,7 +404,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
             res.redirect(303, `/s/${encodeURIComponent(space.slug)}/new?title=${encodeURIComponent(String(req.query.title || req.params.slug))}`);
             return null;
         }
-        return locate(req, res, '/edit');
+        return await locate(req, res, '/edit');
     }
 
     router.get('/w/:space/:slug/edit', wrap(async (req, res) => {

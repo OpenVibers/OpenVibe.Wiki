@@ -161,9 +161,9 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
     // outermost tx() has committed, dropped when it throws. A tx() inside a tx() is a savepoint.
     const commits = new AsyncLocalStorage();
     async function tx(fn) {
-        if (commits.getStore()) return db.tx(() => fn());
+        if (commits.getStore()) return await db.tx(async () => await fn());
         const queue = [];
-        const out = await commits.run(queue, () => db.tx(() => fn()));
+        const out = await commits.run(queue, async () => await db.tx(async () => await fn()));
         for (const job of queue) {
             try { await job(); } catch (err) { log.warn(`[Wiki] after-commit: ${err && err.message}`); }
         }
@@ -421,7 +421,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (c.url && !c.sourceItemId && !c.retrievedAt) fail(422, 'citation.retrieved_at_required', `When was ${c.url} read? A URL citation needs retrievedAt`);
             return { ...c, attachedBy: actorId(actor) };
         });
-        return wrapStore(() => citations.attachMany(page.id, revisionNumber, items));
+        return await wrapStore(() => citations.attachMany(page.id, revisionNumber, items));
     }
 
     async function carryCitations(page, from, to, keep, actor) {
@@ -442,7 +442,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         const text = checkBody(body == null ? '' : body);
         const box = wrapContentError(() => content.normalizeInfobox(infobox));
         const vis = checkVisibility(visibility, 'public', space);
-        return tx(async () => {
+        return await tx(async () => {
             const existing = await q.pageBySlug.get(space.id, slug);
             if (existing) fail(409, existing.state === 'deleted' ? 'page.slug_deleted' : 'page.slug_taken', existing.state === 'deleted' ? `A deleted page held "${slug}"; its address stays gone (410)` : `A page "${slug}" already exists in this space`, { page_id: existing.id });
             if (parentId) { const par = await q.pageById.get(parentId); if (!par || par.space_id !== space.id || par.state === 'deleted') fail(422, 'page.invalid_parent', 'The parent must be a page of the same space'); }
@@ -474,7 +474,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         }
         const b = await before(page);
         await q.setPublished.run({ n: revisionNumber, title: rev.fields.title || page.title, t: now(), id: page.id });
-        return sync(b, page.id, actor);
+        return await sync(b, page.id, actor);
     }
 
     /**
@@ -513,7 +513,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         /** VIP spaces (for preparing a viewer's VIP answers before a list renders; WS-K task 8). */
         async vipSpaces() { return (await q.spaces.all()).filter((s) => s.visibility === 'vip').slice(0, 50); },
         /** A space's VIP-only pages (its tree), at most 50. */
-        vipPagesOf(spaceId) { return q.vipPages.all(spaceId); },
+        async vipPagesOf(spaceId) { return await q.vipPages.all(spaceId); },
 
         async getSpace(idOrSlug, actor) {
             await roles(actor);
@@ -565,7 +565,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             await roles(actor);
             const space = await spaceOrFail(idOrSlug);
             if (!access.canManage(space, actor)) fail(403, 'space.forbidden', 'Only an owner of this space can change it');
-            return tx(async () => {
+            return await tx(async () => {
                 const pages = await q.publishedOfSpace.all(space.id);
                 const snaps = new Map();
                 for (const p of pages) snaps.set(p.id, await before(p));
@@ -596,7 +596,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             await roles(actor);
             const space = await spaceOrFail(idOrSlug);
             if (!access.canManage(space, actor)) fail(403, 'space.forbidden', 'Only an owner of this space can delete it');
-            return tx(async () => {
+            return await tx(async () => {
                 const pages = await q.publishedOfSpace.all(space.id);
                 const snaps = new Map();
                 for (const p of pages) snaps.set(p.id, await before(p));
@@ -632,7 +632,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                     // As before: the list is read with the roles just written, so an owner who hands their own
                     // role away is refused (403) and the change rolls back.
                     await roles(actor, { fresh: true });
-                    return svc.roles(space.id, actor);
+                    return await svc.roles(space.id, actor);
                 });
             } catch (err) {
                 await roles(actor, { fresh: true }).catch(() => {});   // the cached roles must not keep a rolled-back change
@@ -662,7 +662,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const rec = actor && actor.kind === 'system' && importRecord ? wrapContentError(() => authorship.record(importRecord)) : humanRecord(actor);
             // authorship.record() keeps label and original author only; the AI-assistance flag is ours.
             if (importRecord && rec.mode === 'imported' && importRecord.importedFrom && importRecord.importedFrom.aiAssisted === true) rec.importedFrom.aiAssisted = true;
-            return insertPage(space, { title, body, infobox, parentId, visibility, citations: cites, message, summary }, actor, rec);
+            return await insertPage(space, { title, body, infobox, parentId, visibility, citations: cites, message, summary }, actor, rec);
         },
 
         /**
@@ -696,7 +696,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const who = requirePerson(actor);
             const rec = wrapContentError(() => authorship.record({ mode: 'imported', authors: [who], importedFrom: { label: bundle.source || 'a page bundle', originalAuthor: bundle.originalAuthor || null } }));
             if (bundle.aiAssisted) rec.importedFrom.aiAssisted = true;
-            return tx(async () => {
+            return await tx(async () => {
                 const existing = [];
                 for (const p of bundle.pages) { const page = await q.pageBySlug.get(space.id, p.slug); if (page) existing.push({ p, page }); }
                 if (existing.length && bundle.onExisting !== 'skip') {
@@ -752,7 +752,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can edit it');
             const rec = humanRecord(actor);
             if (!Number.isInteger(expectedRevision)) fail(422, 'revision.expected_required', 'expectedRevision (the revision you edited) is required');
-            return tx(async () => {
+            return await tx(async () => {
                 const head = await revisions.head(page.id);
                 if (!head) fail(404, 'revision.not_found', 'This page has no revision');
                 const text = body == null ? head.content : checkBody(body);
@@ -783,7 +783,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (page.state === 'deleted') fail(410, 'page.deleted', 'This page was deleted');
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can revert');
             const who = requirePerson(actor);
-            return tx(async () => {
+            return await tx(async () => {
                 const target = await revisions.get(page.id, Number(toRevision));
                 if (!target) fail(404, 'revision.not_found', `No revision ${toRevision}`);
                 const trec = target.meta.authorship;
@@ -811,7 +811,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (page.state === 'deleted') fail(410, 'page.deleted', 'This page was deleted');
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can publish');
             if (!actor || actor.kind !== 'system') requirePerson(actor);
-            return tx(async () => {
+            return await tx(async () => {
                 const n = revision == null ? await revisions.headNumber(page.id) : Number(revision);
                 const out = await publishRevision(await q.pageById.get(page.id), n, actor);
                 return { page: await q.pageById.get(page.id), ...out };
@@ -824,7 +824,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const space = await spaceOrFail(page.space_id);
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can unpublish');
             if (page.state !== 'published') fail(409, 'page.not_published', 'The page is not published');
-            return tx(async () => {
+            return await tx(async () => {
                 const b = await before(page);
                 await q.setState.run('unpublished', now(), page.id);
                 await scheduler.cancelPending(page.id, 'unpublish');
@@ -845,7 +845,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (!Number.isFinite(at)) fail(422, 'schedule.invalid_time', 'runAt must be an ISO 8601 time');
             const n = revision == null ? await revisions.headNumber(page.id) : Number(revision);
             if (!await revisions.get(page.id, n)) fail(404, 'revision.not_found', `No revision ${n}`);
-            return tx(async () => {
+            return await tx(async () => {
                 const { job, created } = await scheduler.schedule({ entityId: page.id, action: 'publish', runAt: at, revision: n });
                 if (page.state === 'draft' || page.state === 'unpublished') {
                     const b = await before(page);
@@ -862,7 +862,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         async runSchedule({ worker = config.workerId } = {}) {
             return scheduler.runDue({
                 worker,
-                handler: (job) => tx(async () => {
+                handler: async (job) => await tx(async () => {
                     const page = await q.pageById.get(job.entityId);
                     if (!page || page.state === 'deleted') return { skipped: 'deleted' };
                     const space = await q.spaceById.get(page.space_id);
@@ -887,7 +887,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const space = await spaceOrFail(page.space_id);
             if (page.state === 'deleted') fail(410, 'page.deleted', 'This page was deleted');
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can move pages');
-            return tx(async () => {
+            return await tx(async () => {
                 const b = await before(page);
                 let nextSlug = page.slug;
                 if (slug != null || title != null) nextSlug = slug != null ? String(slug).trim().toLowerCase() : wrapContentError(() => content.pageSlug(checkTitle(title)));
@@ -907,7 +907,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 }
                 await db.prepare('UPDATE wiki_pages SET slug = ?, parent_id = ?, updated_at = ? WHERE id = ?').run(nextSlug, parent, now(), page.id);
                 await sync(b, page.id, actor);
-                return q.pageById.get(page.id);
+                return await q.pageById.get(page.id);
             });
         },
 
@@ -916,7 +916,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const page = await pageOrFail(pageId);
             const space = await spaceOrFail(page.space_id);
             if (!access.canManage(space, actor)) fail(403, 'page.forbidden', 'Only an owner of this space changes page visibility');
-            return tx(async () => {
+            return await tx(async () => {
                 const b = await before(page);
                 await db.prepare('UPDATE wiki_pages SET visibility = ?, noindex = ?, updated_at = ? WHERE id = ?')
                     .run(checkVisibility(visibility, page.visibility, space), noindex == null ? page.noindex : (noindex ? 1 : 0), now(), page.id);
@@ -931,7 +931,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const space = await spaceOrFail(page.space_id);
             if (!access.canManage(space, actor)) fail(403, 'page.forbidden', 'Only an owner of this space can delete pages');
             if (page.state === 'deleted') return { page, action: null };
-            return tx(async () => {
+            return await tx(async () => {
                 const b = await before(page);
                 await q.setState.run('deleted', now(), page.id);
                 await db.prepare('UPDATE wiki_pages SET parent_id = ? WHERE parent_id = ?').run(page.parent_id, page.id);
@@ -960,11 +960,11 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 q.linksOf.all(page.id, n),
                 svc.attachmentsOf(page.id),
                 q.children.all(page.id),
-                page.parent_id ? q.pageById.get(page.parent_id) : null,
+                page.parent_id ? await q.pageById.get(page.parent_id) : null,
                 svc.backlinks(space, page, actor),
                 discussions.get(page.id),
-                actor && actor.subject ? q.isWatching.get(page.id, actor.subject) : null,
-                canEdit ? q.proposalsOfPage.all(page.id) : [],
+                actor && actor.subject ? await q.isWatching.get(page.id, actor.subject) : null,
+                canEdit ? await q.proposalsOfPage.all(page.id) : [],
                 canEdit ? scheduler.jobs(page.id) : [],
                 canEdit ? revisions.headNumber(page.id) : null,
             ]);
@@ -999,7 +999,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const rows = (await q.backlinks.all(space.slug, page.slug)).filter((p) => p.id !== page.id);
             if (!rows.length) return [];
             const spaces = new Map((await q.spacesByIds.all([...new Set(rows.map((p) => p.space_id))])).map((s) => [s.id, s]));
-            return rows.map((p) => ({ page: p, space: spaces.get(p.space_id) })).filter(({ page: p, space: s }) => access.canReadPage(s, p, actor));
+            return (await Promise.all(rows.map(async (p) => ({ page: p, space: await spaces.get(p.space_id) })))).filter(({ page: p, space: s }) => access.canReadPage(s, p, actor));
         },
 
         /** [[link]] target → { href, exists }. Pages the actor cannot read look missing. */
@@ -1056,7 +1056,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             await roles(actor);
             const space = await q.spaceById.get(page.space_id);
             for (const n of [Number(a), Number(b)]) if (!Number.isInteger(n) || !await revisionVisible(space, page, n, actor)) fail(404, 'revision.not_found', 'No such revision');
-            return wrapStore(() => revisions.diff(page.id, Number(a), Number(b), { mode: mode === 'line' ? 'line' : 'word' }));
+            return await wrapStore(() => revisions.diff(page.id, Number(a), Number(b), { mode: mode === 'line' ? 'line' : 'word' }));
         },
 
         resolveRedirect(path) {
@@ -1082,13 +1082,13 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const max = Math.min(50, Math.max(1, Number(limit) || 20));
             const hits = rows.filter((p) => access.canReadPage(spaces.get(p.space_id), p, actor)).slice(0, max);
             const revs = await revisions.getMany(hits.map((p) => ({ entityId: p.id, revision: p.published_revision })));
-            return hits.map((p, i) => ({ page: p, space: spaces.get(p.space_id), summary: revs[i] ? (revs[i].fields.summary || ssr.markdownToText(revs[i].content, 200)) : '' }));
+            return (await Promise.all(hits.map(async (p, i) => ({ page: p, space: await spaces.get(p.space_id), summary: revs[i] ? (revs[i].fields.summary || ssr.markdownToText(revs[i].content, 200)) : '' }))));
         },
 
         // Discovery (public, indexable only) -----------------------------------------------
-        async publishedPublic() { return expandPublished(await q.allPublishedPublic.all()); },
+        async publishedPublic() { return await expandPublished(await q.allPublishedPublic.all()); },
 
-        async recentChanges(limit = 50) { return expandPublished(await q.recent.all(Math.min(200, Math.max(1, limit)))); },
+        async recentChanges(limit = 50) { return await expandPublished(await q.recent.all(Math.min(200, Math.max(1, limit)))); },
 
         // Citations and media ----------------------------------------------------------------
         /** Citations go on an unpublished head revision (a published revision's sources are fixed). */
@@ -1100,7 +1100,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const n = Number(revisionNumber);
             if (n !== await revisions.headNumber(page.id)) fail(409, 'citation.not_head', 'Citations are attached to the newest revision; edit the page to cite in a new one');
             if (page.state === 'published' && page.published_revision === n) fail(409, 'citation.revision_published', 'That revision is published; its sources are fixed. Edit the page to add sources to a new revision');
-            return tx(() => attachCitationList(page, n, list, actor));
+            return await tx(async () => await attachCitationList(page, n, list, actor));
         },
 
         citationsOf(page, revisionNumber) { return citations.forRevision(page.id, Number(revisionNumber)); },
@@ -1183,7 +1183,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (!readable) fail(422, 'media.not_readable', 'No OpenVibe.Media object you can read has that id');
             if (obj.visibility === 'private') fail(409, 'media.private', 'That object is private in OpenVibe.Media. Every reader of a wiki page sees its media, so make the object unlisted or public in Media first');
             if (obj.status && obj.status !== 'ready') fail(409, 'media.not_ready', `That object is ${obj.status} in OpenVibe.Media, not ready yet`);
-            return tx(async () => {
+            return await tx(async () => {
                 const att = await wrapStore(() => attachments.attach({ entityId: page.id, mediaId: id, alt, caption, role }));
                 await q.insertOrigin.run(att.id, page.id, id, actorId(actor), obj.owner || null, obj.visibility, now());
                 await attachments.markAvailable(id);
@@ -1247,8 +1247,8 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
          * sequencer sends nothing for an unchanged document). Run at boot, so a rule change — e.g.
          * AI-assisted imports becoming noindex until reviewed — reaches Search for rows written earlier.
          */
-        reconcileIndex() {
-            return tx(async () => {
+        async reconcileIndex() {
+            return await tx(async () => {
                 let sent = 0;
                 for (const { id } of await q.pageIds.all()) {
                     const b = await before(await q.pageById.get(id));
@@ -1278,7 +1278,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (!Number.isInteger(n) || !await revisions.get(page.id, n)) fail(404, 'revision.not_found', `No revision ${revisionNumber}`);
             const prop = await q.proposalByRev.get(page.id, n);
             if (prop && prop.status === 'pending') fail(409, 'review.proposal_pending', 'This revision is a pending AI proposal: approve or reject the proposal', { proposal_id: prop.id });
-            return tx(async () => {
+            return await tx(async () => {
                 const b = await before(page);
                 const review = await wrapStore(() => reviews.record({ entityId: page.id, revision: n, reviewer: who, decision, note }));
                 const out = page.state === 'published' && page.published_revision === n
@@ -1308,7 +1308,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const cleanSummary = checkSummary(summary);
             const text = checkBody(body == null ? '' : body);
             const box = wrapContentError(() => content.normalizeInfobox(infobox));
-            return tx(async () => {
+            return await tx(async () => {
                 let page = pageId ? await pageOrFail(pageId) : null;
                 const space = page ? await spaceOrFail(page.space_id) : await spaceOrFail(spaceIdOrSlug);
                 const t = now();
@@ -1341,7 +1341,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             });
         },
 
-        async proposals(pageId) { return q.proposalsOfPage.all((await pageOrFail(pageId)).id); },
+        async proposals(pageId) { return await q.proposalsOfPage.all((await pageOrFail(pageId)).id); },
         async pendingProposals(actor) {
             await roles(actor);
             const rows = await q.pendingProposals.all();
@@ -1361,7 +1361,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const who = requirePerson(actor);
             if (decision !== 'approved' && decision !== 'rejected') fail(422, 'proposal.invalid_decision', 'decision is approved or rejected');
             if (p.status !== 'pending') fail(409, 'proposal.already_reviewed', `This proposal was already ${p.status}`);
-            return tx(async () => {
+            return await tx(async () => {
                 await reviews.record({ entityId: p.page_id, revision: p.revision, reviewer: who, decision, note });
                 await q.reviewProposal.run({ id: p.id, status: decision, by: who, note: note == null ? null : String(note).slice(0, 2000), now: now() });
                 let published = null;

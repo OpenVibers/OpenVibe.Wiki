@@ -49,7 +49,7 @@ function createProjectsModule({ db, config, tokens, fetchImpl = globalThis.fetch
         let written = 0;
         try {
             for (const { subject, marked_at: markedAt } of await db.prepare('SELECT subject, marked_at FROM wiki_module_dirty ORDER BY marked_at, subject LIMIT ?').all(limit)) {
-                const clear = () => db.prepare('DELETE FROM wiki_module_dirty WHERE subject = ? AND marked_at = ?').run(subject, markedAt);
+                const clear = async () => await db.prepare('DELETE FROM wiki_module_dirty WHERE subject = ? AND marked_at = ?').run(subject, markedAt);
                 const data = await summarize(db, subject);
                 const hash = crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex').slice(0, 32);
                 const last = await db.prepare('SELECT hash FROM wiki_module_pushes WHERE subject = ?').get(subject);
