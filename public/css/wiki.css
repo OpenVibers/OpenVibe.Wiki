@@ -72,3 +72,11 @@ table { border-collapse: collapse; }
   h1 { font-size: 1.5rem; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* The home's showcase sections (openvibe-shared/showcase.css) inside the page column, which has its own gutter. */
+.wk-main .sc-hero, .wk-main .sc-sec, main .sc-hero, main .sc-sec { padding-left: 0; padding-right: 0; }
+main .sc-hero { padding-top: 16px; }
+main .sc-hero h1 { font-size: clamp(30px, 4.6vw, 46px); }
+main .sc-sec { margin-top: 36px; }
+main .sc-ic .ov-icon { --ovi-size: 28px !important; }
+#spaces { display: block; height: 8px; }

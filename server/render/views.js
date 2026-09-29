@@ -4,6 +4,7 @@
  * unless raw()). Forms are plain HTML posts; nothing here needs JavaScript.
  */
 const ssr = require('openvibe-publishing/ssr');
+const showcase = require('openvibe-shared/showcase');
 const { figureHtml } = require('openvibe-publishing/media');
 const { infoboxToText } = require('../wiki/content');
 
@@ -35,9 +36,25 @@ function home({ spaces, recent, actor }) {
     const official = spaces.filter((s) => s.kind === 'official');
     const user = spaces.filter((s) => s.kind === 'user');
     const list = (items) => items.length ? html`<ul class="wk-spaces">${items.map((s) => html`<li><a href="/s/${e(s.slug)}"><strong>${s.name}</strong></a>${s.visibility !== 'public' ? html` <span class="wk-tag">${s.visibility}</span>` : ''}${s.description ? html`<br><span class="wk-muted">${s.description}</span>` : ''}</li>`)}</ul>` : html`<p class="wk-muted">None yet.</p>`;
-    return html`<section class="wk-intro"><h1>OpenVibe.Wiki</h1>
-<p>Wiki spaces with page trees, revision history, citations and discussion. Official spaces are edited by OpenVibe staff; anyone signed in with an OpenVibe account can start a space of their own.</p>
-${actor && actor.subject ? html`<p><a class="wk-button" href="/new-space">Start a space</a></p>` : html`<p><a href="/auth/login?next=%2Fnew-space">Sign in</a> to start a space.</p>`}</section>
+    const start = actor && actor.subject ? { label: 'Start a space', href: '/new-space', primary: true } : { label: 'Sign in to start a space', href: '/auth/login?next=%2Fnew-space', primary: true };
+    // What OpenVibe.Wiki is for (openvibe-shared/showcase), then the spaces and what was published.
+    return html`${raw(showcase.hero({
+        eyebrow: 'OpenVibe.Wiki',
+        title: 'Knowledge,', accent: 'with sources',
+        lede: 'Wiki spaces with page trees, revision history, citations and discussion. Official spaces are edited by OpenVibe staff; anyone signed in with an OpenVibe account can start a space of their own.',
+        actions: [start, { label: 'Browse the spaces', href: '#spaces' }],
+    }) + showcase.features({
+        title: 'What a space gets',
+        items: [
+            { icon: 'ov:wiki', title: 'Page trees', text: 'Pages nest under pages, so a space reads like a book.' },
+            { icon: 'ov:history', title: 'Revision history', text: 'Every published revision is kept; compare or restore any of them.' },
+            { icon: 'ov:check', title: 'Citations', text: 'Claims carry their sources, listed with every page.' },
+            { icon: 'ov:community', title: 'Discussion', text: 'Each page has a thread on OpenVibe.Community.' },
+            { icon: 'ov:account', title: 'Roles and visibility', text: 'Public, members-only, VIP or private spaces, with editors you choose.' },
+            { icon: 'ov:search', title: 'Search and feeds', text: 'Full-text search across the spaces you can see, and Atom and JSON feeds.' },
+        ],
+    }))}
+<div id="spaces"></div>
 <section><h2>Official spaces</h2>${list(official)}</section>
 <section><h2>Community spaces</h2>${list(user)}</section>
 <section><h2>Recently published</h2>${recent.length ? html`<ul class="wk-recent">${recent.map((r) => html`<li><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name} · ${t(r.page.revision_published_at)}</span></li>`)}</ul>` : html`<p class="wk-muted">Nothing published yet.</p>`}

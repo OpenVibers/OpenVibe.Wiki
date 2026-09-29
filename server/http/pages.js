@@ -33,6 +33,7 @@ const ssr = require('openvibe-publishing/ssr');
 const { renderPage } = require('../render/layout');
 const views = require('../render/views');
 const frame = require('openvibe-shared/frame');
+const showcase = require('openvibe-shared/showcase');
 const content = require('../wiki/content');
 const { actorMiddleware, resolveCitations, resolveBundleCitations, citationsFromForm } = require('./common');
 const importer = require('../wiki/import');
@@ -122,7 +123,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         if (req.actor.subject) await svc.access.prepareVip(req.actor, (await svc.vipSpaces()).map((space) => ({ space })));   // VIP spaces the viewer may see
         const [spaces, recent] = await Promise.all([svc.listSpaces(req.actor), svc.recentChanges(10)]);
         send(req, res, 200, views.home({ spaces, recent, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
-            robots: 'index, follow', cache: 'public', active: 'home', path: '/',
+            robots: 'index, follow', cache: 'public', active: 'home', path: '/', styles: [showcase.STYLESHEET],
             jsonLd: seo.structuredData.webPage({ url: `${config.baseUrl}/`, name: 'OpenVibe.Wiki', description: 'Wiki spaces of the OpenVibe network.' }),
         });
     }));

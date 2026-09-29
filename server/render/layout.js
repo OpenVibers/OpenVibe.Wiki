@@ -84,6 +84,7 @@ ${head}
 ${appIcon.headTags({ site: 'network' })}
 ${feeds.map((f) => `<link rel="alternate" type="${f.type}" title="${esc(f.title)}" href="${f.href}">`).join('\n')}
 <link rel="stylesheet" href="${asset('css/wiki.css')}">
+${(o.styles || []).map((name) => `<link rel="stylesheet" href="${esc(ovServe.url(name))}">`).join('\n')}
 <script src="${ovServe.url('theme-loader.js')}" defer></script>
 <script src="${ovServe.url('navbar.js')}" defer></script>
 <script src="${ovServe.url('footer.js')}" defer></script>
