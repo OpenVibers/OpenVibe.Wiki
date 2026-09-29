@@ -4,8 +4,6 @@
 // measurement; raising one is a decision to state in the commit.
 //   node test/perf-budget.test.js
 const assert = require('assert');
-const fs = require('fs');
-const os = require('os');
 const net = require('net');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -26,11 +24,10 @@ const BUDGETS = {
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => resolve(port)); }); });
 
 (async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ov-budget-'));
     const port = await freePort();
     const child = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
         cwd: path.join(__dirname, '..'),
-        env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', NODE_ENV: 'test', WIKI_DB_PATH: path.join(dir, 'wiki.db') },
+        env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', NODE_ENV: 'test' },
         stdio: ['ignore', 'ignore', 'pipe'],
     });
     let stderr = '';
@@ -50,6 +47,5 @@ const freePort = () => new Promise((resolve) => { const s = net.createServer(); 
         console.log('perf budget: all checks passed');
     } finally {
         child.kill();
-        fs.rmSync(dir, { recursive: true, force: true });
     }
 })().catch((err) => { console.error(err); process.exitCode = 1; });

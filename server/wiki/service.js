@@ -75,11 +75,10 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
     const access = createAccess(db, { vip });
     const origin = config.baseUrl;
     const policy = config.gate;
-    // Every entry point reads the actor's roles again (one indexed query): a role granted a moment ago counts, as
-    // it did when each check read SQLite.
+    // Every entry point reads the actor's roles again (one indexed query): a role granted a moment ago counts.
     const roles = (actor, opts = { fresh: true }) => access.loadRoles(actor, opts);
 
-    // ── Queries (PostgreSQL; better-sqlite3-shaped async statements, openvibe-sdk/db prepare) ──
+    // ── Queries (PostgreSQL; async prepared statements via openvibe-sdk/db prepare) ──
     const q = {
         spaceById: db.prepare('SELECT * FROM wiki_spaces WHERE id = ?'),
         spacesByIds: db.prepare('SELECT * FROM wiki_spaces WHERE id = ANY(?)'),
@@ -134,7 +133,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         insertOrigin: db.prepare(`INSERT INTO wiki_attachment_origins (attachment_id, page_id, media_id, attached_by, media_owner, media_visibility, attached_at)
                                   VALUES (?, ?, ?, ?, ?, ?, ?)`),
         originsOf: db.prepare('SELECT * FROM wiki_attachment_origins WHERE page_id = ?'),
-        // Case-insensitive, as SQLite's LIKE was for ASCII.
+        // Case-insensitive title and content search.
         search: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
                             JOIN wiki_page_revisions r ON r.entity_id = p.id AND r.number = p.published_revision
                             WHERE p.state = 'published' AND s.deleted_at IS NULL AND (@space::text IS NULL OR s.slug = @space)

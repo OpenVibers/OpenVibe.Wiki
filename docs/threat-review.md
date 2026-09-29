@@ -166,8 +166,8 @@ Network), per-account quotas, Turnstile on `/new-space`, a staff takedown that s
 
 ## 7. Revisions and vandalism
 
-- Revisions, citations, infobox values and link rows are immutable in SQLite triggers
-  (`node_modules/openvibe-publishing/lib/internal.js:97-104`, `server/db.js:91-97` and `:148-149` for Wiki's tables);
+- Revisions, citations, infobox values and link rows are immutable in database triggers
+  (`node_modules/openvibe-publishing/lib/internal.js:97-104`, `migrations/0001_initial.sql` for Wiki's tables);
   revert is a new revision (`server/wiki/service.js:708`); edits need `expected_revision` and
   conflict with 412 (`server/wiki/service.js:683`, `test/revisions.test.js`).
 - Who may vandalise is small by design: editors appointed by the space owner, staff in official

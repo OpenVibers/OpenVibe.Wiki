@@ -24,9 +24,6 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-# The code tree stays read-only; the database lives in /var/lib/openvibe-wiki.
-StateDirectory=openvibe-wiki
-Environment=WIKI_DB_PATH=/var/lib/openvibe-wiki/wiki.db
 
 [Install]
 WantedBy=multi-user.target

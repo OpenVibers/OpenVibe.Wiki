@@ -77,8 +77,6 @@ records who attached each Media object and what Media said about it at that mome
     Every doubt refuses.
   - *Where it never shows:* search, sitemaps, feeds, and another viewer's lists.
   - *Official spaces* have no VIP owner and refuse `vip`.
-  - *Migration:* databases made before it get their visibility CHECK widened in place at startup
-    (`widenVisibilityChecks`, integrity-checked).
   - Config: `OV_VIP_INTERNAL_URL`, `OV_VIP_URL`, and `WIKI_VIP_*` for the timeout and cache.
 - **Pages**: a tree per space, canonical slugs, rename/move with history-aware 301s (chains
   collapse; renaming a space redirects all its pages), deletion answers 410 at every old address.
@@ -347,9 +345,7 @@ Production deploys with `sudo ovhost deploy wiki` on the host (strategy `git-che
 fast-forward `/opt/openvibe.wiki`, install on a lockfile change, restart, wait for `/api/ready`).
 The unit is `openvibe-wiki.service` on `127.0.0.1:4800`, the env file `/etc/openvibe/wiki.env`. The database is
 `ov_wiki` on the host's data role (`sudo /opt/openvibe.host/roles/data/add-service.sh wiki` writes its settings);
-the release migrates it at boot. The one-time move from SQLite is `scripts/migrate-to-postgres.js` (openvibe-sdk
-`runSqliteMigration`: import, verification, and a rehearsal mode `--pglite`), run while the service is stopped;
-the old `/var/lib/openvibe-wiki/wiki.db` stays read-only for 7 days as the rollback. nginx serves `openvibe.wiki` from
+the release migrates it at boot. nginx serves `openvibe.wiki` from
 [deploy/nginx/openvibe.wiki.conf](deploy/nginx/openvibe.wiki.conf).
 Rollback: ovhost puts the previous sha back by itself when `/api/ready` does not answer 2xx after the
 restart; afterwards `sudo ovhost rollback wiki --to <sha>`. Nothing blocks a rollback: the schema

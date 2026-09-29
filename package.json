@@ -9,8 +9,7 @@
     "dev": "NODE_ENV=development node server/index.js",
     "seed": "node scripts/seed.js",
     "test": "node test/run.js",
-    "test:pg": "WIKI_TEST_STORE=pg node test/run.js",
-    "migrate-to-postgres": "node scripts/migrate-to-postgres.js"
+    "test:pg": "WIKI_TEST_STORE=pg node test/run.js"
   },
   "keywords": [
     "openvibe",
@@ -21,7 +20,6 @@
   "license": "AGPL-3.0-only",
   "repository": "github:OpenVibers/OpenVibe.Wiki",
   "dependencies": {
-    "better-sqlite3": "^11.10.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

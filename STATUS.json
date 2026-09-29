@@ -44,5 +44,5 @@
     "SDK outbox events and Search index documents",
     "per-actor limits (openvibe-sdk/limits)"
   ],
-  "database": "PostgreSQL ov_wiki (ADR-035), schema migrations/0001_initial.sql; the SQLite file of earlier releases is imported once by scripts/migrate-to-postgres.js and kept read-only 7 days"
+  "database": "PostgreSQL ov_wiki (ADR-035), schema migrations/0001_initial.sql"
 }

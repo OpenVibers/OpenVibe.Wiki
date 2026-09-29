@@ -4,9 +4,6 @@
  * key, signed user JWTs and service tokens, and a stub fetch for the other services.
  */
 const crypto = require('crypto');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
 const { serviceAuth } = require('openvibe-contracts');
 const { load } = require('../server/config');
 const { start } = require('../server/index');
@@ -43,13 +40,11 @@ const quiet = process.env.WIKI_TEST_LOG ? console : { log() {}, warn() {}, error
  * A running Wiki on a database of its own (PGlite by default; WIKI_TEST_STORE=pg: the PostgreSQL + PgBouncer
  * containers). opts.db: boot on an existing handle (a restart keeps the data); h.stop() closes what boot opened.
  */
-async function boot({ env = {}, fetch: fetchImpl, dbPath, db: givenDb = null, now, workers = false, tokens, rateLimits = false, limitsNow = null, log = quiet } = {}) {
-    const dir = dbPath ? path.dirname(dbPath) : fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-test-'));
+async function boot({ env = {}, fetch: fetchImpl, db: givenDb = null, now, workers = false, tokens, rateLimits = false, limitsNow = null, log = quiet } = {}) {
     const owned = givenDb ? null : await testDb();
     const db = givenDb || owned.db;
     const config = load({
         NODE_ENV: 'test', PORT: '0', HOST: '127.0.0.1', BASE_URL: 'http://wiki.test',
-        WIKI_DB_PATH: dbPath || path.join(dir, 'wiki.db'),
         OV_NETWORK_URL: ISSUER, OV_NETWORK_INTERNAL_URL: '', WIKI_GATE_MIN_WORDS: '20',
         ...env,
     });
@@ -60,7 +55,7 @@ async function boot({ env = {}, fetch: fetchImpl, dbPath, db: givenDb = null, no
     });
     const base = `http://127.0.0.1:${h.server.address().port}`;
     const stop = async ({ keepDb = false } = {}) => { await h.stop(); if (owned && !keepDb) await owned.close(); };
-    return { ...h, stop, base, dir, dbPath: config.dbPath, closeDb: owned ? owned.close : async () => {} };
+    return { ...h, stop, base, closeDb: owned ? owned.close : async () => {} };
 }
 
 async function req(h, method, p, { token, body, form, headers = {}, cookie } = {}) {

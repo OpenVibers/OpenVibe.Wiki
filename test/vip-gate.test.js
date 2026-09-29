@@ -14,7 +14,7 @@ const VIP_URL = 'http://127.0.0.1:4620/api/v1/policies/evaluate';
 
 (async () => {
     // The schema: `vip` is a visibility PostgreSQL accepts, and anything else is still refused by the CHECK
-    // (on SQLite a database made before `vip` was widened in place; migrations/0001 has it from the start).
+    // (migrations/0001 defines it from the start).
     {
         const { testDb } = require('./db-helper');
         const { db, close } = await testDb();
