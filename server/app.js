@@ -32,6 +32,7 @@ function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valk
     require('openvibe-shared/trace').install(app);
 
     const release = require('openvibe-shared/release').createRelease({ service: 'wiki', root: path.join(__dirname, '..') });
+    require('./render/layout').setRelease(release.release);
     const metrics = require('openvibe-shared/metrics').instrument(app, { service: 'wiki', release: release.release });
     metrics.registry.gauge({
         name: 'wiki_event_outbox', help: 'Events in the outbox by state', labelNames: ['state'],
