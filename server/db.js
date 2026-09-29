@@ -22,7 +22,7 @@
  * and wiki_event_outbox (openvibe-sdk/events PostgreSQL outbox).
  *
  *   openDb(config)             the serving handle: DATABASE_URL; in development without it, an embedded PGlite
- *                              database in data/pglite (one process, nothing to install)
+ *                              database in data/pglite (WIKI_PGLITE_DIR overrides it; one process, nothing to install)
  *   migrate(config, {serving}) apply migrations/ with the owner role (DATABASE_DIRECT_URL), then close it
  */
 const fs = require('fs');
@@ -43,9 +43,10 @@ const DEV_PGLITE = path.join(__dirname, '..', 'data', 'pglite');
 function openDb(config, { registry, log = console } = {}) {
     if (!config.db.url) {
         if (config.isProduction) throw new Error('DATABASE_URL is not set: production serves from PostgreSQL (OpenVibe.Host roles/data add-service.sh wiki)');
-        log.warn(`[Wiki] DATABASE_URL unset: embedded PGlite database in ${DEV_PGLITE} (development only, one process)`);
-        fs.mkdirSync(DEV_PGLITE, { recursive: true });
-        return createDb({ pglite: DEV_PGLITE, service: 'wiki', registry, log });
+        const dir = process.env.WIKI_PGLITE_DIR || DEV_PGLITE;
+        log.warn(`[Wiki] DATABASE_URL unset: embedded PGlite database in ${dir} (development only, one process)`);
+        fs.mkdirSync(dir, { recursive: true });
+        return createDb({ pglite: dir, service: 'wiki', registry, log });
     }
     return createDb({ url: config.db.url, service: 'wiki', registry, log });
 }
