@@ -8,6 +8,7 @@
  * clock/fetch/log/keys, and returns handles to every part. Workers (scheduled publication, the
  * Events outbox relay, the Media attachment check) run only when asked (`workers: true`).
  */
+const { createIndexNow } = require('openvibe-shared/indexnow');
 const { load } = require('./config');
 const { openDb, migrate, createStores } = require('./db');
 const { createPlatform } = require('./integrations/platform');
@@ -16,23 +17,27 @@ const { createKeyStore } = require('./auth/keys');
 const { createViewerResolver } = require('./auth/viewer');
 const { createApp } = require('./app');
 
-async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null } = {}) {
+async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null } = {}) {
     config = config || load();
     // PostgreSQL (ADR-035): migrate on the owner's direct connection, then serve on the pooled runtime role.
     // Tests hand in a migrated database of their own (test/db-helper.js).
     const db = givenDb || openDb(config, { log });
     if (!givenDb) await migrate(config, { serving: db, log });
     const stores = createStores(db, { now });
+    // IndexNow (openvibe-shared/indexnow): created once at boot from INDEXNOW_KEY. Unset → off, nothing
+    // mounted and nothing sent; a test or a drill injects its own (a spy, or the module's own no-key
+    // state) through `indexnow`, and the outbound POST goes through `fetchImpl`, this process's stub.
+    const indexnow = givenIndexNow || createIndexNow({ host: config.baseUrl, key: config.indexnow.key, fetch: fetchImpl, log: (...a) => (log.warn || console.warn)(...a) });
     // Valkey (ADR-035): shared, never-authoritative state (per-actor limit counters). Optional.
     const valkey = config.valkey.url ? require('openvibe-sdk/valkey').createValkey({ url: config.valkey.url, prefix: config.valkey.prefix, log }) : null;
     const platform = createPlatform({ config, db, fetchImpl, tokens, now, log });
-    const svc = createWikiService({ db, stores, outbox: platform.outbox, config, community: platform.community, vip: platform.vip, now, log });
+    const svc = createWikiService({ db, stores, outbox: platform.outbox, config, community: platform.community, vip: platform.vip, now, log, indexnow });
     const reconciled = await svc.reconcileIndex();
     if (reconciled.sent) log.log(`[Wiki] re-sent ${reconciled.sent} Search document(s) whose indexability changed`);
     const keys = createKeyStore({ config, fetchImpl, log, publicKey });
     keys.ensure().catch(() => {});
     const viewers = createViewerResolver({ keys, config });
-    const app = createApp({ config, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow });
+    const app = createApp({ config, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow });
 
     const timers = [];
     if (workers) {
@@ -70,7 +75,7 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
         if (!givenDb) await db.close();
         if (valkey) await valkey.close().catch(() => {});
     }
-    return { app, db, svc, stores, platform, keys, viewers, server, config, stop };
+    return { app, db, svc, stores, platform, keys, viewers, server, config, indexnow, stop };
 }
 
 module.exports = { start };

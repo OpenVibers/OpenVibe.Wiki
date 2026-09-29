@@ -70,7 +70,7 @@ function disclosureFor(rec, review) {
     };
 }
 
-function createWikiService({ db, stores, outbox, config, community = null, vip = null, now = () => Date.now(), log = console }) {
+function createWikiService({ db, stores, outbox, config, community = null, vip = null, now = () => Date.now(), log = console, indexnow = null }) {
     const { revisions, citations, redirects, reviews, attachments, discussions, scheduler, sequencer } = stores;
     const access = createAccess(db, { vip });
     const origin = config.baseUrl;
@@ -367,7 +367,8 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             publishedAt: page.published_at, updatedAt: page.revision_published_at,
         }));
         const sentBefore = before ? before.indexRevision : null;
-        if (doc.revision !== sentBefore) await emit(hooks.indexEvent({ document: doc, now: now() }));
+        const indexChanged = doc.revision !== sentBefore;
+        if (indexChanged) await emit(hooks.indexEvent({ document: doc, now: now() }));
 
         const after = { state, visibility: eff, revision: page.published_revision };
         const wasPublic = Boolean(before) && before.state === 'published' && before.visibility === 'public';
@@ -375,7 +376,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         if (wasPublic !== isPublic) followThread(page.id, isPublic ? 'public' : 'hidden');
         let action = hooks.actionFor(before && before.state ? before : null, after);
         // A review changes only the gate decision: announce it when what Search holds changed.
-        if (!action && updatedIfIndexChanged && state === 'published' && doc.revision !== sentBefore) action = 'updated';
+        if (!action && updatedIfIndexChanged && state === 'published' && indexChanged) action = 'updated';
         if (action) {
             let evDoc = doc;
             if (doc.deleted && (action === 'published' || action === 'updated')) {
@@ -389,6 +390,21 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 extra: { space: space.slug, slug: page.slug, visibility: eff },
             }));
             await notifyWatchers(space, page, action, page.published_revision, actor);
+        }
+        // IndexNow (openvibe-shared/indexnow): tell the engines a public, indexable page appeared,
+        // changed or went away; never for drafts, private, members/VIP or noindex pages. The sitemap is
+        // pinged alongside the page. Only when the publication state moved or Search was sent something
+        // new (a noindex flip moves no state but does change the index), after the commit — a write that
+        // rolls back must not ping — and the module batches and debounces. The previous state's own gate
+        // reasons are not re-read (they are gone by now): a page that was public and published counts as
+        // indexable when it leaves, unless it is still flagged noindex.
+        if (indexnow && indexnow.enabled) {
+            const indexable = state === 'published' && eff === 'public' && !page.noindex && Boolean(decision && decision.indexable);
+            const wasIndexable = Boolean(before) && before.state === 'published' && before.visibility === 'public' && !page.noindex;
+            if ((action || indexChanged) && (indexable || wasIndexable)) {
+                const urls = [pageUrl(space, page), seo.canonicalUrl(origin, '/sitemap.xml')];
+                afterCommit(() => indexnow.pingSoon(urls));
+            }
         }
         return { action, indexRevision: doc.revision, deleted: doc.deleted };
     }

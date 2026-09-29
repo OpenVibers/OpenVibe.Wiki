@@ -40,7 +40,7 @@ const quiet = process.env.WIKI_TEST_LOG ? console : { log() {}, warn() {}, error
  * A running Wiki on a database of its own (PGlite by default; WIKI_TEST_STORE=pg: the PostgreSQL + PgBouncer
  * containers). opts.db: boot on an existing handle (a restart keeps the data); h.stop() closes what boot opened.
  */
-async function boot({ env = {}, fetch: fetchImpl, db: givenDb = null, now, workers = false, tokens, rateLimits = false, limitsNow = null, log = quiet } = {}) {
+async function boot({ env = {}, fetch: fetchImpl, db: givenDb = null, now, workers = false, tokens, rateLimits = false, limitsNow = null, log = quiet, indexnow = undefined } = {}) {
     const owned = givenDb ? null : await testDb();
     const db = givenDb || owned.db;
     const config = load({
@@ -52,6 +52,7 @@ async function boot({ env = {}, fetch: fetchImpl, db: givenDb = null, now, worke
         config, db, publicKey, log, listen: true, workers, rateLimits, now, limitsNow,
         fetchImpl: fetchImpl || (async (url) => { throw new Error(`unexpected outbound fetch ${url}`); }),
         tokens: tokens || { getToken: async () => 'stub-token', authHeaders: async () => ({ Authorization: 'Bearer stub-token' }), invalidate() {} },
+        indexnow,
     });
     const base = `http://127.0.0.1:${h.server.address().port}`;
     const stop = async ({ keepDb = false } = {}) => { await h.stop(); if (owned && !keepDb) await owned.close(); };

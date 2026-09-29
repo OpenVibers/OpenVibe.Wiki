@@ -127,6 +127,12 @@ records who attached each Media object and what Media said about it at that mome
   `/sitemaps/spaces.xml`, `/sitemaps/pages-N.xml`; `/feed.atom` and `/feed.json` (recent changes; with nothing listable
   yet they are valid feeds with zero entries, never a 404);
   `/robots.txt`; `/llms.txt`; a JSON representation of every page at `<page>.json`.
+- **IndexNow (openvibe-shared/indexnow)**: with `INDEXNOW_KEY` set, the key file is served at
+  `/<key>.txt` as `text/plain`; publishing, updating (a new revision, a slug change, a space rename),
+  unpublishing and deleting a public, indexable page pings `api.indexnow.org` with the page's
+  canonical URL and `/sitemap.xml` (the module batches and debounces; a failed ping never takes a
+  publish down). Drafts, private, members, VIP and noindex pages never ping. Unset: off — no key
+  file, no requests.
 - **The gate**: `openvibe-publishing/seo` decides indexing per page with explicit reasons
   (policy: at least `WIKI_GATE_MIN_WORDS` words and `WIKI_GATE_MIN_SOURCES` citations; AI text and
   AI-assisted imports only after a person's review; owner-requested noindex). Only public, published, indexable pages enter sitemaps and
@@ -321,6 +327,10 @@ Called elsewhere, as the service principal `svc:wiki` (client credentials, one t
 - every event is a valid `events.event-envelope@1` and every index document a valid
   `search.index-document@1` (`visibility.test.js`); the proposals validate against the contracts
   schemas (`proposals.test.js`); user text is escaped everywhere (`content.test.js`)
+- IndexNow: off without `INDEXNOW_KEY` (no key route, nothing sent); with one the key file is served
+  at `/<key>.txt` as `text/plain` and a publish, unpublish or delete of an indexable page pings the
+  page path and the sitemap; a draft, a noindex page and a page the gate will not index never ping
+  (`indexnow.test.js`)
 
 ## Security
 

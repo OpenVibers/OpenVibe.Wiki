@@ -79,6 +79,11 @@ function load(env = process.env) {
         scheduleIntervalMs: int(env.WIKI_SCHEDULE_INTERVAL_MS, 15000),
         workerId: env.WIKI_WORKER_ID || `wiki-${process.pid}`,
 
+        // IndexNow (openvibe-shared/indexnow): with a key, search engines are told the moment a
+        // public, indexable page appears, changes or leaves the index (the key file is served at
+        // /<key>.txt). Unset: off — nothing is mounted and nothing is sent.
+        indexnow: { key: String(env.INDEXNOW_KEY || '').trim() },
+
         // The indexability gate policy for wiki pages (openvibe-publishing/seo).
         gate: {
             minWords: int(env.WIKI_GATE_MIN_WORDS, 80),
