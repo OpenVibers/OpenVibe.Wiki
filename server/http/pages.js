@@ -28,6 +28,7 @@
  */
 const express = require('express');
 const ovServe = require('openvibe-shared/serve');
+const cache = require('openvibe-shared/cache-policy');
 const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const { renderPage } = require('../render/layout');
@@ -64,13 +65,13 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     router.use((req, res, next) => {
         if (req.method !== 'POST') return next();
         const o = req.get('origin');
-        if (o && o !== origin && o !== 'null') return res.status(403).type('text/plain').set('Cache-Control', 'private, no-store').send('Cross-site form posts are not accepted.');
+        if (o && o !== origin && o !== 'null') return res.status(403).type('text/plain').set('Cache-Control', cache.htmlHeaders({ private: true })).send('Cross-site form posts are not accepted.');
         next();
     });
 
     const send = (req, res, status, body, o = {}) => {
         const cacheable = o.cache === 'public' && req.actor.kind === 'anonymous' && status === 200;
-        res.status(status).set('Cache-Control', cacheable ? 'public, max-age=60' : 'private, no-store').set('Vary', 'Cookie, Authorization').type('html')
+        res.status(status).set('Cache-Control', cacheable ? cache.htmlHeaders({ maxAge: 60 }) : cache.htmlHeaders({ private: true })).set('Vary', 'Cookie, Authorization').type('html')
             .send(renderPage({ config, actor: req.actor, path: o.path || req.path, ...o, body }));
     };
     const errorPage = (req, res, status, title, message) => send(req, res, status, views.errorBody({ status, title, message }), { title, robots: 'noindex, nofollow' });
@@ -96,7 +97,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         if (page && page.state === 'deleted') { gone(req, res); return null; }
         if (!page) {
             const r = await svc.resolveRedirect(`/w/${req.params.space}/${req.params.slug}`);
-            if (r && r.status === 301) { res.set('Cache-Control', 'public, max-age=300').redirect(301, r.location + suffix + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '')); return null; }
+            if (r && r.status === 301) { res.set('Cache-Control', cache.htmlHeaders({ maxAge: 300 })).redirect(301, r.location + suffix + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '')); return null; }
             if ((r && r.status === 410) || (space && space.deleted_at)) { gone(req, res); return null; }
             notFound(req, res);
             return null;
@@ -319,9 +320,9 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         let v;
         try { v = await svc.view(space, page, req.actor, { revision: rev }); } catch (err) { if (err.status === 404) return notFound(req, res); throw err; }
         const open = page.state === 'published' && svc.access.effectiveVisibility(space, page) === 'public';
-        const cache = open && v.isPublishedRevision ? 'public' : null;
+        const publicCache = open && v.isPublishedRevision ? 'public' : null;
         if (json) {
-            res.status(200).set('Cache-Control', cache && req.actor.kind === 'anonymous' ? 'public, max-age=60' : 'private, no-store').set('Vary', 'Cookie, Authorization')
+            res.status(200).set('Cache-Control', publicCache && req.actor.kind === 'anonymous' ? cache.htmlHeaders({ maxAge: 60 }) : cache.htmlHeaders({ private: true })).set('Vary', 'Cookie, Authorization')
                 .set('X-Robots-Tag', v.isPublishedRevision ? seo.xRobotsTag(v.decision) : 'noindex, nofollow').json(articleData(v, space, page));
             return;
         }
@@ -350,7 +351,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         ].filter(Boolean) : null;
         const head = seo.metaTags({ decision, title: `${v.revision.fields.title} · OpenVibe.Wiki`, description, siteName: 'OpenVibe.Wiki', type: 'article', jsonLd });
         send(req, res, 200, views.articlePage(v, { html: bodyHtml, discussion, actor: req.actor, mediaUrl: (id) => platform.media.publicUrl(id), resolve: (title) => infoboxLinks.get(title) || { href: null, exists: false }, flash: req.query.saved ? 'Saved.' : null }), {
-            head, path: svc.pagePath(space, page), cache,
+            head, path: svc.pagePath(space, page), cache: publicCache,
         });
     }));
 
