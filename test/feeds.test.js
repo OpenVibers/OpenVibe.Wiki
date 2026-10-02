@@ -50,7 +50,7 @@ function atom(text) {
         let r = await H.req(h, 'GET', '/feed.atom');
         assert.strictEqual(r.status, 200, 'an empty feed is a feed, not a 404');
         assert.match(r.headers.get('content-type'), /^application\/atom\+xml/);
-        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=300');
+        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=300, stale-while-revalidate=3600');
         let f = atom(r.text);
         assert.ok(f.root, 'root <feed> in the Atom namespace');
         assert.strictEqual(f.id, 'http://wiki.test/feed.atom');

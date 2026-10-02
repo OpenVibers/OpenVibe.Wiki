@@ -41,7 +41,7 @@ async function lastIndexEvent(h, pageId) {
         assert.strictEqual(ev.payload.indexability.decision, 'index');
         r = await H.req(h, 'GET', '/w/notes/open-page');
         assert.strictEqual(r.status, 200);
-        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=60');
+        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=60, stale-while-revalidate=3600');
         assert.ok(r.text.includes('<meta name="robots" content="index, follow">'));
         // A signed-in view is personalised: never publicly cacheable.
         r = await H.req(h, 'GET', '/w/notes/open-page', { cookie: H.cookieFor(H.userToken({ subject: owner.subject })) });

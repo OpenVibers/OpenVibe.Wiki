@@ -12,6 +12,7 @@ const path = require('path');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const cache = require('openvibe-shared/cache-policy');
 const { createReadiness } = require('openvibe-shared/ready');
 const { createSessionRoutes } = require('./auth/session');
 const { createApi } = require('./http/api');
@@ -112,7 +113,7 @@ function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valk
         setHeaders(res, filePath) {
             const v = res.req && res.req.query && res.req.query.v;
             const rel = path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
-            res.setHeader('Cache-Control', v && v === require('./render/layout').assetVersion(rel) ? 'public, max-age=31536000, immutable' : 'public, max-age=300');
+            res.setHeader('Cache-Control', cache.assetHeaders(rel, { hashed: !!v && v === require('./render/layout').assetVersion(rel) }));
         },
     }));
     // GET /<key>.txt — the IndexNow key file, only when a key is configured (server/index.js).
@@ -131,7 +132,7 @@ function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valk
         log.error('[Wiki]', err && err.stack ? err.stack : err);
         if (res.headersSent) return;
         if (req.path.startsWith('/api/')) return require('openvibe-contracts').http.sendProblem(res, 500, 'internal.error', { detail: 'Internal error' });
-        res.status(500).set('Cache-Control', 'private, no-store').type('text/plain').send('Something went wrong on our side. Please try again.');
+        res.status(500).set('Cache-Control', cache.htmlHeaders({ private: true })).type('text/plain').send('Something went wrong on our side. Please try again.');
     });
     return app;
 }

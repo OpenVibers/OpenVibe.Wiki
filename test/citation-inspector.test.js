@@ -46,7 +46,7 @@ const stripScripts = (html) => html.replace(/<script[\s\S]*?<\/script>/g, '');
         // The published revision by default, readable without scripts.
         r = await H.req(h, 'GET', '/w/bread/rye/sources');
         assert.strictEqual(r.status, 200);
-        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=60');
+        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=60, stale-while-revalidate=3600');
         assert.ok(r.text.includes('<meta name="robots" content="noindex, follow">'));
         let page2 = stripScripts(r.text);
         assert.ok(page2.includes('<h1>Sources of Rye, revision 2</h1>'));

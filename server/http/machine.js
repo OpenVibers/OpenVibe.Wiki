@@ -13,16 +13,17 @@ const express = require('express');
 const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const sharedSeo = require('openvibe-shared/seo');
+const cache = require('openvibe-shared/cache-policy');
 
 const PER_SITEMAP = 45000;
 
 function createMachine({ svc, config }) {
     const router = express.Router();
     const origin = config.baseUrl;
-    const cache = (res, s = 300) => res.set('Cache-Control', `public, max-age=${s}`);
+    const setCache = (res, s = 300) => res.set('Cache-Control', cache.htmlHeaders({ maxAge: s }));
 
     router.get('/robots.txt', (_req, res) => {
-        cache(res, 3600).type('text/plain').send(seo.robotsTxt({
+        setCache(res, 3600).type('text/plain').send(seo.robotsTxt({
             sitemaps: [`${origin}/sitemap.xml`],
             disallow: ['/auth/', '/api/', '/new-space', '/search', '/proposals/'],
         }));
@@ -49,14 +50,14 @@ function createMachine({ svc, config }) {
         const pages = seo.sitemap(await pageEntries(), { maxUrls: PER_SITEMAP });
         const maps = [{ loc: `${origin}/sitemaps/spaces.xml` }];
         pages.files.forEach((_f, i) => maps.push({ loc: `${origin}/sitemaps/pages-${i + 1}.xml` }));
-        cache(res).type('application/xml').send(seo.sitemapIndex(maps));
+        setCache(res).type('application/xml').send(seo.sitemapIndex(maps));
     }));
-    router.get('/sitemaps/spaces.xml', wrap(async (_req, res) => cache(res).type('application/xml').send(seo.sitemap(await spaceEntries()).files[0])));
+    router.get('/sitemaps/spaces.xml', wrap(async (_req, res) => setCache(res).type('application/xml').send(seo.sitemap(await spaceEntries()).files[0])));
     router.get('/sitemaps/pages-:n.xml', wrap(async (req, res) => {
         const files = seo.sitemap(await pageEntries(), { maxUrls: PER_SITEMAP }).files;
         const n = Number(req.params.n);
         if (!Number.isInteger(n) || n < 1 || n > files.length) return res.status(404).type('text/plain').send('Not found');
-        cache(res).type('application/xml').send(files[n - 1]);
+        setCache(res).type('application/xml').send(files[n - 1]);
     }));
 
     async function feedItems() {
@@ -86,15 +87,15 @@ function createMachine({ svc, config }) {
     router.get('/feed.atom', wrap(async (_req, res) => {
         const items = await feedItems();
         const updated = items.some((i) => i.decision.listable) ? null : await emptyFeedUpdated();
-        cache(res).type('application/atom+xml').send(seo.atomFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.atom`, id: `${origin}/feed.atom`, ...(updated ? { updated } : {}) }, items));
+        setCache(res).type('application/atom+xml').send(seo.atomFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.atom`, id: `${origin}/feed.atom`, ...(updated ? { updated } : {}) }, items));
     }));
     router.get('/feed.json', wrap(async (_req, res) => {
-        cache(res).type('application/feed+json').send(JSON.stringify(seo.jsonFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.json`, description: 'Public wiki pages by the time their current revision was published.' }, await feedItems())));
+        setCache(res).type('application/feed+json').send(JSON.stringify(seo.jsonFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.json`, description: 'Public wiki pages by the time their current revision was published.' }, await feedItems())));
     }));
 
     router.get('/llms.txt', wrap(async (_req, res) => {
         const spaces = (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public');
-        cache(res, 3600).type('text/plain').send(sharedSeo.llmsTxt({
+        setCache(res, 3600).type('text/plain').send(sharedSeo.llmsTxt({
             name: 'OpenVibe.Wiki',
             summary: 'Wiki spaces of the OpenVibe network: page trees, immutable revisions, citations attached to the revision that used them, infoboxes and internal links.',
             details: 'Every public page has a JSON representation at the same address plus ".json" (same content, same visibility rules). Revision history and diffs are public for public pages. AI-generated revisions are labelled and are published only after a person approves them.',
