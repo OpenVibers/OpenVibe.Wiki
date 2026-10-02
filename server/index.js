@@ -9,6 +9,7 @@
  * Events outbox relay, the Media attachment check) run only when asked (`workers: true`).
  */
 const { createIndexNow } = require('openvibe-shared/indexnow');
+const { gracefulStop } = require('openvibe-sdk/service');
 const { load } = require('./config');
 const { openDb, migrate, createStores } = require('./db');
 const { createPlatform } = require('./integrations/platform');
@@ -17,7 +18,28 @@ const { createKeyStore } = require('./auth/keys');
 const { createViewerResolver } = require('./auth/viewer');
 const { createApp } = require('./app');
 
-async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null } = {}) {
+/**
+ * The process stop (openvibe-sdk/service, plan T1): the job timers and the Events outbox relay stop taking new
+ * work, then the HTTP server drains (in-flight requests get 8 s), then the database and Valkey close — today's
+ * order. Past the 10 s deadline the process exits 0, as the hand-rolled timer did. `closeDb` is false when a
+ * test handed in its own database (start's `givenDb`), which stays open. `exit` and `signals` are injectable
+ * so a test can watch the stop and no test process installs signal handlers.
+ */
+function createLifecycle({ server, db, valkey = null, platform, timers = [], closeDb = true, exit, signals, log } = {}) {
+    return gracefulStop({
+        name: 'Wiki', server, log, drainMs: 8000, deadlineMs: 10000, deadlineExitCode: 0, exit, signals,
+        stop: [
+            () => timers.forEach(clearInterval),
+            () => platform.outbox.stop(),
+        ],
+        close: [
+            () => { if (closeDb) return db.close(); },
+            () => { if (valkey) return valkey.close(); },
+        ],
+    });
+}
+
+async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null, signals = false, exit = () => {} } = {}) {
     config = config || load();
     // PostgreSQL (ADR-035): migrate on the owner's direct connection, then serve on the pooled runtime role.
     // Tests hand in a migrated database of their own (test/db-helper.js).
@@ -68,29 +90,19 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
         log.log(`[Wiki] ${config.nodeEnv} on http://${config.host}:${config.port} → ${config.baseUrl}`);
     }
 
+    const lifecycle = createLifecycle({ server, db, valkey, platform, timers, closeDb: !givenDb, signals, exit, log });
+
     async function stop() {
-        for (const t of timers) clearInterval(t);
-        await platform.outbox.stop();
-        if (server) await new Promise((resolve) => server.close(resolve));
-        if (!givenDb) await db.close();
-        if (valkey) await valkey.close().catch(() => {});
+        return lifecycle.stop('stop');
     }
-    return { app, db, svc, stores, platform, keys, viewers, server, config, indexnow, stop };
+    return { app, db, svc, stores, platform, keys, viewers, server, config, indexnow, timers, lifecycle, stop };
 }
 
-module.exports = { start };
+module.exports = { start, createLifecycle };
 
 if (require.main === module) {
     require('dotenv').config();
-    start().then((h) => {
-        const shutdown = (signal) => {
-            console.log(`[Wiki] ${signal} — closing`);
-            h.stop().finally(() => process.exit(0));
-            setTimeout(() => process.exit(0), 10000).unref();
-        };
-        process.on('SIGTERM', () => shutdown('SIGTERM'));
-        process.on('SIGINT', () => shutdown('SIGINT'));
-    }).catch((err) => {
+    start({ signals: true, exit: (code) => process.exit(code) }).catch((err) => {
         console.error('[Wiki] failed to start:', err);
         process.exit(1);
     });
