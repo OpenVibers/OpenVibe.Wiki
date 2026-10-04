@@ -21,6 +21,8 @@ async function lastIndexEvent(h, pageId) {
         const cite = [{ url: 'https://example.org/a', retrievedAt: '2026-09-20T00:00:00Z' }];
         const { page } = await h.svc.createPage(space.id, { title: 'Open page', body: H.LONG, citations: cite }, owner);
         const other = (await h.svc.createPage(space.id, { title: 'Second page', body: H.LONG, citations: cite }, owner)).page;
+        // Public and published, but no citations: listable, not indexable (the gate's unsourced).
+        const unsourced = (await h.svc.createPage(space.id, { title: 'Unsourced page', body: H.LONG }, owner)).page;
 
         // Draft: not in sitemap, feed or index; direct URL is 404 for anonymous visitors.
         let r = await H.req(h, 'GET', '/sitemaps/pages-1.xml');
@@ -31,9 +33,21 @@ async function lastIndexEvent(h, pageId) {
         // Published: sitemap, feeds, index upsert, public cache.
         await h.svc.publish(page.id, {}, owner);
         await h.svc.publish(other.id, {}, owner);
+        await h.svc.publish(unsourced.id, {}, owner);
         r = await H.req(h, 'GET', '/sitemaps/pages-1.xml');
         assert.ok(r.text.includes('http://wiki.test/w/notes/open-page'));
+        assert.ok(!r.text.includes('/w/notes/unsourced-page'), 'an unsourced page is noindex: not in the sitemap');
         assert.ok((await H.req(h, 'GET', '/feed.atom')).text.includes('http://wiki.test/w/notes/open-page'));
+        // /llms-full.txt: the llms.txt header, then exactly the indexable pages — the same gate as the
+        // sitemap, so a listable-but-noindex page stays out — each an excerpt, under the byte cap.
+        r = await H.req(h, 'GET', '/llms-full.txt');
+        assert.strictEqual(r.status, 200);
+        assert.match(r.headers.get('content-type'), /^text\/plain/);
+        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=3600, stale-while-revalidate=3600');
+        assert.ok(r.text.startsWith('# OpenVibe.Wiki') && r.text.includes('> Wiki spaces of the OpenVibe network'), 'the llms.txt header comes first');
+        assert.ok(r.text.includes('http://wiki.test/w/notes/open-page') && r.text.includes('http://wiki.test/w/notes/second-page'));
+        assert.ok(!r.text.includes('unsourced-page'), 'only indexable pages, not merely listable ones');
+        assert.ok(Buffer.byteLength(r.text) <= 512 * 1024, 'the page stays within maxBytes');
         assert.ok((await H.req(h, 'GET', '/feed.json')).json.items.some((i) => i.url === 'http://wiki.test/w/notes/open-page'));
         let ev = (await lastIndexEvent(h, page.id));
         assert.strictEqual(ev.event_type, 'wiki.index_document.upserted');
@@ -57,6 +71,7 @@ async function lastIndexEvent(h, pageId) {
         assert.ok(!(await H.req(h, 'GET', '/feed.atom')).text.includes('open-page'));
         assert.ok(!(await H.req(h, 'GET', '/feed.json')).text.includes('open-page'));
         assert.ok(!(await H.req(h, 'GET', '/llms.txt')).text.includes('open-page'));
+        assert.ok(!(await H.req(h, 'GET', '/llms-full.txt')).text.includes('open-page'), 'a private page leaves the AI map too');
         r = await H.req(h, 'GET', '/w/notes/open-page');
         assert.strictEqual(r.status, 404);
         assert.strictEqual(r.headers.get('cache-control'), 'private, no-store');
@@ -134,6 +149,12 @@ async function lastIndexEvent(h, pageId) {
         r = await H.req(h, 'GET', '/robots.txt');
         assert.ok(r.text.includes('Sitemap: http://wiki.test/sitemap.xml'));
         assert.ok(r.text.includes('Disallow: /api/'));
+
+        // The home carries the site's one-line AI summary: the ai-summary meta and a WebPage JSON-LD.
+        r = await H.req(h, 'GET', '/');
+        assert.strictEqual(r.status, 200);
+        assert.ok(/<meta name="ai-summary" content="[^"]+">/.test(r.text), 'the home has the ai-summary meta');
+        assert.ok(r.text.includes('"@type":"WebPage"'), 'and the WebPage JSON-LD');
         console.log('visibility ok');
     } finally {
         await h.stop();

@@ -48,7 +48,7 @@ const INTERNAL = [
             const n = (await h.db.prepare('SELECT max(number) AS n FROM wiki_page_revisions WHERE entity_id = ?').get(page.id)).n;
             try { await h.svc.publish(page.id, { revision: n }, owner); } catch { /* the gate may refuse: fine */ }
             for (const p of ['/w/refs/cited-page', '/w/refs/cited-page/sources', '/w/refs/cited-page/history', `/api/v1/pages/${page.id}`, `/api/v1/pages/${page.id}/revisions/${n}/citations`,
-                `/api/v1/pages/${page.id}/revisions/1/citations`, '/feed.atom', '/feed.json', '/llms.txt', '/sitemaps/pages-1.xml']) {
+                `/api/v1/pages/${page.id}/revisions/1/citations`, '/feed.atom', '/feed.json', '/llms.txt', '/llms-full.txt', '/sitemaps/pages-1.xml']) {
                 await H.req(h, 'GET', p, { cookie: H.cookieFor(tok) });
                 await H.req(h, 'GET', p);
             }
