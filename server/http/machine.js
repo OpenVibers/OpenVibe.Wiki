@@ -8,14 +8,20 @@
  *   /sitemap.xml         sitemap index → /sitemaps/spaces.xml, /sitemaps/pages-<n>.xml
  *   /feed.atom           recent changes (Atom), /feed.json (JSON Feed 1.1)
  *   /llms.txt            orientation for language models
+ *   /llms-full.txt       the same orientation plus an excerpt of every indexable page, bounded
  */
 const express = require('express');
 const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const sharedSeo = require('openvibe-shared/seo');
 const cache = require('openvibe-shared/cache-policy');
+const { AI_SUMMARY } = require('../render/layout');
 
 const PER_SITEMAP = 45000;
+// /llms-full.txt is Wiki, so it can be large: the cap must hold, and a page contributes an excerpt
+// (its summary, or its opening text), never the whole article.
+const LLMS_MAX_BYTES = 512 * 1024;
+const LLMS_EXCERPT = 500;
 
 function createMachine({ svc, config }) {
     const router = express.Router();
@@ -97,7 +103,7 @@ function createMachine({ svc, config }) {
         const spaces = (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public');
         setCache(res, 3600).type('text/plain').send(sharedSeo.llmsTxt({
             name: 'OpenVibe.Wiki',
-            summary: 'Wiki spaces of the OpenVibe network: page trees, immutable revisions, citations attached to the revision that used them, infoboxes and internal links.',
+            summary: AI_SUMMARY,
             details: 'Every public page has a JSON representation at the same address plus ".json" (same content, same visibility rules). Revision history and diffs are public for public pages. AI-generated revisions are labelled and are published only after a person approves them.',
             sections: [
                 { title: 'Spaces', links: spaces.map((s) => ({ title: s.name, url: `${origin}${svc.spacePath(s)}`, note: s.description || '' })) },
@@ -107,6 +113,24 @@ function createMachine({ svc, config }) {
                     { title: 'Recent changes (JSON Feed)', url: `${origin}/feed.json` },
                 ] },
             ],
+        }));
+    }));
+
+    /**
+     * /llms-full.txt: the llms.txt header, then one section of every indexable page. The same gate
+     * as the sitemap decides who is here (a public, published page still unreviewed stays out), and
+     * each entry is an excerpt — the page's summary, or its opening text — never the article. The
+     * byte cap keeps a large wiki bounded: llmsFull truncates whole entries and says so.
+     */
+    router.get('/llms-full.txt', wrap(async (_req, res) => {
+        const pages = (await svc.publishedPublic()).filter(({ decision }) => decision.indexable).map(({ space, page, rev }) => ({
+            title: rev.fields.title,
+            url: svc.pageUrl(space, page),
+            text: rev.fields.summary || ssr.markdownToText(rev.content, LLMS_EXCERPT),
+        }));
+        setCache(res, 3600).type('text/plain').send(sharedSeo.llmsFull({
+            site: 'OpenVibe.Wiki', summary: AI_SUMMARY, base: origin,
+            sections: [{ title: 'Pages', pages }], maxBytes: LLMS_MAX_BYTES,
         }));
     }));
 

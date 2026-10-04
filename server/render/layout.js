@@ -16,6 +16,9 @@ const { escapeHtml: esc } = require('openvibe-publishing/ssr');
 const SITE_NAME = 'OpenVibe.Wiki';
 const NETWORK_URL = 'https://openvibe.network';
 const DEFAULT_DESCRIPTION = 'OpenVibe.Wiki: wiki spaces with page trees, revision history, citations and discussion, part of the OpenVibe network.';
+// The one AI summary for the site: /llms.txt and /llms-full.txt publish it, and the home page carries it
+// as the shell's ai-summary meta / WebPage JSON-LD (openvibe-publishing/layout forwards `summary`).
+const AI_SUMMARY = 'Wiki spaces of the OpenVibe network: page trees, immutable revisions, citations attached to the revision that used them, infoboxes and internal links.';
 const NAV_LINKS = [
     { label: 'Spaces', href: '/' },
     { label: 'Recent changes', href: '/recent' },
@@ -60,7 +63,8 @@ function navConfig(o, config) {
 }
 
 /**
- * o: title, description, path (canonical path), robots or decision (one is required: the gate's
+ * o: title, description, summary (one line an AI can read, for the shell's ai-summary meta and
+ * WebPage JSON-LD), path (canonical path), robots or decision (one is required: the gate's
  * decision for an article, an explicit string for every other page), head (extra head HTML, added
  * after the shared tags), jsonLd, ogType, body, active, actor, config, feeds, styles, query
  */
@@ -81,6 +85,7 @@ function renderPage(o) {
         lang: 'en',
         title: o.title ? `${o.title} · ${SITE_NAME}` : SITE_NAME,
         description: o.description || DEFAULT_DESCRIPTION,
+        summary: o.summary,
         canonical: `${config.baseUrl}${o.path || '/'}`,
         decision: o.decision,
         robots: o.robots,
@@ -102,4 +107,4 @@ function renderPage(o) {
     });
 }
 
-module.exports = { renderPage, asset, setRelease, SITE_NAME, DEFAULT_DESCRIPTION, NETWORK_URL, assetVersion };
+module.exports = { renderPage, asset, setRelease, SITE_NAME, DEFAULT_DESCRIPTION, AI_SUMMARY, NETWORK_URL, assetVersion };

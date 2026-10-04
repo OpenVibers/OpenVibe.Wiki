@@ -74,7 +74,7 @@ const { getPaths, crawl } = require('./security-crawl');
             const paths = getPaths(h.app, values, {
                 // (Queries use parts of the words: a page may echo its own query back.)
                 query: 'q=ledger&space=vault&revision=2&from=1&to=2',
-                extra: ['/sitemap.xml', '/sitemaps/spaces.xml', '/sitemaps/pages-1.xml', '/feed.atom', '/feed.json', '/llms.txt', '/recent', '/updates',
+                extra: ['/sitemap.xml', '/sitemaps/spaces.xml', '/sitemaps/pages-1.xml', '/feed.atom', '/feed.json', '/llms.txt', '/llms-full.txt', '/recent', '/updates',
                     '/search?q=ledger', '/search?q=private-plans', '/search?q=draft-musings', '/search?q=Hidden+Ledger', '/api/v1/search?q=members-only',
                     '/api/v1/search?q=ledger', '/api/v1/search?q=unpublished-revision', '/api/v1/search?q=proposal-secret',
                     '/api/v1/spaces', '/s/vault', '/s/open', '/w/open/open-page/history', '/w/open/open-page/diff/1/2', '/w/open/open-page?revision=2',
