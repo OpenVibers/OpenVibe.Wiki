@@ -21,6 +21,17 @@ const PAGE = `${BASE}/w/notes/first-light`;
         assert.strictEqual((await H.req(off, 'GET', `/${KEY}.txt`)).status, 404, 'no key file is served');
     } finally { await off.stop(); }
 
+    // A set-but-invalid key is a configuration mistake, not a boot failure: the wiki serves, IndexNow
+    // is off, and the mistake is warned about (createIndexNow refuses anything but 8–128 hex/alnum).
+    const warnings = [];
+    const badLog = { log() {}, warn: (m) => warnings.push(String(m)), error() {} };
+    const bad = await H.boot({ env: { BASE_URL: BASE, INDEXNOW_KEY: 'not a key!' }, log: badLog });
+    try {
+        assert.strictEqual(bad.indexnow.enabled, false, 'an invalid key leaves IndexNow off');
+        assert.ok(warnings.some((w) => w.includes('INDEXNOW_KEY')), `the bad key is warned about: ${JSON.stringify(warnings)}`);
+        assert.strictEqual((await H.req(bad, 'GET', `/${KEY}.txt`)).status, 404, 'no key file is served for an invalid key');
+    } finally { await bad.stop(); }
+
     // With a key: the key file is served as text/plain with the key.
     const on = await H.boot({ env: { BASE_URL: BASE, INDEXNOW_KEY: KEY } });
     try {

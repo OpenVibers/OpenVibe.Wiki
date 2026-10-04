@@ -132,7 +132,8 @@ records who attached each Media object and what Media said about it at that mome
   unpublishing and deleting a public, indexable page pings `api.indexnow.org` with the page's
   canonical URL and `/sitemap.xml` (the module batches and debounces; a failed ping never takes a
   publish down). Drafts, private, members, VIP and noindex pages never ping. Unset: off — no key
-  file, no requests.
+  file, no requests. A key that is not 8–128 hex or alphanumeric is refused by the module: Wiki
+  warns and runs with IndexNow off rather than failing to start.
 - **The gate**: `openvibe-publishing/seo` decides indexing per page with explicit reasons
   (policy: at least `WIKI_GATE_MIN_WORDS` words and `WIKI_GATE_MIN_SOURCES` citations; AI text and
   AI-assisted imports only after a person's review; owner-requested noindex). Only public, published, indexable pages enter sitemaps and
