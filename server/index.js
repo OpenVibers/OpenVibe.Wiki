@@ -49,7 +49,18 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     // IndexNow (openvibe-shared/indexnow): created once at boot from INDEXNOW_KEY. Unset → off, nothing
     // mounted and nothing sent; a test or a drill injects its own (a spy, or the module's own no-key
     // state) through `indexnow`, and the outbound POST goes through `fetchImpl`, this process's stub.
-    const indexnow = givenIndexNow || createIndexNow({ host: config.baseUrl, key: config.indexnow.key, fetch: fetchImpl, log: (...a) => (log.warn || console.warn)(...a) });
+    // A set-but-invalid key (the module refuses anything but 8–128 hex/alnum) is a configuration
+    // mistake, not a reason to leave the wiki down: warn and run with IndexNow off, exactly as unset.
+    let indexnow = givenIndexNow;
+    if (!indexnow) {
+        const logIndexNow = (...a) => (log.warn || console.warn)(...a);
+        try {
+            indexnow = createIndexNow({ host: config.baseUrl, key: config.indexnow.key, fetch: fetchImpl, log: logIndexNow });
+        } catch (err) {
+            logIndexNow(`[Wiki] ${err.message} — IndexNow is off until INDEXNOW_KEY is fixed`);
+            indexnow = createIndexNow({ host: config.baseUrl, key: '', fetch: fetchImpl, log: logIndexNow });
+        }
+    }
     // Valkey (ADR-035): shared, never-authoritative state (per-actor limit counters). Optional.
     const valkey = config.valkey.url ? require('openvibe-sdk/valkey').createValkey({ url: config.valkey.url, prefix: config.valkey.prefix, log }) : null;
     const platform = createPlatform({ config, db, fetchImpl, tokens, now, log });
