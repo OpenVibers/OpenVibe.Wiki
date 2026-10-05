@@ -1,12 +1,13 @@
 'use strict';
 /**
- * Capability checks for service tokens, including the wiki.* ids this service introduces before the
- * contracts library knows them (proposed in docs/capabilities-proposal/).
+ * Capability checks for service tokens. The wiki.* ids in CAPS are released by openvibe-contracts
+ * (active, owner wiki), so capabilities.check() decides them; the local fallback below stays for a
+ * future wiki.* id proposed in docs/capabilities-proposal/ before a release defines it.
  *
  * openvibe-contracts' capabilities.check() answers capability.unknown for an id that is not in its
- * manifests yet. Until a release defines them, a grant of a proposed id is decided locally with the
+ * manifests yet. Until a release defines such an id, a grant of it is decided locally with the
  * library's own matching rule (the exact id, or a `prefix.*` grant covering it). An id the library
- * knows always goes through the library, so the day the release lands nothing changes here.
+ * knows always goes through the library, so the day a release lands nothing changes here.
  */
 const { capabilities } = require('openvibe-contracts');
 

@@ -229,7 +229,7 @@ checks one capability, and content writes need the person in `X-OV-Subject` (who
 applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 [server/http/api.js](server/http/api.js).
 
-| Capability (proposed) | Routes |
+| Capability | Routes |
 |---|---|
 | `wiki.space.create` | `POST /spaces`, `PATCH /spaces/:space`, `PUT /spaces/:space/roles/:subject` |
 | `wiki.page.create` | `POST /spaces/:space/pages`, `POST /spaces/:space/import`, `POST /pages/:id/revisions`, `PATCH`/`DELETE /pages/:id`, `POST /pages/:id/media[/verify]` |
@@ -241,8 +241,9 @@ applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 | `wiki.search.query` | `GET /search` |
 
 The ids were proposed in [docs/capabilities-proposal/](docs/capabilities-proposal/) (the plan's
-`wiki.search` becomes the three-segment `wiki.search.query`) and are released in openvibe-contracts
-v0.17.0 with the service manifest (this repo pins v0.64.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
+`wiki.search` becomes the three-segment `wiki.search.query`) and are released in openvibe-contracts,
+which owns the wiki capability manifests, the service manifest and the `wiki.*` event payload schemas
+(this repo pins v0.96.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
 The proposal for `wiki.revision.publish` also lists the revision review route, which the released
 capability names since v0.32.0 (as `wiki.page.create` does the space import route).
 
@@ -280,7 +281,7 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 - PostgreSQL 18 and Valkey 9 (OpenVibe.Host `roles/data/`, ADR-035): every read and write is async through
   `openvibe-sdk/db`; Valkey holds the per-actor limit counters (optional: without `VALKEY_URL` they count per process).
 - `openvibe-publishing` v1.3.0 (async PostgreSQL stores, ingest and publication chassis), `openvibe-contracts`
-  v0.76.0, `openvibe-shared` v2.6.0
+  v0.96.0, `openvibe-shared` v2.6.0
   (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.26.0 (db, auth, PostgreSQL
   events outbox, per-actor limits, testing) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
@@ -373,14 +374,14 @@ held (plan §12.12); the launch release went out on 2026-09-23:
 2. canonical identity/auth integration (Network subjects, a scoped service principal) — **built**; principal `wiki` and its grants are provisioned in production;
 3. server-rendered public routes useful without JavaScript — **built**;
 4. real persistence and end-to-end workflows — **built** and deployed; `ovhost drill wiki` restored it on the production host on 2026-09-23;
-5. capability and event registration against OpenVibe.Contracts — **released** (capabilities and service manifest in v0.17.0; no `wiki.*` event payload schemas yet);
+5. capability and event registration against OpenVibe.Contracts — **released** (capabilities and service manifest in v0.17.0; the `wiki.*` event payload schemas are in the pinned release and every event this service emits validates against them, `test/event-contracts.test.js`);
 6. a migration/seed strategy, a security/threat review, sitemap/robots/feed behaviour — seed and discovery **built**; the written threat review is [docs/threat-review.md](docs/threat-review.md) (2026-09-23: mitigations with code references, the gaps fixed in that pass with tests in `test/threat-review.test.js`, and the gaps that remain with their owners);
 7. acceptance tests proving the advertised functionality — **built** (`npm test`).
 
 The launch release removed `openvibe.wiki` from `OpenVibe.Sites/sites.json`, switched routing to this
 service and opened its Network hub entry in the same release. A placeholder is never counted as an
 implemented service. Still open: a person's review of the 10 seed pages (until then they stay
-`noindex`) and there are no event payload schemas in OpenVibe.Contracts.
+`noindex`).
 
 ---
 
