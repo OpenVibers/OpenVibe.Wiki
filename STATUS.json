@@ -10,7 +10,7 @@
   "contracts": "openvibe-contracts v0.96.0",
   "packages": [
     "openvibe-publishing v1.3.0",
-    "openvibe-shared v2.6.0",
+    "openvibe-shared v2.9.0",
     "openvibe-sdk v0.26.0"
   ],
   "capabilities": [
