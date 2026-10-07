@@ -281,8 +281,8 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 - PostgreSQL 18 and Valkey 9 (OpenVibe.Host `roles/data/`, ADR-035): every read and write is async through
   `openvibe-sdk/db`; Valkey holds the per-actor limit counters (optional: without `VALKEY_URL` they count per process).
 - `openvibe-publishing` v1.3.0 (async PostgreSQL stores, ingest and publication chassis), `openvibe-contracts`
-  v0.107.0, `openvibe-shared` v2.12.0
-  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.34.0 (db, auth, PostgreSQL
+  v0.107.0, `openvibe-shared` v2.13.0
+  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.35.0 (db, auth, PostgreSQL
   events outbox, per-actor limits, testing) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.VIP (VIP spaces and pages), OpenVibe.Search (consumer of
