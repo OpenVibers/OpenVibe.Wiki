@@ -51,8 +51,8 @@ function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valk
             "style-src 'self' 'unsafe-inline' https://openvibe.network https://fonts.googleapis.com https://cdnjs.cloudflare.com",
             "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: https:",
-            // events.openvibe.network: release notifications (release-watch's EventSource, openvibe-shared 1.17).
-            "connect-src 'self' https://openvibe.network https://cloudflareinsights.com https://events.openvibe.network",
+            // openvibe.events: release notifications (release-watch's EventSource, openvibe-shared 1.17).
+            "connect-src 'self' https://openvibe.network https://cloudflareinsights.com https://openvibe.events",
             "frame-src 'self' https://openvibe.network",
             "frame-ancestors 'self'",
             "form-action 'self' https://openvibe.network",
