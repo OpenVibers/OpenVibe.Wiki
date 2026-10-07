@@ -243,7 +243,7 @@ applies). Errors are RFC 9457 problem+json. The full route list is at the top of
 The ids were proposed in [docs/capabilities-proposal/](docs/capabilities-proposal/) (the plan's
 `wiki.search` becomes the three-segment `wiki.search.query`) and are released in openvibe-contracts,
 which owns the wiki capability manifests, the service manifest and the `wiki.*` event payload schemas
-(this repo pins v0.96.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
+(this repo pins v0.107.0) ([docs/service-manifest-proposal.json](docs/service-manifest-proposal.json)).
 The proposal for `wiki.revision.publish` also lists the revision review route, which the released
 capability names since v0.32.0 (as `wiki.page.create` does the space import route).
 
@@ -281,8 +281,8 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 - PostgreSQL 18 and Valkey 9 (OpenVibe.Host `roles/data/`, ADR-035): every read and write is async through
   `openvibe-sdk/db`; Valkey holds the per-actor limit counters (optional: without `VALKEY_URL` they count per process).
 - `openvibe-publishing` v1.3.0 (async PostgreSQL stores, ingest and publication chassis), `openvibe-contracts`
-  v0.96.0, `openvibe-shared` v2.6.0
-  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.26.0 (db, auth, PostgreSQL
+  v0.107.0, `openvibe-shared` v2.11.0
+  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.34.0 (db, auth, PostgreSQL
   events outbox, per-actor limits, testing) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.VIP (VIP spaces and pages), OpenVibe.Search (consumer of
