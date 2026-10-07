@@ -386,3 +386,10 @@ implemented service. Still open: a person's review of the 10 seed pages (until t
 ---
 
 Part of the [OpenVibe network](https://openvibe.network). Built in the open by [OpenVibers](https://github.com/OpenVibers).
+
+<!-- versions:start -->
+- openvibe-contracts: v0.112.0
+- openvibe-sdk: v0.35.0
+- openvibe-shared: v2.13.0
+- openvibe-publishing: v1.3.0
+<!-- versions:end -->
