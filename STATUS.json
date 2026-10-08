@@ -12,7 +12,7 @@
   "shared": "openvibe-shared v2.13.2",
   "packages": [
     "openvibe-publishing v1.3.0",
-    "openvibe-shared v2.13.0",
+    "openvibe-shared v2.13.2",
     "openvibe-sdk v0.35.0"
   ],
   "capabilities": [
