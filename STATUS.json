@@ -9,10 +9,10 @@
   "domain": "openvibe.wiki",
   "contracts": "openvibe-contracts v0.112.0",
   "sdk": "openvibe-sdk v0.35.0",
-  "shared": "openvibe-shared v2.13.0",
+  "shared": "openvibe-shared v2.13.2",
   "packages": [
     "openvibe-publishing v1.3.0",
-    "openvibe-shared v2.13.0",
+    "openvibe-shared v2.13.2",
     "openvibe-sdk v0.35.0"
   ],
   "capabilities": [
@@ -46,5 +46,5 @@
     "per-actor limits (openvibe-sdk/limits)"
   ],
   "database": "PostgreSQL ov_wiki (ADR-035), schema migrations/0001_initial.sql",
-  "updated": "2026-10-07"
+  "updated": "2026-10-08"
 }
