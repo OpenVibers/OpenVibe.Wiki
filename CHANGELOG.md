@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Account export and deletion (ADR-033): `POST /internal/events` (loopback, `WIKI_EVENTS_SECRET`) answers network.account.export_requested and network.account.deleted through `server/wiki/account-data.js` over `openvibe-sdk/account-data` (SDK v0.37.0, was v0.35.0).
+  - **Deleted:** the person's own user spaces (through `deleteSpace`), roles, watches and drafts.
+  - **Authorless:** their contributions elsewhere stay without their id.
+  - **Kept:** reviews.
+  - Migration `0002_account_erasure.sql` adds `account_data_events` and lets only the erasure transaction clear the author on the append-only revisions and citations. The two subscriptions are created at boot. `test/account-data.test.js`.
 - Pin refresh: `openvibe-contracts` v0.96.0 → v0.107.0, `openvibe-shared` v2.9.0 → v2.11.0 and `openvibe-sdk` v0.26.0 → v0.34.0 (`openvibe-publishing` stays v1.3.0, already the newest tag). The releases are additive — Contracts adds capabilities and event schemas for other services, Shared adds showcase next-step cards and a Bot icon, SDK adds Fabric/usage/bot subpaths and a PGlite-backed `createTestDb` — with no change to the shell a page renders through or to any contract this service validates, so no route, page or payload changed.
 - `openvibe-contracts` v0.76.0 → v0.96.0: the wiki capabilities, the wiki service manifest and the `wiki.*` event payload schemas are released in Contracts, so the service-token guard resolves `wiki.*` through the library (the local proposal fallback stays for a future id) and `openvibe-contracts-check --service wiki` passes. Every event the service emits validates against its `wiki.*` payload schema (`test/event-contracts.test.js`). No route, body or payload changed.
 - `openvibe-publishing` v1.2.0 → v1.3.0: `/llms-full.txt` now publishes the `llms.txt` header plus an excerpt of every indexable page (the same gate as the sitemap, never a whole article) under a 512 KiB cap, and the home page carries the site's one-line `ai-summary` meta and WebPage JSON-LD.

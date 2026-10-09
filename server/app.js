@@ -23,7 +23,7 @@ const { createActorLimits } = require('./http/actor-limits');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const VERSION = require('../package.json').version;
 
-function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null }) {
+function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null, accountData = null, accountSend = null }) {
     const app = express();
     // Every resolved actor carries its wiki roles (read once per request), so the synchronous access checks work.
     const viewers = { ...baseViewers, resolve: async (req, opts) => svc.loadRoles(await baseViewers.resolve(req, opts)) };
@@ -62,6 +62,15 @@ function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valk
         next();
     });
     app.use(cookieParser());
+
+    // ── OpenVibe.Events → Wiki (loopback only: nginx answers 404 for /internal/) ──
+    // network.account.export_requested and network.account.deleted (ADR-033), answered by openvibe-sdk/account-data's
+    // consumer over wiki/account-data.js. It reads the raw body itself (the v2 signature covers it) and refuses a request
+    // that came through a proxy.
+    if (accountData) {
+        const send = accountSend || (async () => { throw new Error('OV_OAUTH_CLIENT_SECRET is not set: Wiki cannot answer account events'); });
+        app.post('/internal/events', accountData.consumer({ secrets: config.eventsSecrets || [], send, log }));
+    }
 
     const limiter = (windowMs, max) => (rateLimits ? rateLimit({ windowMs, max, standardHeaders: true, legacyHeaders: false }) : (_q, _s, n) => n());
     app.use('/auth/', limiter(15 * 60000, 60));

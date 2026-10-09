@@ -282,13 +282,33 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
   `openvibe-sdk/db`; Valkey holds the per-actor limit counters (optional: without `VALKEY_URL` they count per process).
 - `openvibe-publishing` v1.3.0 (async PostgreSQL stores, ingest and publication chassis), `openvibe-contracts`
   v0.107.0, `openvibe-shared` v2.15.0
-  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.35.0 (db, auth, PostgreSQL
-  events outbox, per-actor limits, testing) — pinned release tarballs.
+  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.37.0 (db, auth, PostgreSQL
+  events outbox, per-actor limits, account export and deletion, testing) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.VIP (VIP spaces and pages), OpenVibe.Search (consumer of
   the index events). All but the Network key are optional at runtime and degrade to explicit failure
   states.
 - OpenVibe.AI for proposals (not wired to Wiki yet: the proposal API is the seam).
+- Account export and deletion (ADR-033): Network grants `events.subscription.manage` (openvibe.events) for the two
+  subscriptions created at boot, then, last and once the release is live, `network.account.export.contribute` and
+  `network.account.deletion.confirm` (openvibe.network).
+
+### Account export and deletion (ADR-033)
+
+`network.account.export_requested` and `network.account.deleted` arrive at `POST /internal/events`. The route is
+loopback-only (nginx answers 404 for `/internal/`, and the handler refuses a forwarded request) and signed with
+`WIKI_EVENTS_SECRET`. They are answered by `server/wiki/account-data.js` over `openvibe-sdk/account-data`, with one
+receipt per export and deletion in `account_data_events`.
+
+- **Export:** the person's spaces, pages, revisions, AI proposals, roles, watches, drafts and reviews.
+- **Deleted:** a user space they own is deleted the way its owner would delete it (`deleteSpace` as the system actor:
+  unpublished, out of Search and the sitemap, answering 410). Their roles, watches, drafts and wiki.projects state go
+  too.
+- **Authorless:** what they wrote in other spaces stays, with their id removed (`created_by`, `proposed_by` and
+  `attached_by` become `deleted`). Revisions and citations are append-only, so only the erasure transaction may clear
+  a revision's author (and their id in `meta.authorship.authors`) or a citation's `attached_by`
+  (`wiki.account_erasure`, migration `0002_account_erasure.sql`); the text and sources never change.
+- **Kept:** page reviews, since a person's approval is what lets reviewed text stay published.
 
 ## Capabilities
 
