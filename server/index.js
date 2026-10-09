@@ -17,6 +17,8 @@ const { createWikiService } = require('./wiki/service');
 const { createKeyStore } = require('./auth/keys');
 const { createViewerResolver } = require('./auth/viewer');
 const { createApp } = require('./app');
+const accountDataLib = require('./wiki/account-data');
+const { createNetworkSender, startSubscriptions } = require('openvibe-sdk/account-data');
 
 /**
  * The process stop (openvibe-sdk/service, plan T1): the job timers and the Events outbox relay stop taking new
@@ -25,12 +27,13 @@ const { createApp } = require('./app');
  * test handed in its own database (start's `givenDb`), which stays open. `exit` and `signals` are injectable
  * so a test can watch the stop and no test process installs signal handlers.
  */
-function createLifecycle({ server, db, valkey = null, platform, timers = [], closeDb = true, exit, signals, log } = {}) {
+function createLifecycle({ server, db, valkey = null, platform, timers = [], closeDb = true, exit, signals, log, extra = [] } = {}) {
     return gracefulStop({
         name: 'Wiki', server, log, drainMs: 8000, deadlineMs: 10000, deadlineExitCode: 0, exit, signals,
         stop: [
             () => timers.forEach(clearInterval),
             () => platform.outbox.stop(),
+            ...extra,
         ],
         close: [
             () => { if (closeDb) return db.close(); },
@@ -39,7 +42,7 @@ function createLifecycle({ server, db, valkey = null, platform, timers = [], clo
     });
 }
 
-async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null, signals = false, exit = () => {} } = {}) {
+async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null, signals = false, exit = () => {}, accountSend: givenSend = null } = {}) {
     config = config || load();
     // PostgreSQL (ADR-035): migrate on the owner's direct connection, then serve on the pooled runtime role.
     // Tests hand in a migrated database of their own (test/db-helper.js).
@@ -70,7 +73,13 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     const keys = createKeyStore({ config, fetchImpl, log, publicKey });
     keys.ensure().catch(() => {});
     const viewers = createViewerResolver({ keys, config });
-    const app = createApp({ config, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow });
+    // Account export and deletion (ADR-033): the table map over the service, and the sender to Network's internal routes
+    // with Wiki's own client-credentials token (a test hands in a stand-in).
+    const accountData = accountDataLib.create({ db, svc, log });
+    const accountSend = givenSend || (config.oauth.clientSecret
+        ? createNetworkSender({ networkInternalUrl: config.networkInternalUrl, clientId: config.oauth.clientId, clientSecret: config.oauth.clientSecret, fetch: fetchImpl })
+        : null);
+    const app = createApp({ config, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend });
 
     const timers = [];
     if (workers) {
@@ -95,13 +104,20 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     }
 
     let server = null;
+    let subscriptions = null;
     if (listen) {
         await new Promise((resolve) => { server = app.listen(config.port, config.host, resolve); });
         server.keepAliveTimeout = 65000;
         log.log(`[Wiki] ${config.nodeEnv} on http://${config.host}:${config.port} → ${config.baseUrl}`);
+        // The two account subscriptions at OpenVibe.Events, created when missing; off without EVENTS_URL,
+        // WIKI_EVENTS_SECRET or the client secret.
+        subscriptions = startSubscriptions({
+            eventsUrl: config.eventsUrl, endpoint: `http://127.0.0.1:${config.port}/internal/events`, secret: (config.eventsSecrets || [])[0],
+            networkInternalUrl: config.networkInternalUrl, clientId: config.oauth.clientId, clientSecret: config.oauth.clientSecret, fetch: fetchImpl, log,
+        });
     }
 
-    const lifecycle = createLifecycle({ server, db, valkey, platform, timers, closeDb: !givenDb, signals, exit, log });
+    const lifecycle = createLifecycle({ server, db, valkey, platform, timers, closeDb: !givenDb, signals, exit, log, extra: [() => { if (subscriptions) subscriptions.stop(); }] });
 
     async function stop() {
         return lifecycle.stop('stop');

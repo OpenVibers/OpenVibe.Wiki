@@ -56,6 +56,10 @@ function load(env = process.env) {
         // Other services (all optional: each integration degrades to an explicit failure state).
         eventsUrl: trim(env.EVENTS_URL || ''),
         eventsRelayIntervalMs: int(env.EVENTS_RELAY_INTERVAL_MS, 2000),
+        // OpenVibe.Events → Wiki (ADR-033 account export and deletion, server/wiki/account-data.js): the secret(s) that
+        // sign a delivery to POST /internal/events (comma-separated for rotation, 32+ characters each). Unset: the route
+        // answers 503 and no subscription is created at boot.
+        eventsSecrets: String(env.WIKI_EVENTS_SECRET || '').split(',').map((x) => x.trim()).filter(Boolean),
         communityUrl: trim(env.OV_COMMUNITY_URL || 'https://openvibe.community'),
         communityInternalUrl: trim(env.OV_COMMUNITY_INTERNAL_URL || ''),
         sourcesInternalUrl: trim(env.OV_SOURCES_INTERNAL_URL || ''),
