@@ -757,15 +757,20 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         /**
          * New revision. keepCitations: 'all' (default) carries the base revision's citations
          * forward, an array keeps only those citation ids, 'none' drops them all (they stay on
-         * the older revision). citations: new ones for this revision.
+         * the older revision). citations: new ones for this revision. `authorship` and
+         * `allowUnchanged` are for the seed's own revise path only (a system actor): a person's edit
+         * is always human-authored, and only the seed may replace the text with an identical one.
          */
-        async editPage(pageId, { expectedRevision, baseRevision = null, title, body, infobox, summary, citations: cites = [], keepCitations = 'all', message = null } = {}, actor) {
+        async editPage(pageId, { expectedRevision, baseRevision = null, title, body, infobox, summary, citations: cites = [], keepCitations = 'all', message = null, authorship: importRecord = null, allowUnchanged = false } = {}, actor) {
             await roles(actor);
             const page = await pageOrFail(pageId);
             const space = await spaceOrFail(page.space_id);
             if (page.state === 'deleted') fail(410, 'page.deleted', 'This page was deleted');
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can edit it');
-            const rec = humanRecord(actor);
+            // Only this service's own import path (the seed) may state another authorship; people are human authors.
+            const rec = actor && actor.kind === 'system' && importRecord ? wrapContentError(() => authorship.record(importRecord)) : humanRecord(actor);
+            // authorship.record() keeps label and original author only; the AI-assistance flag is ours.
+            if (importRecord && rec.mode === 'imported' && importRecord.importedFrom && importRecord.importedFrom.aiAssisted === true) rec.importedFrom.aiAssisted = true;
             if (!Number.isInteger(expectedRevision)) fail(422, 'revision.expected_required', 'expectedRevision (the revision you edited) is required');
             return await tx(async () => {
                 const head = await revisions.head(page.id);
@@ -775,6 +780,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 const fields = { title: title == null ? head.fields.title : checkTitle(title), summary: summary === undefined ? head.fields.summary || null : checkSummary(summary), infobox: box };
                 const { revision, created } = await wrapStore(() => revisions.create({
                     entityId: page.id, expectedRevision, content: text, fields, meta: { authorship: rec }, author: actorId(actor), message,
+                    allowUnchanged: Boolean(allowUnchanged) && Boolean(actor && actor.kind === 'system'),
                 }));
                 if (!created) return { page, revision, created: false };
                 await writeRevisionExtras(space, page, revision, box);
