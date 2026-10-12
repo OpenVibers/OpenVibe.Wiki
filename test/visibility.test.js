@@ -6,6 +6,17 @@
  * search.index-document@1 (openvibe-contracts).
  */
 const assert = require('assert');
+
+function assertSitemapLastmods(xml, tag = 'url') {
+    const entries = [...xml.matchAll(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'g'))];
+    for (const [, body] of entries) {
+        const match = /<lastmod>(\d{4}-\d{2}-\d{2})<\/lastmod>/.exec(body);
+        assert.ok(match, body);
+        assert.strictEqual(new Date(match[1]).toISOString().slice(0, 10), match[1]);
+    }
+    return entries;
+}
+
 const contracts = require('openvibe-contracts');
 const H = require('./helpers');
 
@@ -36,6 +47,11 @@ async function lastIndexEvent(h, pageId) {
         await h.svc.publish(unsourced.id, {}, owner);
         r = await H.req(h, 'GET', '/sitemaps/pages-1.xml');
         assert.ok(r.text.includes('http://wiki.test/w/notes/open-page'));
+        assertSitemapLastmods(r.text);
+        const publishedPage = await h.db.prepare('SELECT revision_published_at FROM wiki_pages WHERE id = ?').get(page.id);
+        assert.ok(r.text.includes(`<lastmod>${new Date(publishedPage.revision_published_at).toISOString().slice(0, 10)}</lastmod>`));
+        assertSitemapLastmods((await H.req(h, 'GET', '/sitemaps/spaces.xml')).text);
+        assertSitemapLastmods((await H.req(h, 'GET', '/sitemap.xml')).text, 'sitemap');
         assert.ok(!r.text.includes('/w/notes/unsourced-page'), 'an unsourced page is noindex: not in the sitemap');
         assert.ok((await H.req(h, 'GET', '/feed.atom')).text.includes('http://wiki.test/w/notes/open-page'));
         // /llms-full.txt: the llms.txt header, then exactly the indexable pages — the same gate as the

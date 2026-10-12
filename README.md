@@ -24,6 +24,8 @@ citations, redirects, the indexability gate, feeds, sitemaps, JSON-LD, authorshi
 media references, discussion references and the Search index hooks all come from there. Wiki owns
 its publication state; the packages supply the mechanics.
 
+Sitemap entries carry lastmod from each published page or space's latest change.
+
 ## Owns
 
 The ten authority tables of §15.13, in Wiki's own PostgreSQL database (`ov_wiki` on the host's data role, ADR-035; schema in [migrations/](migrations/)):
