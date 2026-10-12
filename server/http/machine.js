@@ -37,25 +37,39 @@ function createMachine({ svc, config }) {
 
     const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 
-    async function pageEntries() {
-        return (await svc.publishedPublic()).map(({ space, page, decision }) => ({
+    async function pageEntries(published = null) {
+        published = published || await svc.publishedPublic();
+        return published.map(({ space, page, decision }) => ({
             loc: svc.pageUrl(space, page), lastmod: page.revision_published_at, decision,
         }));
     }
 
-    async function spaceEntries() {
+    async function spaceEntries(published = null) {
+        published = published || await svc.publishedPublic();
+        const newestPage = new Map();
+        for (const { space, page } of published) {
+            if (!page.revision_published_at) continue;
+            newestPage.set(space.id, Math.max(newestPage.get(space.id) || 0, page.revision_published_at));
+        }
         return (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public').map((s) => {
             const url = seo.canonicalUrl(origin, svc.spacePath(s));
             // A space index is navigation, not an article: no word or source minimum.
             const decision = seo.evaluate({ state: 'published', visibility: 'public', canonicalUrl: url, wordCount: 0 }, { policy: { minWords: 0, requireSources: false }, now: Date.now() });
-            return { loc: url, lastmod: s.updated_at, decision };
+            return { loc: url, lastmod: Math.max(s.updated_at, newestPage.get(s.id) || 0), decision };
         });
     }
 
     router.get('/sitemap.xml', wrap(async (_req, res) => {
-        const pages = seo.sitemap(await pageEntries(), { maxUrls: PER_SITEMAP });
-        const maps = [{ loc: `${origin}/sitemaps/spaces.xml` }];
-        pages.files.forEach((_f, i) => maps.push({ loc: `${origin}/sitemaps/pages-${i + 1}.xml` }));
+        const published = await svc.publishedPublic();
+        const entries = (await pageEntries(published)).filter((e) => e.decision.indexable);
+        const spaces = (await spaceEntries(published)).filter((e) => e.decision.indexable);
+        const pages = seo.sitemap(entries, { maxUrls: PER_SITEMAP });
+        const newest = (rows) => {
+            const times = rows.map((e) => e.lastmod).filter(Boolean);
+            return times.length ? new Date(Math.max(...times)).toISOString() : undefined;
+        };
+        const maps = [{ loc: `${origin}/sitemaps/spaces.xml`, lastmod: newest(spaces) }];
+        pages.files.forEach((_f, i) => maps.push({ loc: `${origin}/sitemaps/pages-${i + 1}.xml`, lastmod: newest(entries.slice(i * PER_SITEMAP, (i + 1) * PER_SITEMAP)) }));
         setCache(res).type('application/xml').send(seo.sitemapIndex(maps));
     }));
     router.get('/sitemaps/spaces.xml', wrap(async (_req, res) => setCache(res).type('application/xml').send(seo.sitemap(await spaceEntries()).files[0])));
