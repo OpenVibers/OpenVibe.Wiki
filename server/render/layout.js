@@ -83,7 +83,8 @@ function renderPage(o) {
         site: 'wiki',
         siteName: SITE_NAME,
         lang: 'en',
-        title: o.title ? `${o.title} · ${SITE_NAME}` : SITE_NAME,
+        // The front page's title says what the site is (search results show it); every other page is "<page> · OpenVibe.Wiki".
+        title: o.title ? `${o.title} · ${SITE_NAME}` : o.path === '/' ? `${SITE_NAME}: wiki spaces with history and citations` : SITE_NAME,
         description: o.description || DEFAULT_DESCRIPTION,
         summary: o.summary,
         canonical: `${config.baseUrl}${o.path || '/'}`,
