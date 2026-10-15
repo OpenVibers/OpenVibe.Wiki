@@ -23,7 +23,7 @@ const { createActorLimits } = require('./http/actor-limits');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const VERSION = require('../package.json').version;
 
-function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null, accountData = null, accountSend = null }) {
+function createApp({ config, telemetry = null, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null, accountData = null, accountSend = null }) {
     const app = express();
     // Every resolved actor carries its wiki roles (read once per request), so the synchronous access checks work.
     const viewers = { ...baseViewers, resolve: async (req, opts) => svc.loadRoles(await baseViewers.resolve(req, opts)) };
@@ -35,6 +35,7 @@ function createApp({ config, svc, viewers: baseViewers, platform, keys, db, valk
     const release = require('openvibe-shared/release').createRelease({ service: 'wiki', root: path.join(__dirname, '..') });
     require('./render/layout').setRelease(release.release);
     const metrics = require('openvibe-shared/metrics').instrument(app, { service: 'wiki', release: release.release });
+    if (telemetry) app.use(telemetry.middleware());   // request telemetry (server/index.js)
     metrics.registry.gauge({
         name: 'wiki_event_outbox', help: 'Events in the outbox by state', labelNames: ['state'],
         collect: () => { const c = platform.outbox.counts(); return [{ labels: { state: 'pending' }, value: c.pending }, { labels: { state: 'rejected' }, value: c.rejected }]; },
