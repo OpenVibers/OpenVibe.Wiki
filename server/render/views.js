@@ -106,6 +106,7 @@ ${space.description ? html`<p>${space.description}</p>` : ''}
 ${canEdit ? html`<p><a class="wk-button" href="/s/${e(space.slug)}/new">New page</a>${canManage ? html` <a href="/s/${e(space.slug)}/import">Import pages</a> <a href="/s/${e(space.slug)}/settings">Space settings</a>` : ''}</p>` : ''}
 ${proposals && proposals.length ? html`<p>${notice('info', `${proposals.length} AI proposal(s) wait for review.`)} <a href="/s/${e(space.slug)}/proposals">Review them</a></p>` : ''}
 <h2>Pages</h2>${tree.length ? raw(treeHtml(tree, space)) : html`<p class="wk-muted">No pages yet.</p>`}
+${space.visibility === 'public' ? html`<p class="wk-muted">Follow this space: <a href="/s/${e(space.slug)}/feed.atom" type="application/atom+xml">Atom</a> · <a href="/s/${e(space.slug)}/feed.json" type="application/feed+json">JSON Feed</a></p>` : ''}
 </section>`;
 }
 

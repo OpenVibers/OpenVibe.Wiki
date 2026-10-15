@@ -135,6 +135,9 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         recent: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
                             WHERE p.state = 'published' AND s.deleted_at IS NULL AND s.visibility = 'public' AND p.visibility = 'public'
                             ORDER BY p.revision_published_at DESC, p.id LIMIT ?`),
+        recentInSpace: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
+                            WHERE s.slug = ? AND p.state = 'published' AND s.deleted_at IS NULL AND s.visibility = 'public' AND p.visibility = 'public'
+                            ORDER BY p.revision_published_at DESC, p.id LIMIT ?`),
         allPublishedPublic: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
                             WHERE p.state = 'published' AND s.deleted_at IS NULL AND s.visibility = 'public' AND p.visibility = 'public'
                             ORDER BY p.id LIMIT 50000`),
@@ -1138,6 +1141,12 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         async publishedPublic() { return await expandPublished(await q.allPublishedPublic.all()); },
 
         async recentChanges(limit = 50) { return await expandPublished(await q.recent.all(Math.min(200, Math.max(1, limit)))); },
+        /** The same, for one public space (its feed): null when the slug names no public, live space. */
+        async recentChangesIn(slug, limit = 50) {
+            const space = await q.spaceBySlug.get(String(slug));
+            if (!space || space.deleted_at || space.visibility !== 'public') return null;
+            return { space, changes: await expandPublished(await q.recentInSpace.all(space.slug, Math.min(200, Math.max(1, limit)))) };
+        },
 
         // Citations and media ----------------------------------------------------------------
         /** Citations go on an unpublished head revision (a published revision's sources are fixed). */

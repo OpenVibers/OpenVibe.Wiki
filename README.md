@@ -166,9 +166,12 @@ records who attached each Media object and what Media said about it at that mome
   written before the flag existed are recognised by their "AI assistance" label, and at boot Wiki
   re-sends Search any document whose indexability changed (`reconcileIndex`, idempotent).
 
+Each public space has its own feed of published pages, `/s/<space>/feed.atom` and `/s/<space>/feed.json`, linked from
+the space page (the site-wide `/feed.atom` and `/feed.json` stay).
+
 Not built yet: page-level talk moderation, media upload from Wiki (attach existing Media objects
 only), consuming Media/Sources change events (Media does not emit deletion events yet; checks are
-pull-based), per-space feeds, full-text ranking (Wiki's own `/api/v1/search` is a simple title/text
+pull-based), full-text ranking (Wiki's own `/api/v1/search` is a simple title/text
 match; network search is OpenVibe.Search).
 
 ## Routes
