@@ -83,15 +83,15 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
         : null);
     // Request telemetry (openvibe-sdk/service, plan T1): one aggregated sample per route template, method and status
     // class each flush, stored in this service's telemetry_samples table (app.js mounts the middleware). With workers
-    // on, a 15 s tick writes each interval (the collector has no timer of its own) and the table keeps 30 days.
-    const telemetry = createHttpTelemetry({ service: 'wiki', sink: telemetrySink || createPgTelemetrySink({ db, log }), skipPrefixes: ['/shared'] });
+    // on, a one-minute tick writes each interval (the collector has no timer of its own) and the table keeps 14 days.
+    const telemetry = createHttpTelemetry({ service: 'wiki', sink: telemetrySink || createPgTelemetrySink({ db, log }), skipPrefixes: ['/shared'], intervalMs: 60_000 });
     let retention = null;
     const app = createApp({ config, telemetry, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend });
 
     const timers = [];
     if (workers) {
-        timers.push(setInterval(() => { telemetry.flush().catch(() => {}); }, 15_000));
-        retention = startTelemetryRetention({ db, log });
+        timers.push(setInterval(() => { telemetry.flush().catch(() => {}); }, 60_000));
+        retention = startTelemetryRetention({ db, log, olderThanDays: 14 });
         let scheduling = false;
         timers.push(setInterval(async () => {
             if (scheduling) return;
