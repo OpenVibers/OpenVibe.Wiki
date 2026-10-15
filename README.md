@@ -48,6 +48,15 @@ The packages add their helper tables under the same prefix (`wiki_page_drafts`, 
 purge audit tables); the SDK outbox keeps `wiki_event_outbox`. Wiki's own `wiki_attachment_origins`
 records who attached each Media object and what Media said about it at that moment.
 
+Wiki also keeps request telemetry in its own `telemetry_samples` table (openvibe-sdk 0.46 telemetry,
+the `platform.telemetry-sample@1` shape; migration `0003_telemetry.sql`): each HTTP request is
+aggregated by route template, method and status class, never by raw URL, and once a minute one
+`http.request` sample per key, plus the active-requests, p95 latency and event-loop-lag gauges, is
+written. Rows older than 14 days are deleted daily; `/shared` files, static assets, health, readiness
+and `/metrics` are not counted. `start()` in [server/index.js](server/index.js) builds the collector
+and, with the workers on (production), flushes it every minute and runs the retention, and
+[server/app.js](server/app.js) mounts its middleware.
+
 ## Does not own
 
 - **Discussion** — OpenVibe.Community owns comment threads; Wiki stores only the thread id
