@@ -18,6 +18,14 @@ const seo = require('openvibe-publishing/seo');
 const hooks = require('openvibe-publishing/index-hooks');
 const authorship = require('openvibe-publishing/authorship');
 const ssr = require('openvibe-publishing/ssr');
+
+/** The first sentence of a summary (a shelf card has room for one), or the summary cut at a word near 160 characters. */
+function firstSentence(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    const m = /^(.{40,200}?[.!?])(?:\s|$)/.exec(t);
+    if (m) return m[1];
+    return t.length <= 160 ? t : `${t.slice(0, 160).replace(/\s+\S*$/, '')}…`;
+}
 const { isMediaId } = require('openvibe-publishing/media');
 const { ulid } = require('openvibe-contracts').ids;
 const content = require('./content');
@@ -656,6 +664,26 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         },
 
         // Pages ----------------------------------------------------------------------------
+        /**
+         * A space's front shelf (the home page): its published pages one level under the top (the children of its
+         * root page when it has exactly one), each with its summary, at most `limit`, and how many pages the viewer
+         * can read in the space. → { pages: [{ page, summary }], total, updated }
+         */
+        async shelf(space, actor, limit = 48) {
+            const roots = await svc.tree(space, actor);
+            let total = 0;
+            let updated = 0;
+            const walk = (nodes) => { for (const n of nodes) { if (n.page.state === 'published') { total++; updated = Math.max(updated, Number(n.page.revision_published_at) || 0); } walk(n.children); } };
+            walk(roots);
+            const level = roots.length === 1 ? roots[0].children : roots;
+            const pages = level.map((n) => n.page).filter((p) => p.state === 'published' && p.published_revision).slice(0, limit);
+            const revs = pages.length ? await revisions.getMany(pages.map((p) => ({ entityId: p.id, revision: p.published_revision }))) : [];
+            return {
+                pages: pages.map((page, i) => ({ page, summary: revs[i] ? firstSentence(revs[i].fields.summary || ssr.markdownToText(revs[i].content, 240)) : '' })),
+                total, updated: updated || null,
+            };
+        },
+
         async tree(space, actor) {
             await roles(actor);
             const pages = (await q.pagesOfSpace.all(space.id)).filter((p) => access.canReadPage(space, p, actor));

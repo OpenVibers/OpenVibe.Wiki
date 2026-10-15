@@ -32,18 +32,53 @@ function vipGateBody({ title, spaceName, joinUrl, signedIn, signInUrl }) {
 <p>${signedIn ? '' : html`<a class="wk-btn" href="${signInUrl}">Sign in</a> `}${joinUrl ? html`<a class="wk-btn" href="${joinUrl}" rel="noopener">See their VIP plans</a>` : ''}</p><p><a href="/">Back to the wiki</a></p></section>`;
 }
 
-function home({ spaces, recent, actor }) {
+// A product page's ring icon on the shelf: its slug names the product (openvibe-live → live); the rest are the network's
+// libraries and runtimes. Anything else gets the wiki's own.
+const SHELF_ICON = { openrestream: 'stream', 'openvibe-mediahub': 'video', 'openvibe-node': 'plug', 'openvibe-sources': 'feeds', 'openvibe-play': 'games',
+    'openvibe-publishing': 'docs', 'openvibe-contracts': 'code', 'openvibe-sdk': 'code', 'openvibe-shared': 'code', 'openvibe-extensions': 'plug', 'openvibe-examples': 'code' };
+const RING = new Set(['ov', 'network', 'live', 'tools', 'media', 'games', 'community', 'chat', 'codes', 'bot', 'blog', 'wiki', 'news', 'reviews', 'tips', 'vip', 'trade', 'host', 'deals', 'coupons',
+    'video', 'search', 'food', 'work', 'rent', 'help', 'quest', 'inventory', 'services', 'space', 'watch', 'actor', 'events', 'ai', 'run', 'billing', 'pics', 'zone', 'download']);
+function shelfIcon(slug) {
+    if (SHELF_ICON[slug]) return `ov:${SHELF_ICON[slug]}`;
+    const m = /^openvibe-([a-z]+)$/.exec(slug || '');
+    return `ov:${m && RING.has(m[1]) ? m[1] : 'wiki'}`;
+}
+
+function home({ spaces, recent, shelves = new Map(), actor }) {
     const official = spaces.filter((s) => s.kind === 'official');
     const user = spaces.filter((s) => s.kind === 'user');
-    const list = (items) => items.length ? html`<ul class="wk-spaces">${items.map((s) => html`<li><a href="/s/${e(s.slug)}"><strong>${s.name}</strong></a>${s.visibility !== 'public' ? html` <span class="wk-tag">${s.visibility}</span>` : ''}${s.description ? html`<br><span class="wk-muted">${s.description}</span>` : ''}</li>`)}</ul>` : html`<p class="wk-muted">None yet.</p>`;
-    const start = actor && actor.subject ? { label: 'Start a space', href: '/new-space', primary: true } : { label: 'Sign in to start a space', href: '/auth/login?next=%2Fnew-space', primary: true };
-    // What OpenVibe.Wiki is for (openvibe-shared/showcase), then the spaces and what was published.
+    const signedIn = !!(actor && actor.subject);
+    const start = signedIn ? { label: 'Start a space', href: '/new-space', primary: true } : { label: 'Sign in to start a space', href: '/auth/login?next=%2Fnew-space', primary: true };
+    const card = (s) => {
+        const shelf = shelves.get(s.id);
+        return html`<li><a class="wk-space" href="/s/${e(s.slug)}"><b>${s.name}</b>${s.visibility !== 'public' ? html` <span class="wk-tag">${s.visibility}</span>` : ''}${s.description ? html`<span class="wk-space-text">${s.description}</span>` : ''}${shelf && shelf.total ? html`<span class="wk-space-meta">${String(shelf.total)} page${shelf.total === 1 ? '' : 's'}${shelf.updated ? html` · updated ${t(shelf.updated)}` : ''}</span>` : ''}</a></li>`;
+    };
+    // Each official space with pages: what is inside it, its pages one level down as cards with their summaries. A space
+    // without a shelf (not public, or empty) is a card under "Official spaces".
+    const shelved = official.filter((s) => shelves.get(s.id) && shelves.get(s.id).pages.length);
+    const unshelved = official.filter((s) => !shelved.includes(s));
+    const inside = shelved.map((s) => {
+        const shelf = shelves.get(s.id);
+        const day = shelf.updated ? new Date(Number(shelf.updated)).toISOString().slice(0, 10) : null;
+        return showcase.features({
+            id: `inside-${s.slug}`, title: `The ${s.name} space`,
+            lede: `${s.description ? `${s.description.replace(/\.?\s*$/, '.')} ` : ''}${shelf.total} pages${day ? `, updated ${day}` : ''}.`,
+            items: shelf.pages.map(({ page, summary }) => ({ icon: shelfIcon(page.slug), title: page.title, text: summary, href: wpath(s, page) })),
+        }) + html`<p class="wk-more"><a href="/s/${e(s.slug)}">Every page of ${s.name}, as a tree</a></p>`;
+    }).join('');
+    // What OpenVibe.Wiki is for (openvibe-shared/showcase), then the spaces, what is inside them, and what was published.
     return html`${raw(showcase.hero({
         eyebrow: 'OpenVibe.Wiki',
         title: 'Knowledge,', accent: 'with sources',
         lede: 'Wiki spaces with page trees, revision history, citations and discussion. Official spaces are edited by OpenVibe staff; anyone signed in with an OpenVibe account can start a space of their own.',
         actions: [start, { label: 'Browse the spaces', href: '#spaces' }],
-    }) + showcase.features({
+    }))}
+<div id="spaces"></div>
+${raw(inside)}
+${unshelved.length || !shelved.length ? html`<section class="sc-sec wk-home-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official spaces</h2>${unshelved.length ? html`<ul class="wk-spaces">${unshelved.map(card)}</ul>` : html`<p class="wk-muted">None yet.</p>`}</section>` : ''}
+<section class="sc-sec wk-home-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community spaces</h2>${user.length ? html`<ul class="wk-spaces">${user.map(card)}</ul>`
+        : html`<div class="wk-empty"><p><b>No community spaces yet.</b> Any OpenVibe account can start one: public, members-only, for its owner's VIP members, or private, with the editors it chooses.</p><p><a class="wk-button" href="${start.href}">${start.label}</a></p></div>`}</section>
+${raw(showcase.features({
         title: 'What a space gets',
         items: [
             { icon: 'ov:wiki', title: 'Page trees', text: 'Pages nest under pages, so a space reads like a book.' },
@@ -54,11 +89,8 @@ function home({ spaces, recent, actor }) {
             { icon: 'ov:search', title: 'Search and feeds', text: 'Full-text search across the spaces you can see, and Atom and JSON feeds.' },
         ],
     }))}
-<div id="spaces"></div>
-<section><h2>Official spaces</h2>${list(official)}</section>
-<section><h2>Community spaces</h2>${list(user)}</section>
-<section><h2>Recently published</h2>${recent.length ? html`<ul class="wk-recent">${recent.map((r) => html`<li><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name} · ${t(r.page.revision_published_at)}</span></li>`)}</ul>` : html`<p class="wk-muted">Nothing published yet.</p>`}
-<p><a href="/recent">All recent changes</a> · <a href="/feed.atom">Atom</a> · <a href="/feed.json">JSON Feed</a></p></section>`;
+<section class="sc-sec wk-home-sec" aria-labelledby="wk-recent-h"><h2 id="wk-recent-h">Recently published</h2>${recent.length ? html`<ul class="wk-recent">${recent.map((r) => html`<li><span><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name}</span></span> <span class="wk-muted">${t(r.page.revision_published_at)}</span></li>`)}</ul>` : html`<p class="wk-muted">Nothing published yet.</p>`}
+<p class="wk-more"><a href="/recent">All recent changes</a> · <a href="/feed.atom">Atom</a> · <a href="/feed.json">JSON Feed</a></p></section>`;
 }
 
 function treeHtml(nodes, space) {
