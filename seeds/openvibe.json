@@ -10,7 +10,7 @@
     {
       "title": "OpenVibe",
       "parent": null,
-      "body": "The **OpenVibe network** is a set of services built in the open by OpenVibers, whose repositories are published in the [OpenVibers](https://github.com/OpenVibers) GitHub organisation. [[OpenVibe.Network]] is the network's identity and account service. This space describes the network's products as their README and STATUS files state them at the cited commits.\n\n## Streaming and media\n\n- [[OpenVibe.Live]] — the streaming front: ingest, viewer playback, channels, streamer tools and moderation.\n- [[OpenVibe.Media]] — the multi-tenant media service for VODs, clips, files, thumbnails and storage tiering.\n- [[OpenVibe.MediaHub]] — a private drive at openvibe.download that keeps file bytes in OpenVibe.Media.\n- [[OpenRestream]] — the ingest and restream control plane extracted from OpenVibe.Live.\n\n## Community and content\n\n- [[OpenVibe.Community]] — pastes, the forum, the comment threads other products embed, Pulse and submissions.\n- [[OpenVibe.Blog]] — the official blog and a blog for every member.\n- [[OpenVibe.News]] — editor-written, source-backed stories assembled from collected news items.\n- [[OpenVibe.Reviews]] — review signals with provenance, entity resolution and honest aggregates.\n- [[OpenVibe.Chat]] — the communication authority for rooms, messages, DMs, calls, TTS and moderation.\n- [[OpenVibe.Space]] — a site for code, dynamic pages and spaces, still a home page today.\n- [[OpenVibe.Help]] — the help and support centre generated from the product manifests.\n- [[OpenVibe.Quest]] — one quest log across every OpenVibe site, awarding badges and OpenCoins.\n\n## Tools and games\n\n- [[OpenVibe.Tools]] — the tools suite: a tool registry, a run API, jobs and a shared guard.\n- [[OpenVibe.Games]] — Scraplandia, a persistent multiplayer physics sandbox in the browser.\n- [[OpenVibe.Food]] — food banks near a place, a meal planner, a food database and a pantry.\n\n## Developer platform\n\n- [[OpenVibe.Network]] — identity, OAuth2 SSO, notifications and the OpenCoins wallet.\n- [[OpenVibe.Events]] — the durable event backbone: delivery, retry, dead letters and replay.\n- [[OpenVibe.Search]] — permission-aware discovery with an ACL-filtered query API.\n- [[OpenVibe.Sources]] — the source registry and ingestion workers with recorded provenance.\n- [[OpenVibe.Publishing]] — the shared publishing packages the publication products build on.\n- [[OpenVibe.Wiki]] — this wiki: spaces, page trees, revisions, citations and discussion.\n- [[OpenVibe.Codes]] — the open coding-agent harness.\n- [[OpenVibe.Services]] — the developer console for projects, apps, credentials and grants.\n- [[OpenVibe.Host]] — the deployment and control plane (the ovhost CLI) and tenant static hosting.\n- [[OpenVibe.Run]] — the job service that places jobs on nodes and follows them to an end.\n\n## Agents and automation\n\n- [[OpenVibe.Actor]] — OpenVibe's own general agent and agent router.\n- [[OpenVibe.Bot]] — the open control panel for robots.\n- [[OpenVibe.AI]] — the AI authority for providers, workflows, runs and quotas.\n- [[OpenVibe.Watch]] — persistent, user-defined observations and conditions over pages, feeds and events.\n\n## Commerce\n\n- [[OpenVibe.Deals]] — community-submitted deals with observed prices and freshness.\n- [[OpenVibe.Coupons]] — coupon codes with merchant matching and validity reports.\n- [[OpenVibe.Trade]] — informational watchlists and sourced market context, with no order execution.\n- [[OpenVibe.Rent]] — rental listings posted by people, with search and saved searches.\n- [[OpenVibe.Inventory]] — the network-wide inventory of items a person owns.\n- [[OpenVibe.Work]] — job listings gathered from open job boards.\n",
+      "body": "The **OpenVibe network** is a set of services built in the open by OpenVibers, whose repositories are published in the [OpenVibers](https://github.com/OpenVibers) GitHub organisation. [[OpenVibe.Network]] is the network's identity and account service. This space describes the network's products as their README and STATUS files state them at the cited commits.\n\n## Streaming and media\n\n- [[OpenVibe.Live]] — the streaming front: ingest, viewer playback, channels, streamer tools and moderation.\n- [[OpenVibe.Media]] — the multi-tenant media service for VODs, clips, files, thumbnails and storage tiering.\n- [[OpenVibe.Zone]] — private S3-compatible storage zones for every project.\n- [[OpenVibe.MediaHub]] — a private drive at openvibe.download that keeps file bytes in OpenVibe.Media.\n- [[OpenRestream]] — the ingest and restream control plane extracted from OpenVibe.Live.\n\n## Community and content\n\n- [[OpenVibe.Community]] — pastes, the forum, the comment threads other products embed, Pulse and submissions.\n- [[OpenVibe.Blog]] — the official blog and a blog for every member.\n- [[OpenVibe.News]] — editor-written, source-backed stories assembled from collected news items.\n- [[OpenVibe.Reviews]] — review signals with provenance, entity resolution and honest aggregates.\n- [[OpenVibe.Chat]] — the communication authority for rooms, messages, DMs, calls, TTS and moderation.\n- [[OpenVibe.Space]] — a site for code, dynamic pages and spaces, still a home page today.\n- [[OpenVibe.Help]] — the help and support centre generated from the product manifests.\n- [[OpenVibe.Quest]] — one quest log across every OpenVibe site, awarding badges and OpenCoins.\n\n## Tools and games\n\n- [[OpenVibe.Tools]] — the tools suite: a tool registry, a run API, jobs and a shared guard.\n- [[OpenVibe.Games]] — Scraplandia, a persistent multiplayer physics sandbox in the browser.\n- [[OpenVibe.Play]] — achievements and leaderboards for every OpenVibe game.\n- [[OpenVibe.Food]] — food banks near a place, a meal planner, a food database and a pantry.\n\n## Developer platform\n\n- [[OpenVibe.Network]] — identity, OAuth2 SSO, notifications and the OpenCoins wallet.\n- [[OpenVibe.Events]] — the durable event backbone: delivery, retry, dead letters and replay.\n- [[OpenVibe.Search]] — permission-aware discovery with an ACL-filtered query API.\n- [[OpenVibe.Sources]] — the source registry and ingestion workers with recorded provenance.\n- [[OpenVibe.Publishing]] — the shared publishing packages the publication products build on.\n- [[OpenVibe.Wiki]] — this wiki: spaces, page trees, revisions, citations and discussion.\n- [[OpenVibe.Codes]] — the open coding-agent harness.\n- [[OpenVibe.Services]] — the developer console for projects, apps, credentials and grants.\n- [[OpenVibe.Host]] — the deployment and control plane (the ovhost CLI) and tenant static hosting.\n- [[OpenVibe.Run]] — the job service that places jobs on nodes and follows them to an end.\n\n## Agents and automation\n\n- [[OpenVibe.Actor]] — OpenVibe's own general agent and agent router.\n- [[OpenVibe.Bot]] — the open control panel for robots.\n- [[OpenVibe.Node]] — one service on your own computers and robots, used by Bot and Actor.\n- [[OpenVibe.AI]] — the AI authority for providers, workflows, runs and quotas.\n- [[OpenVibe.Watch]] — persistent, user-defined observations and conditions over pages, feeds and events.\n\n## Commerce\n\n- [[OpenVibe.Deals]] — community-submitted deals with observed prices and freshness.\n- [[OpenVibe.Coupons]] — coupon codes with merchant matching and validity reports.\n- [[OpenVibe.Trade]] — informational watchlists and sourced market context, with no order execution.\n- [[OpenVibe.Rent]] — rental listings posted by people, with search and saved searches.\n- [[OpenVibe.Inventory]] — the network-wide inventory of items a person owns.\n- [[OpenVibe.Work]] — job listings gathered from open job boards.\n",
       "summary": "Overview of the OpenVibe network and the products described in this space, grouped by area, with their stated status at the cited commits.",
       "infobox": [
         {
@@ -322,7 +322,7 @@
     {
       "title": "OpenVibe.Search",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Search** is the permission-aware discovery service of the OpenVibe network, at `search.openvibe.network`. Its README describes \"the canonical index document, event-fed indexing\" and \"an ACL-filtered query API, and deletion/visibility propagation\".\n\n## What it does\n\nEvery publication product tells Search about its resources through one contract, `search.index-document@1`. Search answers queries \"without ever returning a document the caller may not see\". It provides a query API (`GET /api/v1/search`, `/api/v1/suggest`, `/api/v1/documents/:owner/:type/:id`), facets, freshness-weighted ranking, saved searches, and a server-rendered search page useful without JavaScript. It stores documents, ACLs, facets and a full-text index in PostgreSQL (`ov_search`), fed through [[OpenVibe.Events]]. A visibility change or deletion leaves results immediately and emits `search.document.removed`, which can also queue a Cloudflare CDN purge.\n\n## What it does not do yet\n\nThe README states that a document \"with content indexed end to end in production\" is not yet demonstrated: the Events subscription delivered wiki events, some upserts were rejected as `owner_not_accepted` (since fixed) and only the tombstones landed. No product polls the removal feed yet, and the CDN purge needs a token with Cache Purge permission. Search does not own any product's content, publication state or indexability decision, nor sitemaps, feeds or page caches.\n\n## How it fits the network\n\nOwners can write documents directly with an owner token or, preferably, publish index-document events through [[OpenVibe.Events]]. Search calls [[OpenVibe.Network]] for signing keys, and with saved-search notifications on it can resolve a subject and push a notification.\n\n## Runtime and status\n\nIt runs on Node 22 and Express with PostgreSQL full-text search, listening on `127.0.0.1:4710` behind nginx. STATUS.json records the stage as \"alpha\" and the service deployed with `sudo ovhost deploy search`. License: AGPL-3.0.",
+      "body": "**OpenVibe.Search** is the permission-aware discovery service of the OpenVibe network, at `search.openvibe.network`. Its README describes \"the canonical index document, event-fed indexing\" and \"an ACL-filtered query API, and deletion/visibility propagation\".\n\n## What it does\n\nEvery publication product tells Search about its resources through one contract, `search.index-document@1`. Search answers queries \"without ever returning a document the caller may not see\". It provides a query API (`GET /api/v1/search`, `/api/v1/suggest`, `/api/v1/documents/:owner/:type/:id`), facets, freshness-weighted ranking, saved searches, and a server-rendered search page useful without JavaScript. It stores documents, ACLs, facets and a full-text index in PostgreSQL (`ov_search`), fed through [[OpenVibe.Events]]. A visibility change or deletion leaves results immediately and emits `search.document.removed`, which can also queue a Cloudflare CDN purge.\n\n## What it does not do yet\n\nIndexing works end to end in production: on 2026-10-14 Search held 10,438 documents that products had sent through [[OpenVibe.Events]]. No product polls the removal feed yet, and the CDN purge needs a Cloudflare token with Cache Purge permission. Search does not own any product's content, publication state or indexability decision, nor sitemaps, feeds or page caches.\n## How it fits the network\n\nOwners can write documents directly with an owner token or, preferably, publish index-document events through [[OpenVibe.Events]]. Search calls [[OpenVibe.Network]] for signing keys, and with saved-search notifications on it can resolve a subject and push a notification.\n\n## Runtime and status\n\nIt runs on Node 22 and Express with PostgreSQL full-text search, listening on `127.0.0.1:4710` behind nginx. STATUS.json records the stage as \"alpha\" and the service deployed with `sudo ovhost deploy search`. License: AGPL-3.0.",
       "summary": "The permission-aware discovery service: a canonical index document, event-fed indexing and an ACL-filtered query API.",
       "infobox": [
         {
@@ -364,15 +364,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Search/blob/c47243cb904ae973dee413467cf7a94b440f5703/README.md",
-          "title": "OpenVibe.Search README (commit c47243c)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Search/blob/4c5c58fc04be9f0c0eaf60d3c940495a1efc71f0/README.md",
+          "title": "OpenVibe.Search README (commit 4c5c58f)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "an ACL-filtered query API, and deletion/visibility propagation."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Search/blob/c47243cb904ae973dee413467cf7a94b440f5703/STATUS.json",
-          "title": "OpenVibe.Search STATUS.json (commit c47243c)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Search/blob/4c5c58fc04be9f0c0eaf60d3c940495a1efc71f0/STATUS.json",
+          "title": "OpenVibe.Search STATUS.json (commit 4c5c58f)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "ACL-filtered full-text query API"
         }
       ]
@@ -380,7 +380,7 @@
     {
       "title": "OpenVibe.Sources",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Sources** is the source registry and ingestion service of the OpenVibe network, at `sources.openvibe.network` on port 4720, with a loopback-only API. The README calls it \"The source registry and the ingestion workers the publication products depend on.\"\n\n## What it does\n\nSources owns the one place outside material enters the network: a registry of sources with their terms, plus workers that fetch them politely and record what happened. News, Reviews, Deals, Coupons, Trade and AI summarisation all read items with provenance from here. A source records its type (`rss|atom|sitemap|jsonld|api|manual`), category, endpoints, auth, robots and terms notes, rate limits and indexability. Adapters parse RSS, Atom, sitemaps, JSON-LD and official APIs. Every attempt writes a `fetch_runs` row with an explicit state, and the README states a failed fetch is a recorded failure, never replaced by invented content. Items keep revisions and provenance, and removal is explicit.\n\n## What it does not do yet\n\nAll six seeded sources are disabled, so no run has fetched from a real source from the deployed service. Terms must be re-verified by a person before a source is enabled. Sources does not decide what a product publishes, and it never calls [[OpenVibe.AI]].\n\n## How it fits the network\n\nProducts are the only clients of both Sources and [[OpenVibe.AI]]: a product reads items and passes them to AI as run input. Sources emits `sources.item.*`, `sources.fetch.failed` and staff-only index documents through the [[OpenVibe.Events]] outbox, and raw items reach [[OpenVibe.Search]] for staff only, always `noindex`. It depends on [[OpenVibe.Host]] data roles, PostgreSQL and [[OpenVibe.Network]] signing keys.\n\n## Runtime and status\n\nNode 22 and Express on PostgreSQL 18 and Valkey 9, unit `openvibe-sources.service` on `127.0.0.1:4720`, database `ov_sources`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
+      "body": "**OpenVibe.Sources** is the source registry and ingestion service of the OpenVibe network, at `sources.openvibe.network` on port 4720, with a loopback-only API. The README calls it \"The source registry and the ingestion workers the publication products depend on.\"\n\n## What it does\n\nSources owns the one place outside material enters the network: a registry of sources with their terms, plus workers that fetch them politely and record what happened. News, Reviews, Deals, Coupons, Trade and AI summarisation all read items with provenance from here. A source records its type (`rss|atom|sitemap|jsonld|api|manual`), category, endpoints, auth, robots and terms notes, rate limits and indexability. Adapters parse RSS, Atom, sitemaps, JSON-LD and official APIs. Every attempt writes a `fetch_runs` row with an explicit state, and the README states a failed fetch is a recorded failure, never replaced by invented content. Items keep revisions and provenance, and removal is explicit.\n\n## What it does not do yet\n\nOn 2026-10-14, 31 sources were enabled and 2 disabled. The enabled ones are news wires, Steam reviews, DealNews coupons and other feeds. A person reads each source's robots and terms notes before enabling it, and a source whose robots file refuses the fetch stays disabled. Sources does not decide what a product publishes, and it never calls [[OpenVibe.AI]].\n## How it fits the network\n\nProducts are the only clients of both Sources and [[OpenVibe.AI]]: a product reads items and passes them to AI as run input. Sources emits `sources.item.*`, `sources.fetch.failed` and staff-only index documents through the [[OpenVibe.Events]] outbox, and raw items reach [[OpenVibe.Search]] for staff only, always `noindex`. It depends on [[OpenVibe.Host]] data roles, PostgreSQL and [[OpenVibe.Network]] signing keys.\n\n## Runtime and status\n\nNode 22 and Express on PostgreSQL 18 and Valkey 9, unit `openvibe-sources.service` on `127.0.0.1:4720`, database `ov_sources`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
       "summary": "The source registry and ingestion workers that fetch outside material with recorded provenance; alpha, deployed but not launched, seeded sources disabled.",
       "infobox": [
         {
@@ -422,15 +422,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Sources/blob/c1bca4e2fae3cbb9cfeb0b85d20f947a35a934b9/README.md",
-          "title": "OpenVibe.Sources README (commit c1bca4e)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Sources/blob/6a7a7488cc21ee4ca85c9ba2882b9522991118e3/README.md",
+          "title": "OpenVibe.Sources README (commit 6a7a748)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "The source registry and the ingestion workers the publication products depend on"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Sources/blob/c1bca4e2fae3cbb9cfeb0b85d20f947a35a934b9/STATUS.json",
-          "title": "OpenVibe.Sources STATUS.json (commit c1bca4e)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Sources/blob/6a7a7488cc21ee4ca85c9ba2882b9522991118e3/STATUS.json",
+          "title": "OpenVibe.Sources STATUS.json (commit 6a7a748)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Deployed with `sudo ovhost deploy sources`: /opt/openvibe.sources, unit openvibe-sources, 127.0.0.1:4720, principal sources."
         }
       ]
@@ -472,7 +472,7 @@
     {
       "title": "OpenVibe.Wiki",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Wiki** is the knowledge product of the OpenVibe network, public at `https://openvibe.wiki` since 2026-09-23 on port 4800 (service id `wiki`). It is alpha.\n\n## What it does\n\nWiki offers spaces (official and user), page trees with canonical slugs, immutable revisions with diff and revert, manual editing without JavaScript, typed infoboxes, internal links, citations attached to the revision that used them, [[OpenVibe.Media]] attachments and [[OpenVibe.Community]] discussion. It supports public, members, VIP, private and members-only visibility. Its README calls it the first full consumer of the shared publishing packages ([[OpenVibe.Publishing]]): revisions, citations, redirects, the gate, feeds, sitemaps and Search hooks come from there, while Wiki owns its publication state.\n\n## What it does not do yet\n\nThe only content is the official space's AI-assisted seed pages, and no person has reviewed them, so every page is `noindex` and none is in Search. Not built yet: page-level talk moderation, media upload from Wiki (existing objects only), consuming Media and Sources change events, per-space feeds, and full-text ranking. AI is a seam only: there are no AI provider calls in Wiki, and a proposal waits for a person's approval.\n\n## How it fits the network\n\nWiki depends on [[OpenVibe.Network]] for SSO and identity, [[OpenVibe.Events]] for its outbox, [[OpenVibe.Community]] for threads, [[OpenVibe.Sources]] for citations, [[OpenVibe.Media]] for attachments, OpenVibe.VIP for VIP spaces, and [[OpenVibe.Search]] as the consumer of its index documents. [[OpenVibe.AI]] would file proposals, but the README says the API is not wired yet.\n\n## Runtime and status\n\nNode 22 and Express, PostgreSQL 18 (`ov_wiki`) and Valkey 9, unit `openvibe-wiki.service` on `127.0.0.1:4800`. Deployed and public. License: AGPL-3.0.",
+      "body": "**OpenVibe.Wiki** is the knowledge product of the OpenVibe network, public at `https://openvibe.wiki` since 2026-09-23 on port 4800 (service id `wiki`). It is alpha.\n\n## What it does\n\nWiki offers spaces (official and user), page trees with canonical slugs, immutable revisions with diff and revert, manual editing without JavaScript, typed infoboxes, internal links, citations attached to the revision that used them, [[OpenVibe.Media]] attachments and [[OpenVibe.Community]] discussion. It supports public, members, VIP, private and members-only visibility. Its README calls it the first full consumer of the shared publishing packages ([[OpenVibe.Publishing]]): revisions, citations, redirects, the gate, feeds, sitemaps and Search hooks come from there, while Wiki owns its publication state.\n\n## What it does not do yet\n\nThe official space's pages were revised on 2026-10-14 from each repository's README and STATUS. No person has reviewed them yet, so they stay `noindex`. Not built yet:\n\n- page-level talk moderation;\n- media upload from Wiki (it links existing objects only);\n- consuming Media and Sources change events;\n- per-space feeds and full-text ranking.\n\nAI is a seam only: Wiki makes no AI provider calls, and a proposal waits for a person's approval.\n## How it fits the network\n\nWiki depends on [[OpenVibe.Network]] for SSO and identity, [[OpenVibe.Events]] for its outbox, [[OpenVibe.Community]] for threads, [[OpenVibe.Sources]] for citations, [[OpenVibe.Media]] for attachments, OpenVibe.VIP for VIP spaces, and [[OpenVibe.Search]] as the consumer of its index documents. [[OpenVibe.AI]] would file proposals, but the README says the API is not wired yet.\n\n## Runtime and status\n\nNode 22 and Express, PostgreSQL 18 (`ov_wiki`) and Valkey 9, unit `openvibe-wiki.service` on `127.0.0.1:4800`. Deployed and public. License: AGPL-3.0.",
       "summary": "The wiki product of the network: spaces, page trees, immutable revisions, citations, infoboxes, internal links, media and discussion, public since 2026-09-23.",
       "infobox": [
         {
@@ -514,15 +514,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Wiki/blob/cc7a8fc09705bfc69ee24aeb43e29c2d4453ec6b/README.md",
-          "title": "OpenVibe.Wiki README (commit cc7a8fc)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Wiki/blob/0b8dbc25587aa3d1b1d68683d84371096f22639b/README.md",
+          "title": "OpenVibe.Wiki README (commit 0b8dbc2)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Wiki spaces with page trees, revisions, citations, media and discussion"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Wiki/blob/cc7a8fc09705bfc69ee24aeb43e29c2d4453ec6b/STATUS.json",
-          "title": "OpenVibe.Wiki STATUS.json (commit cc7a8fc)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Wiki/blob/0b8dbc25587aa3d1b1d68683d84371096f22639b/STATUS.json",
+          "title": "OpenVibe.Wiki STATUS.json (commit 0b8dbc2)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Public at https://openvibe.wiki since 2026-09-23"
         }
       ]
@@ -530,7 +530,7 @@
     {
       "title": "OpenVibe.Codes",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Codes** is the open coding-agent harness of the OpenVibe network, public at `https://openvibe.codes` on port 4900 (service id `codes`). It is alpha.\n\n## What it does\n\nCodes is \"the open coding-agent harness for Claude Code, Codex, OpenCode, Command Code, Aider, the DeepSeek API and models you host yourself\". The `openvibe-codes` command, a CLI and Node.js module, runs a coding task on an agent that fits it, hands the task to the next agent when one fails or goes quiet, and keeps every run. Every adapter turns its agent's output into one Claude Code `stream-json`-shaped event stream, with keys, tokens and private keys redacted. The site carries the agent catalog, a public routing API (`POST /api/v1/harnesses/route`), getting started, Improve OpenVibe and the community documents. Everything is server-rendered and usable without JavaScript.\n\n## What it does not do yet\n\nOn 2026-10-08 the developer console that used to live here moved to [[OpenVibe.Services]], and every former console address answers a permanent redirect there. Not built yet: a hosted runner on [[OpenVibe.Run]] with budgets and metering, [[OpenVibe.Actor]] using Codes for coding work, Improve OpenVibe as a guided run, the OpenVibe agent pool running on this package, and the community documents, which are drafts pending the owner's review.\n\n## How it fits the network\n\nCodes signs in with [[OpenVibe.Network]] and depends on PostgreSQL 18 and Valkey 9 on [[OpenVibe.Host]]. It does not own accounts, projects or grants ([[OpenVibe.Network]]) or provider keys ([[OpenVibe.AI]]). The harness runs on a person's own machine with their own CLIs and keys; nothing goes through OpenVibe.\n\n## Runtime and status\n\nNode 22 and Express 4, PostgreSQL 18 (`ov_codes`) and Valkey 9, unit `openvibe-codes.service` on `127.0.0.1:4900`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
+      "body": "**OpenVibe.Codes** is the open coding-agent harness of the OpenVibe network, public at `https://openvibe.codes` on port 4900 (service id `codes`). It is alpha.\n\n## What it does\n\nCodes is \"the open coding-agent harness for Claude Code, Codex, OpenCode, Command Code, Aider, the DeepSeek API and models you host yourself\". The `openvibe-codes` command, a CLI and Node.js module, runs a coding task on an agent that fits it, hands the task to the next agent when one fails or goes quiet, and keeps every run. Every adapter turns its agent's output into one Claude Code `stream-json`-shaped event stream, with keys, tokens and private keys redacted. The site carries the agent catalog, a public routing API (`POST /api/v1/harnesses/route`), getting started, Improve OpenVibe and the community documents. Everything is server-rendered and usable without JavaScript.\n\n## What it does not do yet\n\nOn 2026-10-08 the developer console that used to live here moved to [[OpenVibe.Services]], and every former console address answers a permanent redirect there. Codes is now the open coding-agent harness and its CLI. Not built yet:\n\n- a hosted runner on [[OpenVibe.Run]] with budgets and metering, which waits for a separate isolated worker host;\n- pushes to a person's own GitHub, which wait for a GitHub OAuth app;\n- the community documents, which are drafts pending the owner's review.\n## How it fits the network\n\nCodes signs in with [[OpenVibe.Network]] and depends on PostgreSQL 18 and Valkey 9 on [[OpenVibe.Host]]. It does not own accounts, projects or grants ([[OpenVibe.Network]]) or provider keys ([[OpenVibe.AI]]). The harness runs on a person's own machine with their own CLIs and keys; nothing goes through OpenVibe.\n\n## Runtime and status\n\nNode 22 and Express 4, PostgreSQL 18 (`ov_codes`) and Valkey 9, unit `openvibe-codes.service` on `127.0.0.1:4900`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
       "summary": "The open coding-agent harness: the openvibe-codes CLI routes coding tasks across coding agents, while the former developer console now redirects to OpenVibe.Services.",
       "infobox": [
         {
@@ -572,15 +572,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/8ac570f061b9d23abc660b27019454e3c83825bb/README.md",
-          "title": "OpenVibe.Codes README (commit 8ac570f)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/bc2148c0cafc94684984243bf0b8fdfb0c5cfb5f/README.md",
+          "title": "OpenVibe.Codes README (commit bc2148c)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "the open coding-agent harness for Claude Code, Codex, OpenCode, Command Code, Aider"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/8ac570f061b9d23abc660b27019454e3c83825bb/STATUS.json",
-          "title": "OpenVibe.Codes STATUS.json (commit 8ac570f)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/bc2148c0cafc94684984243bf0b8fdfb0c5cfb5f/STATUS.json",
+          "title": "OpenVibe.Codes STATUS.json (commit bc2148c)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Since 2026-10-08 Codes is the open coding-agent harness"
         }
       ]
@@ -704,7 +704,7 @@
     {
       "title": "OpenRestream",
       "parent": "OpenVibe",
-      "body": "**OpenRestream** is the ingest and restream control plane extracted from [[OpenVibe.Live]], served at `openre.stream` with RTMP ingest at `ingest.openre.stream`. A streamer goes live once from OBS or any RTMP encoder and can send the stream to Twitch, YouTube, Kick and other RTMP, RTMPS or SRT servers at the same time.\n\n## What it does\n\nThe README states that OpenRestream owns stream definitions, ingest keys, ingest sessions, transport workers and their generations, restream destinations and outputs with health, recording requests to [[OpenVibe.Media]], and the `openre.*` lifecycle events. It states that RTMP ingest, restream, JSMPEG and WebRTC workers are ported and tested with real ffmpeg. The API and coordinator run on `127.0.0.1:4500`, and RTMP ingest is public on port 1936.\n\n## What it does not do yet\n\nThe README states that no Live slot is ingested here yet: \"every slot is still ingested by Live until its per-slot cutover\". OAuth-linked destinations are \"not ported\", and platform viewer counts, chat relay and PowerChat stay in Live.\n\n## How it fits the network\n\nIt depends on [[OpenVibe.Network]] for JWKS and service tokens, [[OpenVibe.Events]] for event relay, [[OpenVibe.Media]] for recordings, and [[OpenVibe.Host]] for PostgreSQL and Valkey. [[OpenVibe.Live]] keeps the creator and channel product and observes sessions through OpenRestream APIs and events.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 7), tested end to end with real RTMP and deployed internally on the production host. License: AGPL-3.0.",
+      "body": "**OpenRestream** is the ingest and restream control plane extracted from [[OpenVibe.Live]], served at `openre.stream` with RTMP ingest at `ingest.openre.stream`. A streamer goes live once from OBS or any RTMP encoder and can send the stream to Twitch, YouTube, Kick and other RTMP, RTMPS or SRT servers at the same time.\n\n## What it does\n\nThe README states that OpenRestream owns stream definitions, ingest keys, ingest sessions, transport workers and their generations, restream destinations and outputs with health, recording requests to [[OpenVibe.Media]], and the `openre.*` lifecycle events. It states that RTMP ingest, restream, JSMPEG and WebRTC workers are ported and tested with real ffmpeg. The API and coordinator run on `127.0.0.1:4500`, and RTMP ingest is public on port 1936.\n\n## What it does not do yet\n\n`openre.stream` serves its own site since 2026-10-09, after an independent security review. Anyone signs in with OpenVibe, creates a stream with its RTMP key and sends it to other channels. A new stream also goes live on the person's [[OpenVibe.Live]] channel unless they untick that. No Live slot is ingested here yet: every slot is still ingested by Live until its own cutover. OAuth-linked destinations are not ported, and platform viewer counts, chat relay and PowerChat stay in Live.\n## How it fits the network\n\nIt depends on [[OpenVibe.Network]] for JWKS and service tokens, [[OpenVibe.Events]] for event relay, [[OpenVibe.Media]] for recordings, and [[OpenVibe.Host]] for PostgreSQL and Valkey. [[OpenVibe.Live]] keeps the creator and channel product and observes sessions through OpenRestream APIs and events.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 7), tested end to end with real RTMP; the site is public since 2026-10-09. License: AGPL-3.0.",
       "summary": "The ingest and restream control plane extracted from OpenVibe.Live: go live once and restream to several destinations, at openre.stream.",
       "infobox": [
         {
@@ -746,15 +746,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenRestream/blob/57e15dc9eb3671098dbf263beeec23b0a119183a/README.md",
-          "title": "OpenRestream README (commit 57e15dc)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenRestream/blob/370f0a96d7465fac80b6baff388c5919a493366d/README.md",
+          "title": "OpenRestream README (commit 370f0a9)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Open restreaming at openre.stream"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenRestream/blob/57e15dc9eb3671098dbf263beeec23b0a119183a/STATUS.json",
-          "title": "OpenRestream STATUS.json (commit 57e15dc)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenRestream/blob/370f0a96d7465fac80b6baff388c5919a493366d/STATUS.json",
+          "title": "OpenRestream STATUS.json (commit 370f0a9)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "No slot switched yet"
         }
       ]
@@ -820,7 +820,7 @@
     {
       "title": "OpenVibe.MediaHub",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.MediaHub** is the network's file service, serving `openvibe.download` as a private drive. A signed-in person can upload, organise, share and delete their own files.\n\n## What it does\n\nMediaHub keeps the metadata, the per-person limits, the share links and the report queue, while the bytes live in [[OpenVibe.Media]]. Uploads are account-only: a plain form streams a file up to 256 MB, and larger files use resumable chunked uploads. Files are private to their owner, and another person's file id answers 404. Share links expire in one hour to seven days, are revocable, count downloads, and need the downloader to be signed in. Downloads are always attachments, sandboxed, with a real Content-Type only for a short safe list. Three distinct reports, or any report of illegal content, suspend a share for staff review.\n\n## What it does not do yet\n\nThe README states that `openvibe.pics` and `openvibe.video` are parked: they redirect to openvibe.network until Pics and Video are built. Public signed-out share links are deliberately not offered while there is no scanning, and previews and thumbnails are not built. The service manifest lists ten capabilities, but no route guards one yet; every `/api/v1` route requires a signed-in person.\n\n## How it fits the network\n\nMediaHub depends on [[OpenVibe.Network]] for SSO and subject resolution, [[OpenVibe.Media]] for the bytes, [[OpenVibe.Events]] for the account export and deletion topics, and PostgreSQL and Valkey.\n\n## Runtime and status\n\nThe README states the port is 4990, the service id is `media-hub`, and the status is alpha. STATUS.json says it is public at https://openvibe.download since 2026-10-08. License: AGPL-3.0.",
+      "body": "**OpenVibe.MediaHub** is the network's file service, serving `openvibe.download` as a private drive. A signed-in person can upload, organise, share and delete their own files.\n\n## What it does\n\nMediaHub keeps the metadata, the per-person limits, the share links and the report queue, while the bytes live in [[OpenVibe.Media]]. Uploads are account-only: a plain form streams a file up to 256 MB, and larger files use resumable chunked uploads. Files are private to their owner, and another person's file id answers 404. Share links expire in one hour to seven days, are revocable, count downloads, and need the downloader to be signed in. Downloads are always attachments, sandboxed, with a real Content-Type only for a short safe list. Three distinct reports, or any report of illegal content, suspend a share for staff review.\n\n## What it does not do yet\n\nOne process serves `openvibe.download`, a private drive, and `openvibe.video`: the recordings and clips of [[OpenVibe.Live]], with AI chapters, captions and the chat. `openvibe.pics` stays parked until upload scanning and abuse intake exist. Public signed-out share links are deliberately not offered without scanning.\n## How it fits the network\n\nMediaHub depends on [[OpenVibe.Network]] for SSO and subject resolution, [[OpenVibe.Media]] for the bytes, [[OpenVibe.Events]] for the account export and deletion topics, and PostgreSQL and Valkey.\n\n## Runtime and status\n\nThe README states the port is 4990, the service id is `media-hub`, and the status is alpha. STATUS.json says it is public at https://openvibe.download since 2026-10-08. License: AGPL-3.0.",
       "summary": "The network file service at openvibe.download: a private drive where a signed-in person uploads, organises, shares and deletes their own files, with bytes in OpenVibe.Media.",
       "infobox": [
         {
@@ -862,15 +862,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.MediaHub/blob/4a7bd39c3f58183967de46ce407c3c1dc4c1832a/README.md",
-          "title": "OpenVibe.MediaHub README (commit 4a7bd39)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.MediaHub/blob/406ec3deb93ad501a09f9a83b1445b4c61edd0ee/README.md",
+          "title": "OpenVibe.MediaHub README (commit 406ec3d)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Your files, shared on your terms."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.MediaHub/blob/4a7bd39c3f58183967de46ce407c3c1dc4c1832a/STATUS.json",
-          "title": "OpenVibe.MediaHub STATUS.json (commit 4a7bd39)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.MediaHub/blob/406ec3deb93ad501a09f9a83b1445b4c61edd0ee/STATUS.json",
+          "title": "OpenVibe.MediaHub STATUS.json (commit 406ec3d)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "openvibe.download as a private drive"
         }
       ]
@@ -878,7 +878,7 @@
     {
       "title": "OpenVibe.Blog",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Blog** hosts the official OpenVibe blog and a blog for every member, served at `openvibe.blog`. It provides drafts, revisions, series, scheduling and feeds.\n\n## What it does\n\nThe README states the official blog exists from the first boot, and every member gets a blog on first use. Posts have drafts and immutable revisions with optimistic concurrency, diff and revert. Publishing, unpublishing, soft delete and scheduled publish or unpublish are supported. Tags, nested categories and ordered series organise posts, and slug changes leave 301s. Posts can use [[OpenVibe.Media]] for covers and figures, [[OpenVibe.Community]] for comment threads, and OpenVibe.VIP for members-only posts. A network changelog publishes Patch notes posts on the official blog. Pages are server-rendered and useful without JavaScript.\n\n## What it does not do yet\n\nThe README states the seed post stays a draft until a person reviews it, so nothing is published on the blog yet. The editor attaches existing `med_...` ids and does not upload. Media publishes no deletion event yet, so broken assets are found by polling. The Community thread visibility sync is best effort.\n\n## How it fits the network\n\nBlog depends on [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Media]] for attachments, [[OpenVibe.Community]] for comments, [[OpenVibe.Events]] for events and [[OpenVibe.Search]] for indexing.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 16, Blog half), public at https://openvibe.blog since 2026-09-23. STATUS.json says it is deployed and that its capabilities and service manifest are registered. License: AGPL-3.0.",
+      "body": "**OpenVibe.Blog** hosts the official OpenVibe blog and a blog for every member, served at `openvibe.blog`. It provides drafts, revisions, series, scheduling and feeds.\n\n## What it does\n\nThe README states the official blog exists from the first boot, and every member gets a blog on first use. Posts have drafts and immutable revisions with optimistic concurrency, diff and revert. Publishing, unpublishing, soft delete and scheduled publish or unpublish are supported. Tags, nested categories and ordered series organise posts, and slug changes leave 301s. Posts can use [[OpenVibe.Media]] for covers and figures, [[OpenVibe.Community]] for comment threads, and OpenVibe.VIP for members-only posts. A network changelog publishes Patch notes posts on the official blog. Pages are server-rendered and useful without JavaScript.\n\n## What it does not do yet\n\nThe official blog is live. On 2026-10-14 it held 60 published posts, most of them Patch notes from the network changelog. The editor attaches existing `med_...` ids and does not upload. Media publishes no deletion event yet, so broken assets are found by polling. The Community thread visibility sync is best effort.\n## How it fits the network\n\nBlog depends on [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Media]] for attachments, [[OpenVibe.Community]] for comments, [[OpenVibe.Events]] for events and [[OpenVibe.Search]] for indexing.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 16, Blog half), public at https://openvibe.blog since 2026-09-23. STATUS.json says it is deployed and that its capabilities and service manifest are registered. License: AGPL-3.0.",
       "summary": "Hosts the official OpenVibe blog and a blog for every member, with drafts, revisions, series, scheduling and feeds.",
       "infobox": [
         {
@@ -920,15 +920,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Blog/blob/5f6ed5848daff06498d4fa8803db256d4a15c682/README.md",
-          "title": "OpenVibe.Blog README (commit 5f6ed58)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Blog/blob/b7167827834389bd2a6e4d580fb7edd16992e7f9/README.md",
+          "title": "OpenVibe.Blog README (commit b716782)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "The official OpenVibe blog and a blog for every member"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Blog/blob/5f6ed5848daff06498d4fa8803db256d4a15c682/STATUS.json",
-          "title": "OpenVibe.Blog STATUS.json (commit 5f6ed58)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Blog/blob/b7167827834389bd2a6e4d580fb7edd16992e7f9/STATUS.json",
+          "title": "OpenVibe.Blog STATUS.json (commit b716782)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Public at https://openvibe.blog since 2026-09-23"
         }
       ]
@@ -936,7 +936,7 @@
     {
       "title": "OpenVibe.News",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.News** is a publication product, served at `openvibe.news`, that turns collected news items into editor-written, source-backed stories. The README calls it \"A publication product, not an autonomous headline generator\".\n\n## What it does\n\n[[OpenVibe.Sources]] collects news items, and News normalises them, removes duplicates, groups them into explainable clusters, and gives editors tools to write stories. Every paragraph an editor publishes cites the source items it rests on, and the README states a story with no sources cannot be published. Stories have immutable revisions, timelines, editor-written perspectives, corrections, updates and final retractions. Ingestion works two ways: an Events webhook and a cursor pull. Discussion threads are referenced from [[OpenVibe.Community]], and optional [[OpenVibe.AI]] drafts need a person's review. Pages are server-rendered and useful without JavaScript.\n\n## What it does not do yet\n\nThe README states that full article text from sources is never stored, shown, fed or indexed, and that News \"publishes nothing until an editor does\": the only seed is the topic list. Production ingests from [[OpenVibe.Sources]], but there are no stories yet, because a story exists only once an editor opens one from a cluster and publishes it. Delivery of a real item through [[OpenVibe.Events]] and an AI run are not yet demonstrated.\n\n## How it fits the network\n\nNews depends on [[OpenVibe.Sources]] for items, [[OpenVibe.Events]] for events, [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Community]] for comments and [[OpenVibe.Search]] for indexing.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 17, News half), public at `openvibe.news` since 2026-10-09, and that STATUS.json records it deployed. License: AGPL-3.0.",
+      "body": "**OpenVibe.News** is a publication product, served at `openvibe.news`, that turns collected news items into editor-written, source-backed stories. The README calls it \"A publication product, not an autonomous headline generator\".\n\n## What it does\n\n[[OpenVibe.Sources]] collects news items, and News normalises them, removes duplicates, groups them into explainable clusters, and gives editors tools to write stories. Every paragraph an editor publishes cites the source items it rests on, and the README states a story with no sources cannot be published. Stories have immutable revisions, timelines, editor-written perspectives, corrections, updates and final retractions. Ingestion works two ways: an Events webhook and a cursor pull. Discussion threads are referenced from [[OpenVibe.Community]], and optional [[OpenVibe.AI]] drafts need a person's review. Pages are server-rendered and useful without JavaScript.\n\n## What it does not do yet\n\nThe home page shows the latest items from the source wires, each linking to its source. Full article text from sources is never stored, shown, fed or indexed. Edited stories exist only once an editor opens one from a cluster and publishes it, and none has been published yet.\n## How it fits the network\n\nNews depends on [[OpenVibe.Sources]] for items, [[OpenVibe.Events]] for events, [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Community]] for comments and [[OpenVibe.Search]] for indexing.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 17, News half), public at `openvibe.news` since 2026-10-09, and that STATUS.json records it deployed. License: AGPL-3.0.",
       "summary": "A publication product that turns news items collected by OpenVibe.Sources into editor-written, source-backed stories with cited paragraphs.",
       "infobox": [
         {
@@ -978,15 +978,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/8c4186584796a83d8672b3107d546776a1f1c7d2/README.md",
-          "title": "OpenVibe.News README (commit 8c41865)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/648dbd9af3ebc1b86da85fa919cac379bdf779f3/README.md",
+          "title": "OpenVibe.News README (commit 648dbd9)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Source-backed stories: clustered coverage, cited paragraphs, perspectives, timelines"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/8c4186584796a83d8672b3107d546776a1f1c7d2/STATUS.json",
-          "title": "OpenVibe.News STATUS.json (commit 8c41865)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/648dbd9af3ebc1b86da85fa919cac379bdf779f3/STATUS.json",
+          "title": "OpenVibe.News STATUS.json (commit 648dbd9)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "stories exist only once an editor opens and publishes one"
         }
       ]
@@ -994,7 +994,7 @@
     {
       "title": "OpenVibe.Reviews",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Reviews** is the interpretation and publication layer for review signals, served at `openvibe.reviews`. It reads what sources stated through [[OpenVibe.Sources]], attributes each observation to the thing it is about, and shows every number with its provenance.\n\n## What it does\n\nThe README states Reviews resolves entities and computes an aggregate only from the signals that exist; with no qualifying signal the aggregate is absent, not zero. Signals arrive by a cursor pull and a signed webhook. Resolution is deterministic, strongest rule first, and a name alone never resolves. Merges and splits are audited and reversible. Summaries are written or approved by a person, and each point cites the signals it rests on. Corrections become new immutable summary revisions with a public notice. Pages and the editor desk are server-rendered and useful without JavaScript.\n\n## What it does not do yet\n\nThe README states Reviews never fabricates a rating and never presents AI output as user reviews. The database holds nothing yet: entities come from editors, signals only from Sources, and no Sources review source is enabled. A run against the deployed Sources with a real, enabled review source, a real [[OpenVibe.AI]] run, and delivery of a real item through [[OpenVibe.Events]] are not yet demonstrated.\n\n## How it fits the network\n\nReviews depends on [[OpenVibe.Network]] for SSO and service principals, [[OpenVibe.Sources]] for review items, [[OpenVibe.Events]] for events and [[OpenVibe.Community]] for discussion threads.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 17, Reviews half), public at `openvibe.reviews` since 2026-10-09, and that STATUS.json records it deployed, with none seeded. License: AGPL-3.0.",
+      "body": "**OpenVibe.Reviews** is the interpretation and publication layer for review signals, served at `openvibe.reviews`. It reads what sources stated through [[OpenVibe.Sources]], attributes each observation to the thing it is about, and shows every number with its provenance.\n\n## What it does\n\nThe README states Reviews resolves entities and computes an aggregate only from the signals that exist; with no qualifying signal the aggregate is absent, not zero. Signals arrive by a cursor pull and a signed webhook. Resolution is deterministic, strongest rule first, and a name alone never resolves. Merges and splits are audited and reversible. Summaries are written or approved by a person, and each point cites the signals it rests on. Corrections become new immutable summary revisions with a public notice. Pages and the editor desk are server-rendered and useful without JavaScript.\n\n## What it does not do yet\n\nReviews never fabricates a rating and never presents AI output as user reviews. On 2026-10-14 it held 19 entities, Steam games whose review signals come from a Steam source in [[OpenVibe.Sources]]. Summaries written or approved by a person are still to come.\n## How it fits the network\n\nReviews depends on [[OpenVibe.Network]] for SSO and service principals, [[OpenVibe.Sources]] for review items, [[OpenVibe.Events]] for events and [[OpenVibe.Community]] for discussion threads.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 17, Reviews half), public at `openvibe.reviews` since 2026-10-09, and that STATUS.json records it deployed, with none seeded. License: AGPL-3.0.",
       "summary": "The interpretation and publication layer for review signals, with provenance, deterministic entity resolution and honest aggregates.",
       "infobox": [
         {
@@ -1036,15 +1036,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Reviews/blob/33e51f860b1cec2f77a19d33901cbf7c7431ecfa/README.md",
-          "title": "OpenVibe.Reviews README (commit 33e51f8)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Reviews/blob/d069da2c1d13ffc34741fd3168661edd7fb8921c/README.md",
+          "title": "OpenVibe.Reviews README (commit d069da2)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Review signals gathered across sources with provenance, entity resolution and honest aggregates"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Reviews/blob/33e51f860b1cec2f77a19d33901cbf7c7431ecfa/STATUS.json",
-          "title": "OpenVibe.Reviews STATUS.json (commit 33e51f8)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Reviews/blob/d069da2c1d13ffc34741fd3168661edd7fb8921c/STATUS.json",
+          "title": "OpenVibe.Reviews STATUS.json (commit d069da2)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "the database stays empty until a person verifies a review source's terms"
         }
       ]
@@ -1052,7 +1052,7 @@
     {
       "title": "OpenVibe.Help",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Help** is the help and support centre for every OpenVibe site, the service behind `openvibe.help` on port 5020 (service id `help`). Its README says \"the product is written and tested; it is not deployed yet\".\n\n## What it does\n\nAt boot it reads the pinned OpenVibe.Contracts product and service manifests, builds a catalog of every site, and generates one article per manifest FAQ entry, quoting every text verbatim. `/search` ranks those articles with a fixed, explainable score and adds a second section from [[OpenVibe.Search]]'s public API, cached for five minutes and degrading to the articles alone on failure. A signed-in person opens a support ticket with a site, subject, message and an optional page URL stored as text and never fetched, and the ticket stays one conversation; staff are decided by the Network role claim.\n\n## What it does not do yet\n\nIt is not registered with [[OpenVibe.Services]]: its capability and service manifests are not yet registered. The README status says it is not deployed yet, while STATUS.json records a public deployment. There is no email side to a ticket, no \"Report a problem\" button embedded on other OpenVibe sites, and no answers drawn from the docs, wiki, blog or service status.\n\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for sign-in, JWKS and the role claim, [[OpenVibe.Search]] for the network half of `/search`, [[OpenVibe.Events]] for the two account export and deletion topics, and [[OpenVibe.Host]] for deploy, PostgreSQL and Valkey.\n\n## Status\n\nSTATUS.json's stage is \"product\". It records the service deployed and public since 2026-10-08. License: AGPL-3.0.",
+      "body": "**OpenVibe.Help** is the help and support centre for every OpenVibe site, the service behind `openvibe.help` on port 5020 (service id `help`). Its README says \"the product is written and tested; it is not deployed yet\".\n\n## What it does\n\nAt boot it reads the pinned OpenVibe.Contracts product and service manifests, builds a catalog of every site, and generates one article per manifest FAQ entry, quoting every text verbatim. `/search` ranks those articles with a fixed, explainable score and adds a second section from [[OpenVibe.Search]]'s public API, cached for five minutes and degrading to the articles alone on failure. A signed-in person opens a support ticket with a site, subject, message and an optional page URL stored as text and never fetched, and the ticket stays one conversation; staff are decided by the Network role claim.\n\n## What it does not do yet\n\nHelp is live at `openvibe.help` since 2026-10-08, with its capabilities registered in the network's contracts. Not built yet:\n\n- an email side to a ticket;\n- a \"Report a problem\" button embedded on other OpenVibe sites;\n- answers drawn from the docs, wiki, blog or service status.\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for sign-in, JWKS and the role claim, [[OpenVibe.Search]] for the network half of `/search`, [[OpenVibe.Events]] for the two account export and deletion topics, and [[OpenVibe.Host]] for deploy, PostgreSQL and Valkey.\n\n## Status\n\nSTATUS.json's stage is \"product\". It records the service deployed and public since 2026-10-08. License: AGPL-3.0.",
       "summary": "The help and support centre for every OpenVibe site: help articles generated from OpenVibe.Contracts at boot, search alongside OpenVibe.Search, and one-conversation support tickets.",
       "infobox": [
         {
@@ -1094,15 +1094,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Help/blob/b66893794f5596831d0c0ead64323b1aecf03d3b/README.md",
-          "title": "OpenVibe.Help README (commit b668937)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Help/blob/39222f7632906bd866c7d066f5ec7143669a8ee3/README.md",
+          "title": "OpenVibe.Help README (commit 39222f7)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "the product is written and tested; it is not deployed yet"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Help/blob/b66893794f5596831d0c0ead64323b1aecf03d3b/STATUS.json",
-          "title": "OpenVibe.Help STATUS.json (commit b668937)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Help/blob/39222f7632906bd866c7d066f5ec7143669a8ee3/STATUS.json",
+          "title": "OpenVibe.Help STATUS.json (commit 39222f7)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "public at https://openvibe.help since 2026-10-08"
         }
       ]
@@ -1110,7 +1110,7 @@
     {
       "title": "OpenVibe.Food",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Food** answers \"what should we eat?\" for a household, served at `openvibe.food` on port 4970 (service id `food`). Its README says the food, planner, database and pantry features are \"live and tested\".\n\n## What it does\n\nIt finds food banks, soup kitchens, community fridges, pantry boxes and budget grocery stores near a place, using OpenStreetMap through Nominatim and Overpass, with distance, address and opening hours. A deterministic meal planner builds a shop for one person, a couple or a group over one to fourteen days, one item from each of the six USDA MyPlate groups, with a shopping list, the cheapest store per line, an estimated cost and a budget as a hard cap. It carries a 42-item food database with nutrition and typical cost bands, and a pantry with a plain \"what can I make\" against ten basic recipes. Everything is server-rendered and works without JavaScript.\n\n## What it does not do yet\n\nDelivery comparison, meal kits and cupboard recipes built with the network's AI are not built. There is no browser-location \"food near me\", only a place name or explicit coordinates, and the cost bands are typical carried-over values, not live figures. Its service and capability manifests are not in OpenVibe.Contracts.\n\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for sign-in, [[OpenVibe.Events]] for the two account topics and [[OpenVibe.Host]] for deploy, PostgreSQL and Valkey. Its food list and cost bands are carried over from [[OpenVibe.Tools]]' grocery source.\n\n## Status\n\nSTATUS.json's stage is \"product\"; it is deployed and public since 2026-10-08. License: AGPL-3.0.",
+      "body": "**OpenVibe.Food** answers \"what should we eat?\" for a household, served at `openvibe.food` on port 4970 (service id `food`). Its README says the food, planner, database and pantry features are \"live and tested\".\n\n## What it does\n\nIt finds food banks, soup kitchens, community fridges, pantry boxes and budget grocery stores near a place, using OpenStreetMap through Nominatim and Overpass, with distance, address and opening hours. A deterministic meal planner builds a shop for one person, a couple or a group over one to fourteen days, one item from each of the six USDA MyPlate groups, with a shopping list, the cheapest store per line, an estimated cost and a budget as a hard cap. It carries a 42-item food database with nutrition and typical cost bands, and a pantry with a plain \"what can I make\" against ten basic recipes. Everything is server-rendered and works without JavaScript.\n\n## What it does not do yet\n\nFood near you, the meal planner, the food database, the pantry and recipe ideas from [[OpenVibe.AI]] are live. Delivery comparison is not built yet. There is no browser-location \"food near me\", only a place name or explicit coordinates, and the cost bands are typical carried-over values, not live figures.\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for sign-in, [[OpenVibe.Events]] for the two account topics and [[OpenVibe.Host]] for deploy, PostgreSQL and Valkey. Its food list and cost bands are carried over from [[OpenVibe.Tools]]' grocery source.\n\n## Status\n\nSTATUS.json's stage is \"product\"; it is deployed and public since 2026-10-08. License: AGPL-3.0.",
       "summary": "Answers what a household should eat: food banks and budget stores near a place from OpenStreetMap, a deterministic meal planner, a food database and a pantry.",
       "infobox": [
         {
@@ -1152,15 +1152,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Food/blob/76588a1fea39ccf549d82046b314042f87c2c848/README.md",
-          "title": "OpenVibe.Food README (commit 76588a1)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Food/blob/50d2445a9af7ef506be3bbeb859f7d1c0020e0cf/README.md",
+          "title": "OpenVibe.Food README (commit 50d2445)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "the product works — food near you, a meal planner, the food database and the pantry are live and tested."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Food/blob/76588a1fea39ccf549d82046b314042f87c2c848/STATUS.json",
-          "title": "OpenVibe.Food STATUS.json (commit 76588a1)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Food/blob/50d2445a9af7ef506be3bbeb859f7d1c0020e0cf/STATUS.json",
+          "title": "OpenVibe.Food STATUS.json (commit 50d2445)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "public at https://openvibe.food since 2026-10-08"
         }
       ]
@@ -1220,8 +1220,8 @@
     {
       "title": "OpenVibe.Games",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Games** is Scraplandia, a persistent multiplayer physics sandbox for the browser, served at `openvibe.games` and `play.openvibe.games`.\n\n## What it does\n\nIt runs an authoritative dedicated server that clients reach over a versioned WebSocket protocol. Players spawn in Scrap City, a safe city, gather branches, stones and scrap outside the gates, craft tools and building pieces, place them in the wilds and position them with a GMod-style physgun. The stack is TypeScript everywhere, Babylon.js on the client with a WebGPU path and a WebGL fallback, deterministic Rapier physics on the server and in client prediction, and PostgreSQL 18 with optional Valkey persistence through openvibe-sdk. The world, characters, inventories, skills and props are persistent.\n\n## What it does not do yet\n\nMods are declarative only; executable mods are refused until sandboxed execution exists in [[OpenVibe.Host]] Stage C. There is no achievement system, and the game never builds in Host.\n\n## How it fits the network\n\nPlayers are keyed by [[OpenVibe.Network]] subjects. The game publishes `games.*` events through [[OpenVibe.Events]] and mirrors map-editor assets to [[OpenVibe.Media]]. It deploys through [[OpenVibe.Host]].\n\n## Status\n\nSTATUS.json's stage is \"stable\"; it is deployed with the `pnpm-build` strategy, and in production its events and the Media mirror are on.",
-      "summary": "Scraplandia, a persistent multiplayer physics sandbox served at openvibe.games and play.openvibe.games, with an authoritative server, Rapier physics and PostgreSQL persistence.",
+      "summary": "Browser games on one moddable base: Scraplandia (a persistent multiplayer physics sandbox), Salvage Rush (timed rounds) and the casual line, starting with Vibe Heroes.",
+      "body": "**OpenVibe.Games** runs browser games at `openvibe.games` and `play.openvibe.games`, all from one TypeScript codebase with an authoritative server.\n\n## What it does\n\n- **Scraplandia** is a persistent multiplayer physics sandbox. Players gather in the wilds outside Scrap City, craft tools and building pieces, place them with a GMod-style physgun, and extract valuables in its scored \"Haul\" mode.\n- **Salvage Rush** is a separate place in the same process: 90-second rounds of collecting scrap, scored by the server.\n- **Vibe Heroes** (`/play/vibe-heroes`) is the first casual game: a phone-first idle hero collector built from a shared casual kit.\n- **The client** runs Babylon.js, using WebGPU where the browser has it. Its quality tiers scale resolution, shadows and texture size on weak phones.\n- **The server** keeps characters, inventories and the world in PostgreSQL, with deterministic Rapier physics.\n- **Mods** add content packs and sandboxed script mods with per-mod capability grants.\n- **The map editor** works in the browser and is tested end to end in CI.\n\n## How it fits the network\n\nPlayers are keyed by [[OpenVibe.Network]] subjects.\n\n- **Play.** Games registers Scraplandia and Salvage Rush as titles on [[OpenVibe.Play]] and posts every round, haul, achievement unlock and guest adoption there.\n- **Inventory.** Some achievements grant cosmetic items through [[OpenVibe.Inventory]].\n- **Events and Media.** Games publishes `games.*` events through [[OpenVibe.Events]] and mirrors map-editor assets to [[OpenVibe.Media]].\n\nIt deploys through [[OpenVibe.Host]].\n\n## Status\n\nSTATUS.json's stage is \"stable\"; it is deployed with the `pnpm-build` strategy.",
       "infobox": [
         {
           "key": "repository",
@@ -1256,15 +1256,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Games/blob/c7fc69668d107372f6e09869c2abf396ee90c7f5/README.md",
-          "title": "OpenVibe.Games README (commit c7fc696)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "A persistent multiplayer physics sandbox for the browser"
+          "url": "https://github.com/OpenVibers/OpenVibe.Games/blob/d782f6c088ada4f75c46659388bf9e9e79aa2bda/README.md",
+          "title": "OpenVibe.Games README (commit d782f6c)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "quote": "OpenVibe.Games hosts Scraplandia at https://openvibe.games and https://play.openvibe.games."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Games/blob/c7fc69668d107372f6e09869c2abf396ee90c7f5/STATUS.json",
-          "title": "OpenVibe.Games STATUS.json (commit c7fc696)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Games/blob/d782f6c088ada4f75c46659388bf9e9e79aa2bda/STATUS.json",
+          "title": "OpenVibe.Games STATUS.json (commit d782f6c)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Public at https://openvibe.games and https://play.openvibe.games"
         }
       ]
@@ -1272,7 +1272,7 @@
     {
       "title": "OpenVibe.Run",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Run** is the job service of the network, served at `openvibe.run` on port 4920. It accepts jobs, places each one on a node that advertises the runtime class it needs, and follows it to its end.\n\n## What it does\n\nA job belongs to a project, is billed per wall-clock second it runs, and is visible only to the token that project presents. Submit (`POST /api/v1/jobs`, capability `run.job.submit`) validates against a released contract, mints a `job_<ULID>` id, stores the row queued and writes `run.job.queued` in the same transaction. A poller places the job from the Fabric's offers using `openvibe-sdk/placement`, sends it to [[OpenVibe.Bot]], mirrors Bot's state and the node's stdout back, and settles it. `/api/v1/jobs/:id/stream` replays and follows a job's output as a server-sent event stream.\n\n## What it does not do yet\n\nWithout `OV_OAUTH_CLIENT_SECRET` Run cannot mint the Network token Bot requires, so the bridge is off and every job stays queued. `openvibe.run` is parked, answering a 302 to openvibe.network, until Run has a product surface.\n\n## How it fits the network\n\nIt verifies tokens issued by [[OpenVibe.Network]] and publishes `run.job.*` events to [[OpenVibe.Events]]. It owns no node link or per-second metering, which belong to [[OpenVibe.Bot]], and it holds no Billing token.\n\n## Status\n\nSTATUS.json's stage is \"alpha\"; it is deployed on the host since 2026-10-07, with the job API reached by first-party callers on loopback.",
+      "body": "**OpenVibe.Run** is the job service of the network, served at `openvibe.run` on port 4920. It accepts jobs, places each one on a node that advertises the runtime class it needs, and follows it to its end.\n\n## What it does\n\nA job belongs to a project, is billed per wall-clock second it runs, and is visible only to the token that project presents. Submit (`POST /api/v1/jobs`, capability `run.job.submit`) validates against a released contract, mints a `job_<ULID>` id, stores the row queued and writes `run.job.queued` in the same transaction. A poller places the job from the Fabric's offers using `openvibe-sdk/placement`, sends it to [[OpenVibe.Bot]], mirrors Bot's state and the node's stdout back, and settles it. `/api/v1/jobs/:id/stream` replays and follows a job's output as a server-sent event stream.\n\n## What it does not do yet\n\nRun serves its own site at `openvibe.run` since 2026-10-11. First-party callers such as [[OpenVibe.Codes]] submit jobs on loopback. A hosted runner for untrusted code waits for a separate, isolated worker host.\n## How it fits the network\n\nIt verifies tokens issued by [[OpenVibe.Network]] and publishes `run.job.*` events to [[OpenVibe.Events]]. It owns no node link or per-second metering, which belong to [[OpenVibe.Bot]], and it holds no Billing token.\n\n## Status\n\nSTATUS.json's stage is \"alpha\"; it is deployed on the host since 2026-10-07, with the job API reached by first-party callers on loopback.",
       "summary": "The network's job service at openvibe.run: it accepts jobs, places each on a node advertising the runtime class it needs, sends it to OpenVibe.Bot and mirrors it to its end.",
       "infobox": [
         {
@@ -1308,15 +1308,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Run/blob/5a8d9987b8b176e66fbff37a6c05d941a129b472/README.md",
-          "title": "OpenVibe.Run README (commit 5a8d998)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Run/blob/6eb9d7799c5f74e64c0f0bee5ceff4594ded11db/README.md",
+          "title": "OpenVibe.Run README (commit 6eb9d77)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "The job service of the network (openvibe.run)."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Run/blob/5a8d9987b8b176e66fbff37a6c05d941a129b472/STATUS.json",
-          "title": "OpenVibe.Run STATUS.json (commit 5a8d998)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Run/blob/6eb9d7799c5f74e64c0f0bee5ceff4594ded11db/STATUS.json",
+          "title": "OpenVibe.Run STATUS.json (commit 6eb9d77)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "unit openvibe-run.service on 127.0.0.1:4920 since 2026-10-07"
         }
       ]
@@ -1324,7 +1324,7 @@
     {
       "title": "OpenVibe.Host",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Host** is two things at `openvibe.host`. Its front page is **hosting compared**: a sourced comparison of cloud, VPS and dedicated plans. Behind it are the network's deployment plane (the `ovhost` CLI) and OpenVibe's own static site hosting, which is built but not yet open to the public.\n\n## The hosting catalog\n\nThe README describes the catalog as plan T20 step 3: \"openvibe.host is **hosting compared**\". Plans come from providers' official APIs through [[OpenVibe.Sources]] (category `hosting`; Linode's plan types first) and from staff entries that must name their source URL. Each plan shows its monthly price, its price per vCPU and per GB of RAM and disk, the day the price was checked and a link to its source; price changes are kept as a history per plan. The order comes only from the sort a visitor picks, and affiliate links are marked with `rel=\"sponsored nofollow noopener\"` and disclosed beside the link. The pages work without JavaScript, and the same data is public at `/api/v1/catalog/*`.\n\n## What it does\n\nStage A is the `ovhost` CLI: it holds the host inventory, validates environments, installs and rolls back releases, polls `/api/ready`, runs scheduled PostgreSQL backups and restore drills, and installs nginx vhosts transactionally. It is installed on the production host and deploys every service. Stage B is a Node service on port 4910 that hosts static sites for OpenVibe projects: projects, sites, immutable content-addressed deploys, activation and rollback, `<site>.openvibe.host` and TXT-verified custom domains, quotas and upload logs.\n\n## What it does not do yet\n\nStage C, sandboxed user code with isolation profiles, budgets, secret references, outbound policy and metering, is not started and is deliberately blocked until isolation and metering are proven. Projects are created in Host until [[OpenVibe.Network]] has them, and certificates for custom domains are operator-issued by certbot, not automated. Git deploys are Phase 1 only: Host never clones, fetches or builds.\n\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for SSO and tokens, [[OpenVibe.Events]] for `host.*` events, and optionally [[OpenVibe.Media]] for deploy objects. Its resource index feeds [[OpenVibe.Services]]' fan-out.\n\n## Status\n\nSTATUS.json's stage is \"alpha\" (Wave 21, Stages A and B); it is deployed in production since 2026-10-07. License: AGPL-3.0.",
+      "body": "**OpenVibe.Host** is two things at `openvibe.host`. Its front page is **hosting compared**: a sourced comparison of cloud, VPS and dedicated plans. Behind it are the network's deployment plane (the `ovhost` CLI) and OpenVibe's own static site hosting, which is built but not yet open to the public.\n\n## The hosting catalog\n\nThe README describes the catalog as plan T20 step 3: \"openvibe.host is **hosting compared**\". Plans come from providers' official APIs through [[OpenVibe.Sources]] (category `hosting`; Linode's plan types first) and from staff entries that must name their source URL. Each plan shows its monthly price, its price per vCPU and per GB of RAM and disk, the day the price was checked and a link to its source; price changes are kept as a history per plan. The order comes only from the sort a visitor picks, and affiliate links are marked with `rel=\"sponsored nofollow noopener\"` and disclosed beside the link. The pages work without JavaScript, and the same data is public at `/api/v1/catalog/*`.\n\n## What it does\n\nStage A is the `ovhost` CLI: it holds the host inventory, validates environments, installs and rolls back releases, polls `/api/ready`, runs scheduled PostgreSQL backups and restore drills, and installs nginx vhosts transactionally. It is installed on the production host and deploys every service. Stage B is a Node service on port 4910 that hosts static sites for OpenVibe projects: projects, sites, immutable content-addressed deploys, activation and rollback, `<site>.openvibe.host` and TXT-verified custom domains, quotas and upload logs.\n\n## What it does not do yet\n\nStage C, sandboxed user code with isolation profiles, budgets, secret references, outbound policy and metering, is not started and is deliberately blocked until isolation and metering are proven. Static site hosting moved to [[OpenVibe.Space]]. Certificates for custom domains are operator-issued by certbot, not automated.\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for SSO and tokens, [[OpenVibe.Events]] for `host.*` events, and optionally [[OpenVibe.Media]] for deploy objects. Its resource index feeds [[OpenVibe.Services]]' fan-out.\n\n## Status\n\nSTATUS.json's stage is \"alpha\" (Wave 21, Stages A and B); it is deployed in production since 2026-10-07. License: AGPL-3.0.",
       "summary": "Hosting compared (a sourced plan catalog) at openvibe.host, plus the network's deployment plane (ovhost) and static site hosting that opens after review.",
       "infobox": [
         {
@@ -1366,15 +1366,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/adeebc069f4bfce5be6edb407725762cd1a573a6/README.md",
-          "title": "OpenVibe.Host README (commit adeebc0)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/bd71b193f57056452cc9b67fcb4254cd761bd47c/README.md",
+          "title": "OpenVibe.Host README (commit bd71b19)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "openvibe.host is **hosting compared**"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/f6879be67a8e946bfa45433b5ccd9972eae65d49/STATUS.json",
-          "title": "OpenVibe.Host STATUS.json (commit f6879be)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/bd71b193f57056452cc9b67fcb4254cd761bd47c/STATUS.json",
+          "title": "OpenVibe.Host STATUS.json (commit bd71b19)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "production: openvibe.host and *.openvibe.host since 2026-10-07"
         }
       ]
@@ -1382,7 +1382,7 @@
     {
       "title": "OpenVibe.Actor",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Actor** is OpenVibe's own general agent and the router for agent work, public at `openvibe.actor` on port 4950. It takes a task in plain words, sends it to the best agent system for it, streams the steps, has a model of another family check the answer, and gives back the result with its cost and the reason it went where it did.\n\n## What it does\n\nA task runs in five steps: classify it, route it with `openvibe-sdk/placement` over the agent catalog, run it while steps stream as events, check it with a model of another family, then deliver it or hand it on. Modes are cheapest, balanced, best, fastest and private. The OpenVibe runtime acts only through OpenVibe's public APIs: [[OpenVibe.Search]] content, [[OpenVibe.Tools]]' catalog and run API, and the Tools page reader. Private mode runs the open model on OpenVibe's own server, and the README says the task text never leaves OpenVibe. The API covers tasks, live server-sent events, cancel, a route dry run and personal agents.\n\n## What it does not do yet\n\nCoding tasks need [[OpenVibe.Run]] sandboxes and are listed as unavailable; browser and desktop agents, more agent platforms, bring-your-own keys through [[OpenVibe.AI]] and paid tiers through OpenVibe.Billing come later. Webhooks on task state changes and an approval inbox are not finished. A project secret named by reference is refused until project secrets exist.\n\n## How it fits the network\n\nActor depends on [[OpenVibe.Network]] for sign-in and tokens, [[OpenVibe.Search]] and [[OpenVibe.Tools]] at runtime, and [[OpenVibe.Events]] for its two boot-time subscriptions. It calls the model providers DeepSeek and OpenAI, plus an OpenAI-compatible local server for private mode. [[OpenVibe.Services]] reads its resource index over loopback.\n\n## Status\n\nNode 22 with Express, PostgreSQL for tasks, event logs and daily spend, and Valkey for shared limit counters. STATUS.json records it deployed; its stage is alpha. License: AGPL-3.0.",
+      "body": "**OpenVibe.Actor** is OpenVibe's own general agent and the router for agent work, public at `openvibe.actor` on port 4950. It takes a task in plain words, sends it to the best agent system for it, streams the steps, has a model of another family check the answer, and gives back the result with its cost and the reason it went where it did.\n\n## What it does\n\nA task runs in five steps: classify it, route it with `openvibe-sdk/placement` over the agent catalog, run it while steps stream as events, check it with a model of another family, then deliver it or hand it on. Modes are cheapest, balanced, best, fastest and private. The OpenVibe runtime acts only through OpenVibe's public APIs: [[OpenVibe.Search]] content, [[OpenVibe.Tools]]' catalog and run API, and the Tools page reader. Private mode runs the open model on OpenVibe's own server, and the README says the task text never leaves OpenVibe. The API covers tasks, live server-sent events, cancel, a route dry run and personal agents.\n\n## What it does not do yet\n\nSince the first release, Actor has added:\n\n- an approval inbox for the steps a person must confirm;\n- signed webhooks on task state changes;\n- computer control on a person's own machine through [[OpenVibe.Node]]: reading the screen and, at the level the person allows, the mouse and keyboard.\n\nCoding tasks need [[OpenVibe.Run]] sandboxes and stay unavailable until an isolated worker host exists. A project secret named by reference is refused until project secrets exist. Paid tiers come later.\n## How it fits the network\n\nActor depends on [[OpenVibe.Network]] for sign-in and tokens, [[OpenVibe.Search]] and [[OpenVibe.Tools]] at runtime, and [[OpenVibe.Events]] for its two boot-time subscriptions. It calls the model providers DeepSeek and OpenAI, plus an OpenAI-compatible local server for private mode. [[OpenVibe.Services]] reads its resource index over loopback.\n\n## Status\n\nNode 22 with Express, PostgreSQL for tasks, event logs and daily spend, and Valkey for shared limit counters. STATUS.json records it deployed; its stage is alpha. License: AGPL-3.0.",
       "summary": "OpenVibe's own general agent and agent router: it classifies a task, routes it with openvibe-sdk/placement, streams the steps, checks the answer with another model family and delivers the result with its cost.",
       "infobox": [
         {
@@ -1424,15 +1424,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Actor/blob/2c7ec5dce6f9f99558b54f3f762a6910448d38a4/README.md",
-          "title": "OpenVibe.Actor README (commit 2c7ec5d)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Actor/blob/fd04882c43c990f0f94c2f0c311f7fb5b4f3a636/README.md",
+          "title": "OpenVibe.Actor README (commit fd04882)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Your agent for everything: give a task in plain words, and Actor sends it to the best agent for it"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Actor/blob/2c7ec5dce6f9f99558b54f3f762a6910448d38a4/STATUS.json",
-          "title": "OpenVibe.Actor STATUS.json (commit 2c7ec5d)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Actor/blob/fd04882c43c990f0f94c2f0c311f7fb5b4f3a636/STATUS.json",
+          "title": "OpenVibe.Actor STATUS.json (commit fd04882)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "A task in plain words is classified, routed by openvibe-sdk/placement to the agent system that can do it"
         }
       ]
@@ -1666,7 +1666,7 @@
     {
       "title": "OpenVibe.Quest",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Quest** is \"One quest log across every OpenVibe site\" at `openvibe.quest` on port 4980. A quest counts something a person really did somewhere in the network and pays a badge on their profile; when OpenCoins are on, it also credits OpenCoins through [[OpenVibe.Network]]'s wallet.\n\n## What it does\n\nThe quest catalog holds 12 first-party quests in code, each with steps, the events that count them, a badge, OpenCoins and any item reward, plus the whole list of events Quest listens to. Quest runs no activities of its own: it consumes domain events from [[OpenVibe.Events]] at `POST /internal/events`, taking the person from the field each event's schema defines. Progress is stored per step, with one completion per person per quest and one badge per person, all once-only under a redelivery. Six quests grant one of [[OpenVibe.Live]]'s items through [[OpenVibe.Inventory]]. The API exposes the catalog, a quest, your own log and a badges endpoint; the pages are server-rendered.\n\n## What it does not do yet\n\nOpenCoins are off until the feature is turned on (`QUEST_COINS`, default `off`). The README's status says Quest is not deployed, and its not-yet list says the service is not registered with [[OpenVibe.Services]] nor deployed by [[OpenVibe.Host]]; STATUS.json, however, records it deployed to the production host and public since 2026-10-08. Community-made quests, leaderboards, repeatable quests and account-merge re-keying are not implemented.\n\n## How it fits the network\n\nQuest depends on [[OpenVibe.Network]] for sign-in and crediting coins, [[OpenVibe.Events]] for deliveries, and [[OpenVibe.Inventory]] for item rewards. It counts events from [[OpenVibe.Live]], [[OpenVibe.Community]], [[OpenVibe.Space]], [[OpenVibe.Chat]], [[OpenVibe.Wiki]], [[OpenVibe.Games]] and [[OpenVibe.Tools]].\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. The README calls it a \"first release\". License: AGPL-3.0.",
+      "body": "**OpenVibe.Quest** is \"One quest log across every OpenVibe site\" at `openvibe.quest` on port 4980. A quest counts something a person really did somewhere in the network and pays a badge on their profile; when OpenCoins are on, it also credits OpenCoins through [[OpenVibe.Network]]'s wallet.\n\n## What it does\n\nThe quest catalog holds 12 first-party quests in code, each with steps, the events that count them, a badge, OpenCoins and any item reward, plus the whole list of events Quest listens to. Quest runs no activities of its own: it consumes domain events from [[OpenVibe.Events]] at `POST /internal/events`, taking the person from the field each event's schema defines. Progress is stored per step, with one completion per person per quest and one badge per person, all once-only under a redelivery. Six quests grant one of [[OpenVibe.Live]]'s items through [[OpenVibe.Inventory]]. The API exposes the catalog, a quest, your own log and a badges endpoint; the pages are server-rendered.\n\n## What it does not do yet\n\nQuest is deployed and public since 2026-10-08. OpenCoins are off until the feature is turned on (`QUEST_COINS`, default `off`). Community-made quests, leaderboards and repeatable quests are not implemented.\n## How it fits the network\n\nQuest depends on [[OpenVibe.Network]] for sign-in and crediting coins, [[OpenVibe.Events]] for deliveries, and [[OpenVibe.Inventory]] for item rewards. It counts events from [[OpenVibe.Live]], [[OpenVibe.Community]], [[OpenVibe.Space]], [[OpenVibe.Chat]], [[OpenVibe.Wiki]], [[OpenVibe.Games]] and [[OpenVibe.Tools]].\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. The README calls it a \"first release\". License: AGPL-3.0.",
       "summary": "One quest log across every OpenVibe site: it counts domain events the sites emit to award badges and, when enabled, OpenCoins through Network’s wallet.",
       "infobox": [
         {
@@ -1708,15 +1708,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/c5a4b0a218ebee11cd0b1ee84b9e813ff5524bc0/README.md",
-          "title": "OpenVibe.Quest README (commit c5a4b0a)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/e7c7d996e288eb3f5f07c22a459e10a80cf16a54/README.md",
+          "title": "OpenVibe.Quest README (commit e7c7d99)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Quests across the whole network."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/c5a4b0a218ebee11cd0b1ee84b9e813ff5524bc0/STATUS.json",
-          "title": "OpenVibe.Quest STATUS.json (commit c5a4b0a)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/e7c7d996e288eb3f5f07c22a459e10a80cf16a54/STATUS.json",
+          "title": "OpenVibe.Quest STATUS.json (commit e7c7d99)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "OpenVibe.Quest — the network's shared quest and rewards system"
         }
       ]
@@ -1724,7 +1724,7 @@
     {
       "title": "OpenVibe.Deals",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Deals** is the network's service for deals submitted and voted on by the community, with source, price and freshness always shown. It is at the alpha stage (roadmap Wave 18) and is deployed internally, not launched.\n\n## What it does\n\nIt normalises deal submissions and imports, keeps product and store records, and records offers with timestamped price, shipping, condition and availability observations. A price is an observation: each has a source and an `observed_at` time, is shown \"as of\" that time, and is never presented as current without a fresh observation. Votes and hotness (`hot@1`) are server-authoritative and deterministic. It provides duplicate merge and unmerge, watches and saved searches, moderation and abuse controls, and server-rendered pages, feeds and sitemaps useful without JavaScript.\n\n## What it does not do yet\n\nDeals starts empty: the README says \"no example deals, no invented prices.\" It runs on the production host on loopback with an empty database, and openvibe.deals still shows the placeholder from OpenVibe.Sites. Watch matches are events only, and \"nobody delivers them to people until Network's consumer exists\". No deals-category source is enabled in [[OpenVibe.Sources]], so nothing has been imported.\n\n## How it fits the network\n\nDiscussion is [[OpenVibe.Community]]'s; imports come from [[OpenVibe.Sources]]; notifications are events for [[OpenVibe.Network]]. It publishes through [[OpenVibe.Events]] and emits [[OpenVibe.Search]] documents.\n\n## Status\n\nIt runs on Node 22 and Express with PostgreSQL 18 and Valkey 9, on port 4840. It is licensed AGPL-3.0.",
+      "body": "**OpenVibe.Deals** is the network's service for deals submitted and voted on by the community, with source, price and freshness always shown. It is at the alpha stage (roadmap Wave 18) and is deployed internally, not launched.\n\n## What it does\n\nIt normalises deal submissions and imports, keeps product and store records, and records offers with timestamped price, shipping, condition and availability observations. A price is an observation: each has a source and an `observed_at` time, is shown \"as of\" that time, and is never presented as current without a fresh observation. Votes and hotness (`hot@1`) are server-authoritative and deterministic. It provides duplicate merge and unmerge, watches and saved searches, moderation and abuse controls, and server-rendered pages, feeds and sitemaps useful without JavaScript.\n\n## What it does not do yet\n\nDeals starts empty, with \"no example deals, no invented prices\", and imports only from sources whose terms are verified. `openvibe.deals` is served from its own site since 2026-10-08. Watch matches are events: they reach people once a consumer delivers them as notifications.\n## How it fits the network\n\nDiscussion is [[OpenVibe.Community]]'s; imports come from [[OpenVibe.Sources]]; notifications are events for [[OpenVibe.Network]]. It publishes through [[OpenVibe.Events]] and emits [[OpenVibe.Search]] documents.\n\n## Status\n\nIt runs on Node 22 and Express with PostgreSQL 18 and Valkey 9, on port 4840. It is licensed AGPL-3.0.",
       "summary": "Community-submitted deals, recording prices as timestamped observations and always showing each deal’s source, price and freshness.",
       "infobox": [
         {
@@ -1766,15 +1766,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Deals/blob/8bd0e7d76d094774fffc9fbf58437baebf3ad30b/README.md",
-          "title": "OpenVibe.Deals README (commit 8bd0e7d)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Deals/blob/8d474edd14f2877cebdf493a5de9fa39bbd1af80/README.md",
+          "title": "OpenVibe.Deals README (commit 8d474ed)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Deals submitted and voted on by the community, with source, price and freshness always shown."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Deals/blob/8bd0e7d76d094774fffc9fbf58437baebf3ad30b/STATUS.json",
-          "title": "OpenVibe.Deals STATUS.json (commit 8bd0e7d)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Deals/blob/8d474edd14f2877cebdf493a5de9fa39bbd1af80/STATUS.json",
+          "title": "OpenVibe.Deals STATUS.json (commit 8d474ed)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Deployed internally, not launched"
         }
       ]
@@ -1782,7 +1782,7 @@
     {
       "title": "OpenVibe.Coupons",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Coupons** is the network's coupon service: codes with merchant matching, restrictions, expiry and real-people validity reports. It is at the alpha stage (roadmap Wave 18) and has been public at openvibe.coupons since 2026-10-09.\n\n## What it does\n\nCoupons keeps merchants and their normalized domains, codes, restrictions, validity reports, expiry and confidence. Four rules shape it, per the README: no code is labelled working because a model guessed it; unknown stays unknown; expired codes leave active results at the instant of expiry; and a merchant page cannot obtain anyone's data. It provides the public API that the OpenVibe browser helper uses, server-rendered pages useful without JavaScript, feeds and sitemaps, and a confidence formula computed only from recent reports by people.\n\n## What it does not do yet\n\nIt holds no codes: nothing is seeded and no coupons source is enabled, so production holds 0 coupons until members, staff or the Sources coupons category publish some. There is no Community discussion on code pages yet, watches do not notify because [[OpenVibe.Network]] has no notification consumer, and there is no staff UI to edit a code's text or restrictions.\n\n## How it fits the network\n\nDeal offers belong to [[OpenVibe.Deals]]; discussion belongs to [[OpenVibe.Community]]; identity and the notification store are [[OpenVibe.Network]]'s; [[OpenVibe.Search]] indexes what Coupons sends through [[OpenVibe.Events]]; ingestion belongs to [[OpenVibe.Sources]].\n\n## Status\n\nIt runs on Node 22 and Express with PostgreSQL 18 and Valkey 9, on port 4850. It is licensed AGPL-3.0.",
+      "body": "**OpenVibe.Coupons** is the network's coupon service: codes with merchant matching, restrictions, expiry and real-people validity reports. It is at the alpha stage (roadmap Wave 18) and has been public at openvibe.coupons since 2026-10-09.\n\n## What it does\n\nCoupons keeps merchants and their normalized domains, codes, restrictions, validity reports, expiry and confidence. Four rules shape it, per the README: no code is labelled working because a model guessed it; unknown stays unknown; expired codes leave active results at the instant of expiry; and a merchant page cannot obtain anyone's data. It provides the public API that the OpenVibe browser helper uses, server-rendered pages useful without JavaScript, feeds and sitemaps, and a confidence formula computed only from recent reports by people.\n\n## What it does not do yet\n\nA code's status comes only from recent reports, evidence or its source, never from a model's guess. On 2026-10-14 production held 16 codes, published automatically from the DealNews source in [[OpenVibe.Sources]] across 37 merchants. There is no Community discussion on code pages yet, and no staff UI to edit a code's text or restrictions.\n## How it fits the network\n\nDeal offers belong to [[OpenVibe.Deals]]; discussion belongs to [[OpenVibe.Community]]; identity and the notification store are [[OpenVibe.Network]]'s; [[OpenVibe.Search]] indexes what Coupons sends through [[OpenVibe.Events]]; ingestion belongs to [[OpenVibe.Sources]].\n\n## Status\n\nIt runs on Node 22 and Express with PostgreSQL 18 and Valkey 9, on port 4850. It is licensed AGPL-3.0.",
       "summary": "Coupon codes with merchant matching, restrictions, expiry and real-people validity reports, public at openvibe.coupons since 2026-10-09.",
       "infobox": [
         {
@@ -1824,15 +1824,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Coupons/blob/afc7d4f1f3bb0b5d2b5280d596df470d7c2a018f/README.md",
-          "title": "OpenVibe.Coupons README (commit afc7d4f)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Coupons/blob/daa2bb213cf337d14abd91dcc337682642b6ee11/README.md",
+          "title": "OpenVibe.Coupons README (commit daa2bb2)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Coupon codes with merchant matching, restrictions, expiry and real-people validity reports."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Coupons/blob/afc7d4f1f3bb0b5d2b5280d596df470d7c2a018f/STATUS.json",
-          "title": "OpenVibe.Coupons STATUS.json (commit afc7d4f)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Coupons/blob/daa2bb213cf337d14abd91dcc337682642b6ee11/STATUS.json",
+          "title": "OpenVibe.Coupons STATUS.json (commit daa2bb2)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "production holds 0 coupons"
         }
       ]
@@ -1840,7 +1840,7 @@
     {
       "title": "OpenVibe.Rent",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Rent** is the network service to find a place, or rent yours out: one place to find and offer things to rent, including apartments, rooms, houses, commercial space, parking and storage, and equipment. It is at the product stage and its v1 works end to end.\n\n## What it does\n\nIn this first version every listing is posted by a person on the site: a signed-in person may hold at most 10 active listings and post 5 new ones a day, each lasting 30 days until expiry. Listings carry a price with an ISO 4217 currency, a period, city, country and optional details, and a contact link. Search has filters and facets with cursor paging. Three distinct reports hide a listing until staff look; owners can edit, renew, hide, show and delete their own listing. Pages are server-rendered and complete without JavaScript, and account export and deletion follow ADR-033.\n\n## What it does not do yet\n\nThere are \"no scraped listings and no partner feeds\": other sources arrive only when their terms are verified. There are no payments, deposits or messaging, and no inbox. Alerts from a saved search come later through [[OpenVibe.Watch]]. Its service and capability manifests are not yet registered with [[OpenVibe.Services]].\n\n## How it fits the network\n\nAccounts, sign-in and roles come from [[OpenVibe.Network]]; the shared site frame is Network's; event delivery and subscriptions are [[OpenVibe.Events]]'; files and media are [[OpenVibe.Media]]'s. A caller's URL goes to [[OpenVibe.Tools]], whose own guard decides what may be fetched.\n\n## Status\n\nIt runs on Node 22 with PostgreSQL and Valkey, on port 5010, and is licensed AGPL-3.0.",
+      "body": "**OpenVibe.Rent** is the network service to find a place, or rent yours out: one place to find and offer things to rent, including apartments, rooms, houses, commercial space, parking and storage, and equipment. It is at the product stage and its v1 works end to end.\n\n## What it does\n\nIn this first version every listing is posted by a person on the site: a signed-in person may hold at most 10 active listings and post 5 new ones a day, each lasting 30 days until expiry. Listings carry a price with an ISO 4217 currency, a period, city, country and optional details, and a contact link. Search has filters and facets with cursor paging. Three distinct reports hide a listing until staff look; owners can edit, renew, hide, show and delete their own listing. Pages are server-rendered and complete without JavaScript, and account export and deletion follow ADR-033.\n\n## What it does not do yet\n\nVersion 1 works end to end: people post listings, anyone searches them, and three reports hide one until staff look. There are \"no scraped listings and no partner feeds\"; other sources arrive only when their terms are verified. There are no payments, deposits or messaging. Alerts from a saved search come later through [[OpenVibe.Watch]].\n## How it fits the network\n\nAccounts, sign-in and roles come from [[OpenVibe.Network]]; the shared site frame is Network's; event delivery and subscriptions are [[OpenVibe.Events]]'; files and media are [[OpenVibe.Media]]'s. A caller's URL goes to [[OpenVibe.Tools]], whose own guard decides what may be fetched.\n\n## Status\n\nIt runs on Node 22 with PostgreSQL and Valkey, on port 5010, and is licensed AGPL-3.0.",
       "summary": "A product where people post rental listings that others search, with reports, saved searches and 30-day expiry, and no payments or messaging.",
       "infobox": [
         {
@@ -1882,15 +1882,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Rent/blob/6426daa438879058ebad254befa1acd7969515c9/README.md",
-          "title": "OpenVibe.Rent README (commit 6426daa)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Rent/blob/10d73eb47c4ca6418903a9f5ee73f45cd0bc10c4/README.md",
+          "title": "OpenVibe.Rent README (commit 10d73eb)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Find a place, or rent yours out."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Rent/blob/6426daa438879058ebad254befa1acd7969515c9/STATUS.json",
-          "title": "OpenVibe.Rent STATUS.json (commit 6426daa)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Rent/blob/10d73eb47c4ca6418903a9f5ee73f45cd0bc10c4/STATUS.json",
+          "title": "OpenVibe.Rent STATUS.json (commit 10d73eb)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "no scraped listings and no partner feeds"
         }
       ]
@@ -1898,7 +1898,7 @@
     {
       "title": "OpenVibe.Inventory",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Inventory** is the network-wide inventory for an OpenVibe account (ADR-054): your items, on every OpenVibe site. It is at the alpha stage (plan track T21 step 2), and its authority, API, pages and Live's migration script are built and tested.\n\n## What it does\n\nInventory holds the items people earn or are given across every site, game and app. It registers item kinds (a contract plus a renderer per surface), the definitions an issuer publishes and the instances a person owns, and keeps what each person has equipped. Every movement is one append-only ledger row and one `inventory.*` event, written in the same transaction as the change. Issuers grant only within their namespace; people see and equip what they own. Live's name effects, particles, hats and voices are the first kinds, and `scripts/import-live.js` moves Live's unlocks and equipped slots here. A Workshop lets a signed-in person make community badges.\n\n## What it does not do yet\n\nNothing is sold, bought, traded or converted. [[OpenVibe.Live]] does not yet read and write through Inventory, and Live's own tables are not dropped. Profiles on Network do not show the showcase, and equip in Chat, Community and Games is not built. Creator submissions and staff review come later, and account merge is not done.\n\n## How it fits the network\n\nIdentity is [[OpenVibe.Network]]'s; files are [[OpenVibe.Media]]'s; event delivery is [[OpenVibe.Events]]'. Live's cosmetics tables stay [[OpenVibe.Live]]'s, and Live's grantors include [[OpenVibe.Quest]].\n\n## Status\n\nIt runs on Node 22 and Express with PostgreSQL and Valkey, on port 5030, and is licensed AGPL-3.0.",
+      "body": "**OpenVibe.Inventory** is the network-wide inventory for an OpenVibe account (ADR-054): your items, on every OpenVibe site. It is at the alpha stage (plan track T21 step 2), and its authority, API, pages and Live's migration script are built and tested.\n\n## What it does\n\nInventory holds the items people earn or are given across every site, game and app. It registers item kinds (a contract plus a renderer per surface), the definitions an issuer publishes and the instances a person owns, and keeps what each person has equipped. Every movement is one append-only ledger row and one `inventory.*` event, written in the same transaction as the change. Issuers grant only within their namespace; people see and equip what they own. Live's name effects, particles, hats and voices are the first kinds, and `scripts/import-live.js` moves Live's unlocks and equipped slots here. A Workshop lets a signed-in person make community badges.\n\n## What it does not do yet\n\nNothing is sold, bought, traded or converted into OpenCoins or Vibes, and there are no paid random rewards. Since 2026-10-09 [[OpenVibe.Live]] reads and writes cosmetics through Inventory, and [[OpenVibe.Games]] grants items for achievements. Creator submissions and staff review come later.\n## How it fits the network\n\nIdentity is [[OpenVibe.Network]]'s; files are [[OpenVibe.Media]]'s; event delivery is [[OpenVibe.Events]]'. Live's cosmetics tables stay [[OpenVibe.Live]]'s, and Live's grantors include [[OpenVibe.Quest]].\n\n## Status\n\nIt runs on Node 22 and Express with PostgreSQL and Valkey, on port 5030, and is licensed AGPL-3.0.",
       "summary": "The network-wide inventory for an OpenVibe account: item kinds, definitions, instances, an equipped set and an append-only ledger.",
       "infobox": [
         {
@@ -1940,15 +1940,15 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Inventory/blob/a64ccdc8450f3efede77a2022a0c60ba0231f952/README.md",
-          "title": "OpenVibe.Inventory README (commit a64ccdc)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Inventory/blob/3101849e7fd2fe1fa4830a3fb78de59d6602cbfb/README.md",
+          "title": "OpenVibe.Inventory README (commit 3101849)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "Your items, on every OpenVibe site."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Inventory/blob/a64ccdc8450f3efede77a2022a0c60ba0231f952/STATUS.json",
-          "title": "OpenVibe.Inventory STATUS.json (commit a64ccdc)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Inventory/blob/3101849e7fd2fe1fa4830a3fb78de59d6602cbfb/STATUS.json",
+          "title": "OpenVibe.Inventory STATUS.json (commit 3101849)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "one inventory for an OpenVibe account"
         }
       ]
@@ -1956,7 +1956,7 @@
     {
       "title": "OpenVibe.Space",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Space** is the network's site for code and dynamic pages. It is at the alpha stage and has been public at openvibe.space since 2026-10-08.\n\n## What it does\n\nSpace is being rebuilt to host code, dynamic pages and spaces: apps people build that use their OpenVibe account, the network's services and the SDK. Today it serves a home page that says what is coming. The forum moved back to [[OpenVibe.Community]] on 2026-10-08, so every forum URL answers a permanent redirect to the same path and query on openvibe.community: `/s` and `/s/*` return 301 for GET and HEAD and 308 otherwise, and the forum APIs return 308. Space also keeps a Network OAuth2 sign-in client, discovery files, and health and release endpoints.\n\n## What it does not do yet\n\nThe README says \"code hosting and dynamic pages are not built yet\", and no spaces apps run here; the home page says so. OpenVibe.Contracts still registers forum capabilities for Space, and the update that retires or reassigns them is a separate change. The forum tables remain in `ov_space` with their rows, and this release writes no drop migration. Space consumes no network events and has no account export or deletion, because it holds no user content.\n\n## How it fits the network\n\nIdentity and sign-in come from [[OpenVibe.Network]], and every forum URL redirects to [[OpenVibe.Community]]. Its only outbound calls are Network OAuth endpoints and the JWKS document.\n\n## Status\n\nIt runs on Node and Express with PostgreSQL, on port 4940, and is licensed AGPL-3.0.",
+      "body": "**OpenVibe.Space** is the network's site for code and dynamic pages. It is at the alpha stage and has been public at openvibe.space since 2026-10-08.\n\n## What it does\n\nSpace is being rebuilt to host code, dynamic pages and spaces: apps people build that use their OpenVibe account, the network's services and the SDK. Today it serves a home page that says what is coming. The forum moved back to [[OpenVibe.Community]] on 2026-10-08, so every forum URL answers a permanent redirect to the same path and query on openvibe.community: `/s` and `/s/*` return 301 for GET and HEAD and 308 otherwise, and the forum APIs return 308. Space also keeps a Network OAuth2 sign-in client, discovery files, and health and release endpoints.\n\n## What it does not do yet\n\nStatic sites are built: each one is served at `<name>.openvibe.website` from immutable deploys, with custom domains. Public hosting stays off by default (`SPACE_PUBLIC_HOSTING=off`), and only OpenVibe staff create projects: abuse handling and a designated DMCA agent come before a public launch. Dynamic pages and spaces (small apps on a person's account) are planned and not built.\n## How it fits the network\n\nIdentity and sign-in come from [[OpenVibe.Network]], and every forum URL redirects to [[OpenVibe.Community]]. Its only outbound calls are Network OAuth endpoints and the JWKS document.\n\n## Status\n\nIt runs on Node and Express with PostgreSQL, on port 4940, and is licensed AGPL-3.0.",
       "summary": "A site for code, dynamic pages and spaces: it currently redirects every forum URL to OpenVibe.Community and hosts only a home page.",
       "infobox": [
         {
@@ -1998,16 +1998,154 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Space/blob/5c012d087d2ed5a149df81ff7648fedd6ccabcae/README.md",
-          "title": "OpenVibe.Space README (commit 5c012d0)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Space/blob/cf1a2abdf6d5a2c86bf45946bd8c92db9e83ac5e/README.md",
+          "title": "OpenVibe.Space README (commit cf1a2ab)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "code and dynamic pages for the OpenVibe network"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Space/blob/5c012d087d2ed5a149df81ff7648fedd6ccabcae/STATUS.json",
-          "title": "OpenVibe.Space STATUS.json (commit 5c012d0)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Space/blob/cf1a2abdf6d5a2c86bf45946bd8c92db9e83ac5e/STATUS.json",
+          "title": "OpenVibe.Space STATUS.json (commit cf1a2ab)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "code hosting and dynamic pages are not built yet"
+        }
+      ]
+    },
+    {
+      "title": "OpenVibe.Play",
+      "parent": "OpenVibe",
+      "summary": "Achievements and leaderboards for every OpenVibe game, at play.openvibe.network: titles registered by their own game, public boards, and each person's achievements.",
+      "body": "**OpenVibe.Play** keeps the achievements and leaderboards of every OpenVibe game at `play.openvibe.network`.\n\n## What it does\n\n- **Titles.** A game registers a title with its own Network token. Only that game writes to the title.\n- **Achievements.** A title defines its achievements, including hidden ones. Unlocks are idempotent.\n- **Leaderboards.** A board ranks each player's best score or the sum of their scores, this week or all time. Score posts are idempotent by round, so a retry never counts twice.\n- **Guests.** A guest's progress becomes the person's when the game adopts them after they sign in.\n- **Merged accounts.** When two OpenVibe accounts merge, their rows merge too.\n- **Reads.** The boards and titles are public, as pages and JSON. Each signed-in person sees their own achievements across games.\n\n## How it fits the network\n\n- [[OpenVibe.Games]] is its first title owner, posting from its own tables.\n- Sign-in and app tokens come from [[OpenVibe.Network]].\n- People's rows are part of the account export and are erased with the account.\n\n## Status\n\nSTATUS.json's stage is \"alpha\"; it is deployed on the network's host.",
+      "infobox": [
+        {
+          "key": "repository",
+          "label": "Repository",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.Play"
+        },
+        {
+          "key": "domain",
+          "label": "Domain",
+          "type": "text",
+          "value": "play.openvibe.network"
+        },
+        {
+          "key": "port",
+          "label": "Port",
+          "type": "number",
+          "value": 5040
+        },
+        {
+          "key": "runtime",
+          "label": "Runtime",
+          "type": "text",
+          "value": "Node 22, Express 4, PostgreSQL 18, Valkey"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "value": "alpha"
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Play/blob/33da87a0af4553b9dbe208a5c7a369741370d7af/README.md",
+          "title": "OpenVibe.Play README (commit 33da87a)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "quote": "Achievements and leaderboards for every OpenVibe game."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Play/blob/33da87a0af4553b9dbe208a5c7a369741370d7af/STATUS.json",
+          "title": "OpenVibe.Play STATUS.json (commit 33da87a)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "quote": "achievements and leaderboards for every OpenVibe game"
+        }
+      ]
+    },
+    {
+      "title": "OpenVibe.Zone",
+      "parent": "OpenVibe",
+      "summary": "Private S3-compatible storage zones for OpenVibe projects at openvibe.zone: named buckets per project environment, scoped access keys and quotas, with the objects kept by OpenVibe.Media.",
+      "body": "**OpenVibe.Zone** gives every OpenVibe project private storage zones at `openvibe.zone`. A zone is an S3 bucket of one project environment, sandbox or production.\n\n## What it does\n\n- **Default zones.** Each environment has a default zone, which holds its existing objects.\n- **Named zones.** A project creates more zones by name, each with an optional quota.\n- **Names are never reused.** A zone's name is never given to another zone, even after it is deleted, so a URL signed for one bucket can never reach a different one.\n- **Access keys** read, write or both. A key can be limited to some zones, and its secret is shown once.\n- **S3 tools.** The AWS SDKs, rclone and backup tools reach zones over S3, path style.\n- **Deletion.** Deleting a zone removes every object and every copy of it. A zone holding an object under a retention hold cannot be deleted.\n\n## How it fits the network\n\n- **Zone owns** the zone records and their control API.\n- **[[OpenVibe.Media]] owns** what is inside a zone: the objects, their bytes and copies, the S3 surface, the access keys, quota enforcement and the one deletion path. Every object in a zone is an ordinary Media object, reachable through Media's own API too.\n- Projects and roles come from [[OpenVibe.Network]].\n- [[OpenVibe.Services]] lists zones beside a project's other resources and can delete one.\n\n## Status\n\nSTATUS.json's stage is \"alpha\". Not yet built: multipart uploads, server-side copy, and per-zone usage history.",
+      "infobox": [
+        {
+          "key": "repository",
+          "label": "Repository",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.Zone"
+        },
+        {
+          "key": "domain",
+          "label": "Domain",
+          "type": "text",
+          "value": "openvibe.zone"
+        },
+        {
+          "key": "port",
+          "label": "Port",
+          "type": "number",
+          "value": 5050
+        },
+        {
+          "key": "runtime",
+          "label": "Runtime",
+          "type": "text",
+          "value": "Node 22, Express 4, PostgreSQL 18, Valkey"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "value": "alpha"
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ce6a762353936082b3ef5b688c1b8bd5c9b94c60/README.md",
+          "title": "OpenVibe.Zone README (commit ce6a762)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "quote": "Private S3-compatible storage zones for OpenVibe projects, at https://openvibe.zone."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ce6a762353936082b3ef5b688c1b8bd5c9b94c60/STATUS.json",
+          "title": "OpenVibe.Zone STATUS.json (commit ce6a762)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "quote": "private S3-compatible storage zones for OpenVibe projects"
+        }
+      ]
+    },
+    {
+      "title": "OpenVibe.Node",
+      "parent": "OpenVibe",
+      "summary": "One service for a person's computers, servers, Raspberry Pis, phones and robots: pair it once and OpenVibe.Bot and OpenVibe.Actor can use the device, with a local kill switch.",
+      "body": "**OpenVibe Node** runs on a person's own devices: computers, servers, Raspberry Pis, phones and robots. Paired once with OpenVibe, it lets products such as [[OpenVibe.Bot]] and [[OpenVibe.Actor]] use the device.\n\n## What it does\n\n- **The core** is one static Go binary per platform.\n  - It connects out over one WebSocket and needs no open ports.\n  - It keeps heartbeats, a deadman and a persisted emergency stop, and owner limits are clamped before any driver sees a value.\n  - It publishes video over WHIP.\n  - It installs as a system service on Linux, macOS and Windows.\n- **Plugins** run as separate processes: robot drivers (Adeept, Cozmo, ROS 2, and the community's LOOI driver) and the computer plugin. Every plugin stops its own actuators when its link goes quiet.\n- **The computer plugin** lets an AI agent work on the machine only at the level its owner sets:\n  - reading the screen;\n  - files;\n  - a terminal;\n  - the mouse and keyboard.\n\n  At the \"ask\" level, each action waits for the owner's approval on the machine.\n- **The local kill switch** (`openvibe-node stop`) stops every motor and keeps it stopped.\n\n## How it fits the network\n\nDevices pair through [[OpenVibe.Network]] or [[OpenVibe.Bot]]. Bot drives robots through it, and [[OpenVibe.Actor]] uses its computer plugin for computer control.\n\n## Status\n\nReleased as versioned binaries; the computer plugin's input level arrived in v0.9.0.",
+      "infobox": [
+        {
+          "key": "repository",
+          "label": "Repository",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.Node"
+        },
+        {
+          "key": "runtime",
+          "label": "Runtime",
+          "type": "text",
+          "value": "Go (one static binary per platform), plugins in Go and Python"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "value": "released (v0.9.x)"
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Node/blob/bf0ebb9e0b43e89beec8e855ef3fdecbba96c1c7/README.md",
+          "title": "OpenVibe.Node README (commit bf0ebb9)",
+          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "quote": "One service for your computers, servers, Raspberry Pis, phones and robots"
         }
       ]
     }
