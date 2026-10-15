@@ -80,8 +80,8 @@ function createMachine({ svc, config }) {
         setCache(res).type('application/xml').send(files[n - 1]);
     }));
 
-    async function feedItems() {
-        return (await svc.recentChanges(50)).map(({ space, page, rev, decision }) => ({
+    async function feedItems(changes = null) {
+        return (changes || await svc.recentChanges(50)).map(({ space, page, rev, decision }) => ({
             id: `tag:openvibe.wiki,2026:page/${page.id}/revision/${page.published_revision}`,
             url: svc.pageUrl(space, page),
             title: rev.fields.title,
@@ -112,6 +112,23 @@ function createMachine({ svc, config }) {
     router.get('/feed.json', wrap(async (_req, res) => {
         setCache(res).type('application/feed+json').send(JSON.stringify(seo.jsonFeed({ title: 'OpenVibe.Wiki: recent changes', link: `${origin}/recent`, feedUrl: `${origin}/feed.json`, description: 'Public wiki pages by the time their current revision was published.' }, await feedItems())));
     }));
+
+    // One space's recent changes (Atom and JSON Feed), for people who follow that space only. A private, deleted or
+    // unknown space has no feed (404); an empty public space has a valid feed with no entries.
+    async function spaceFeed(req, res) {
+        const found = /^[a-z0-9-]{1,64}$/.test(req.params.space) ? await svc.recentChangesIn(req.params.space, 50) : null;
+        if (!found) return res.status(404).type('text/plain').send('Not found');
+        const { space } = found;
+        const items = await feedItems(found.changes);
+        const base = `${origin}/s/${encodeURIComponent(space.slug)}`;
+        const title = `OpenVibe.Wiki: ${space.name}`;
+        if (req.params.format === 'atom') {
+            const updated = items.some((i) => i.decision.listable) ? null : new Date(space.updated_at || 0).toISOString();
+            return setCache(res).type('application/atom+xml').send(seo.atomFeed({ title, link: base, feedUrl: `${base}/feed.atom`, id: `${base}/feed.atom`, ...(updated ? { updated } : {}) }, items));
+        }
+        return setCache(res).type('application/feed+json').send(JSON.stringify(seo.jsonFeed({ title, link: base, feedUrl: `${base}/feed.json`, description: `Pages published in the ${space.name} space of OpenVibe.Wiki, newest first.` }, items)));
+    }
+    router.get('/s/:space/feed.:format(atom|json)', wrap(spaceFeed));
 
     router.get('/llms.txt', wrap(async (_req, res) => {
         const spaces = (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public');

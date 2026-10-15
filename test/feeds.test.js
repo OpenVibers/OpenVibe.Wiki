@@ -84,6 +84,23 @@ function atom(text) {
         f = atom((await H.req(h, 'GET', '/feed.atom')).text);
         assert.deepStrictEqual(f.entries.map((e) => e.href), ['http://wiki.test/w/notes/open-page']);
         assert.strictEqual(f.updated, f.entries[0].updated);
+
+        // One space's feed: only its own listable pages; a private or unknown space has none; the space page links it.
+        const other = await h.svc.createSpace({ name: 'Other', slug: 'other' }, owner);
+        const elsewhere = (await h.svc.createPage(other.id, { title: 'Elsewhere page', body: H.LONG, citations: cite }, owner)).page;
+        await h.svc.publish(elsewhere.id, {}, owner);
+        r = await H.req(h, 'GET', '/s/notes/feed.atom');
+        assert.strictEqual(r.status, 200);
+        assert.match(r.headers.get('content-type'), /^application\/atom\+xml/);
+        f = atom(r.text);
+        assert.strictEqual(f.id, 'http://wiki.test/s/notes/feed.atom');
+        assert.strictEqual(f.title, 'OpenVibe.Wiki: Notes');
+        assert.deepStrictEqual(f.entries.map((e) => e.href), ['http://wiki.test/w/notes/open-page'], 'only the Notes space, only listable pages');
+        const json = (await H.req(h, 'GET', '/s/other/feed.json')).json;
+        assert.deepStrictEqual(json.items.map((i) => i.url), ['http://wiki.test/w/other/elsewhere-page']);
+        assert.strictEqual((await H.req(h, 'GET', '/s/secret/feed.atom')).status, 404, 'a private space has no feed');
+        assert.strictEqual((await H.req(h, 'GET', '/s/nope/feed.json')).status, 404, 'an unknown space has no feed');
+        assert.ok((await H.req(h, 'GET', '/s/notes')).text.includes('href="/s/notes/feed.atom"'), 'the space page links its feed');
         console.log('feeds ok');
     } finally {
         await h.stop();
