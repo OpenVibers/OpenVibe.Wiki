@@ -18,8 +18,8 @@ const BUDGETS = {
     jsRawKB: 245,   // 239.1 (197.7 before openvibe-shared/shell's web-runtime.js)
     jsBrotliKB: 59,   // 56.3 (45.6 before web-runtime.js)
     cssFiles: 2,   // 1
-    cssRawKB: 18,   // 16.3 (wiki.css + the cached /shared/showcase.css)
-    cssBrotliKB: 4.5,   // 4.1
+    cssRawKB: 20,   // 19.1 (wiki.css + the cached /shared/showcase.css; 2026-10-15 the home's space cards, shelf and recent list)
+    cssBrotliKB: 5,   // 4.6
     externalFiles: 1,   // 0
 };
 
