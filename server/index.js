@@ -9,7 +9,8 @@
  * Events outbox relay, the Media attachment check) run only when asked (`workers: true`).
  */
 const { createIndexNow } = require('openvibe-shared/indexnow');
-const { gracefulStop } = require('openvibe-sdk/service');
+const { gracefulStop, createHttpTelemetry } = require('openvibe-sdk/service');
+const { createPgTelemetrySink, startTelemetryRetention } = require('openvibe-sdk/telemetry');
 const { load } = require('./config');
 const { openDb, migrate, createStores } = require('./db');
 const { createPlatform } = require('./integrations/platform');
@@ -27,7 +28,7 @@ const { createNetworkSender, startSubscriptions } = require('openvibe-sdk/accoun
  * test handed in its own database (start's `givenDb`), which stays open. `exit` and `signals` are injectable
  * so a test can watch the stop and no test process installs signal handlers.
  */
-function createLifecycle({ server, db, valkey = null, platform, timers = [], closeDb = true, exit, signals, log, extra = [] } = {}) {
+function createLifecycle({ server, db, valkey = null, platform, timers = [], telemetry = null, retention = null, closeDb = true, exit, signals, log, extra = [] } = {}) {
     return gracefulStop({
         name: 'Wiki', server, log, drainMs: 8000, deadlineMs: 10000, deadlineExitCode: 0, exit, signals,
         stop: [
@@ -36,13 +37,14 @@ function createLifecycle({ server, db, valkey = null, platform, timers = [], clo
             ...extra,
         ],
         close: [
+            async () => { if (retention) await retention.stop(); if (telemetry) await telemetry.stop(); },
             () => { if (closeDb) return db.close(); },
             () => { if (valkey) return valkey.close(); },
         ],
     });
 }
 
-async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null, signals = false, exit = () => {}, accountSend: givenSend = null } = {}) {
+async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, telemetrySink = null, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null, signals = false, exit = () => {}, accountSend: givenSend = null } = {}) {
     config = config || load();
     // PostgreSQL (ADR-035): migrate on the owner's direct connection, then serve on the pooled runtime role.
     // Tests hand in a migrated database of their own (test/db-helper.js).
@@ -79,10 +81,17 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     const accountSend = givenSend || (config.oauth.clientSecret
         ? createNetworkSender({ networkInternalUrl: config.networkInternalUrl, clientId: config.oauth.clientId, clientSecret: config.oauth.clientSecret, fetch: fetchImpl })
         : null);
-    const app = createApp({ config, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend });
+    // Request telemetry (openvibe-sdk/service, plan T1): one aggregated sample per route template, method and status
+    // class each flush, stored in this service's telemetry_samples table (app.js mounts the middleware). With workers
+    // on, a 15 s tick writes each interval (the collector has no timer of its own) and the table keeps 30 days.
+    const telemetry = createHttpTelemetry({ service: 'wiki', sink: telemetrySink || createPgTelemetrySink({ db, log }), skipPrefixes: ['/shared'] });
+    let retention = null;
+    const app = createApp({ config, telemetry, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend });
 
     const timers = [];
     if (workers) {
+        timers.push(setInterval(() => { telemetry.flush().catch(() => {}); }, 15_000));
+        retention = startTelemetryRetention({ db, log });
         let scheduling = false;
         timers.push(setInterval(async () => {
             if (scheduling) return;
@@ -117,12 +126,12 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
         });
     }
 
-    const lifecycle = createLifecycle({ server, db, valkey, platform, timers, closeDb: !givenDb, signals, exit, log, extra: [() => { if (subscriptions) subscriptions.stop(); }] });
+    const lifecycle = createLifecycle({ server, db, telemetry, retention, valkey, platform, timers, closeDb: !givenDb, signals, exit, log, extra: [() => { if (subscriptions) subscriptions.stop(); }] });
 
     async function stop() {
         return lifecycle.stop('stop');
     }
-    return { app, db, svc, stores, platform, keys, viewers, server, config, indexnow, timers, lifecycle, stop };
+    return { app, db, telemetry, svc, stores, platform, keys, viewers, server, config, indexnow, timers, lifecycle, stop };
 }
 
 module.exports = { start, createLifecycle };
