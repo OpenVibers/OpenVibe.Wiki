@@ -1330,8 +1330,8 @@
     {
       "title": "OpenVibe.Host",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Host** is two things at `openvibe.host`. Its front page is **hosting compared**: a sourced comparison of cloud, VPS and dedicated plans. Behind it are the network's deployment plane (the `ovhost` CLI) and OpenVibe's own static site hosting, which is built but not yet open to the public.\n\n## The hosting catalog\n\nThe README describes the catalog as plan T20 step 3: \"openvibe.host is **hosting compared**\". Plans come from providers' official APIs through [[OpenVibe.Sources]] (category `hosting`; Linode's plan types first) and from staff entries that must name their source URL. Each plan shows its monthly price, its price per vCPU and per GB of RAM and disk, the day the price was checked and a link to its source; price changes are kept as a history per plan. The order comes only from the sort a visitor picks, and affiliate links are marked with `rel=\"sponsored nofollow noopener\"` and disclosed beside the link. The pages work without JavaScript, and the same data is public at `/api/v1/catalog/*`.\n\n## What it does\n\nStage A is the `ovhost` CLI: it holds the host inventory, validates environments, installs and rolls back releases, polls `/api/ready`, runs scheduled PostgreSQL backups and restore drills, and installs nginx vhosts transactionally. It is installed on the production host and deploys every service. Stage B is a Node service on port 4910 that hosts static sites for OpenVibe projects: projects, sites, immutable content-addressed deploys, activation and rollback, `<site>.openvibe.host` and TXT-verified custom domains, quotas and upload logs.\n\n## What it does not do yet\n\nStage C, sandboxed user code with isolation profiles, budgets, secret references, outbound policy and metering, is not started and is deliberately blocked until isolation and metering are proven. Static site hosting moved to [[OpenVibe.Space]]. Certificates for custom domains are operator-issued by certbot, not automated.\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for SSO and tokens, [[OpenVibe.Events]] for `host.*` events, and optionally [[OpenVibe.Media]] for deploy objects. Its resource index feeds [[OpenVibe.Services]]' fan-out.\n\n## Status\n\nSTATUS.json's stage is \"alpha\" (Wave 21, Stages A and B); it is deployed in production since 2026-10-07. License: AGPL-3.0.",
-      "summary": "Hosting compared (a sourced plan catalog) at openvibe.host, plus the network's deployment plane (ovhost) and static site hosting that opens after review.",
+      "body": "**OpenVibe.Host** is two things. At `openvibe.host` it is **hosting compared**: a sourced comparison of cloud, VPS and dedicated plans, the offers providers post, and domain prices. Behind it is the network's deployment plane, the `ovhost` CLI, which deploys every OpenVibe service.\n\n## Hosting plans\n\nThe README calls the catalog plan T20 step 3: \"openvibe.host is **hosting compared**\". Plans come from providers' official APIs through [[OpenVibe.Sources]] (category `hosting`) and from staff entries that must name their source URL. Each plan shows its monthly price, its price per vCPU and per GB of RAM and disk, the day the price was checked and a link to its source; price changes are kept as a history per plan, and [[OpenVibe.Watch]] can tell a visitor when a price changes. The order comes only from the sort a visitor picks, and affiliate links are marked with `rel=\"sponsored nofollow noopener\"` and disclosed beside the link.\n\n## Offers\n\n`/catalog/offers` lists what providers post on LowEndTalk's Offers board and LowEndBox, read from their public feeds through Sources: the headline, who posted it, the date and the price the headline states, with its monthly equivalent. Each links to its post, which has the final word.\n\n## Domains\n\n`/catalog/domains` compares what registrars charge for each ending: the first year, a renewal, a transfer and the total over five years (the first year and four renewals at one registrar), with a mark where the renewal is more than a fifth above the first year. Prices come from registrars' public price lists through Sources, Porkbun's first. Each ending has its own page with every registrar's price and its change history. A name check asks the ending's registry over RDAP, the public lookup that replaced WHOIS: it says whether the name is registered (and through which registrar, since when and until when), prices the same name at popular endings, and links to the search at ten registrars.\n\n## The deployment plane\n\nThe `ovhost` CLI holds the host inventory, validates environments, installs and rolls back releases, polls `/api/ready`, runs scheduled PostgreSQL backups and restore drills, and installs nginx vhosts transactionally. It is installed on the production host and deploys every service.\n\n## What it does not do\n\nStatic site hosting moved to [[OpenVibe.Space]]; `*.openvibe.host` answers with a pointer there. Sandboxed user code (Stage C) is not started.\n\n## How it fits the network\n\nIt uses [[OpenVibe.Network]] for sign-in and tokens, [[OpenVibe.Events]] for `host.*` events, [[OpenVibe.Sources]] for prices and offers, and [[OpenVibe.Search]] for its plan and provider pages; plan and provider pages have discussion threads on [[OpenVibe.Community]].\n\n## Status\n\nSTATUS.json's stage is \"alpha\". License: AGPL-3.0.",
+      "summary": "Hosting compared at openvibe.host: sourced plan prices, hosting offers and domain prices with a name check, plus the network's deployment plane (ovhost).",
       "infobox": [
         {
           "key": "repository",
@@ -1372,16 +1372,16 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/bd71b193f57056452cc9b67fcb4254cd761bd47c/README.md",
-          "title": "OpenVibe.Host README (commit bd71b19)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/96703d71d398896bb6969ce66f768c847c0d84ed/README.md",
+          "title": "OpenVibe.Host README (commit 96703d7)",
+          "retrievedAt": "2026-10-16T17:40:00.000Z",
           "quote": "openvibe.host is **hosting compared**"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/bd71b193f57056452cc9b67fcb4254cd761bd47c/STATUS.json",
-          "title": "OpenVibe.Host STATUS.json (commit bd71b19)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
-          "quote": "production: openvibe.host and *.openvibe.host since 2026-10-07"
+          "url": "https://github.com/OpenVibers/OpenVibe.Host/blob/96703d71d398896bb6969ce66f768c847c0d84ed/README.md",
+          "title": "OpenVibe.Host README (commit 96703d7)",
+          "retrievedAt": "2026-10-16T17:40:00.000Z",
+          "quote": "What registrars charge for each ending"
         }
       ]
     },
