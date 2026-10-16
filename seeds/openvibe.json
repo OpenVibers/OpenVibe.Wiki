@@ -2016,10 +2016,10 @@
           "quote": "spaces (apps people make on their OpenVibe account) and static hosting for the OpenVibe network."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Space/blob/6b1e3d3024ffc299915614a1852621f1d0333804/docs/spaces.md",
-          "title": "OpenVibe.Space docs/spaces.md (commit 6b1e3d3)",
+          "url": "https://github.com/OpenVibers/OpenVibe.Space/blob/6b1e3d3024ffc299915614a1852621f1d0333804/README.md",
+          "title": "OpenVibe.Space README (commit 6b1e3d3), Spaces",
           "retrievedAt": "2026-10-16T21:00:00.000Z",
-          "quote": "A **space** is a small web app someone makes on openvibe.space that uses the visitor's OpenVibe account."
+          "quote": "are small web apps people make here"
         }
       ]
     },
