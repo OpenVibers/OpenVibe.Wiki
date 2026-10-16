@@ -1968,7 +1968,7 @@
     {
       "title": "OpenVibe.Space",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Space** is the network's site for spaces and static hosting, at openvibe.space.\n\n## What it does\n\n**Spaces** are small web apps people make on their OpenVibe account. A person describes one and OpenVibe AI builds it, or starts from a template (a guestbook, an AI buddy, a poll, a reaction game, private to-dos, or a blank page), or forks someone else's. Then they change anything in a browser editor with a live preview. A space uses the visitor's account through the space SDK:\n\n- signing in with OpenVibe, which the visitor approves once;\n- shared lists;\n- each visitor's private storage;\n- its own AI, which answers on behalf of the visitor.\n\nThe gallery at `/spaces` lists published spaces.\n\n**Static sites** are served at `<name>.openvibe.website` from immutable deploys, with one-step rollback, previews, Git ingest and verified custom domains.\n\nThe forum moved back to [[OpenVibe.Community]] on 2026-10-08; every forum URL answers a permanent redirect there.\n\n## What waits for the public launch\n\nPublishing a space at its own address, and hosting anyone's static site, open together with Space's public hosting (`SPACE_PUBLIC_HOSTING`). That waits on abuse handling, a designated DMCA agent and a Public Suffix List entry. Until then OpenVibe staff publish, and everyone signed in can make, edit, preview and use the AI builder.\n",
+      "body": "**OpenVibe.Space** is the network's site for spaces and static hosting, at openvibe.space.\n\n## What it does\n\n**Spaces** are small web apps people make on their OpenVibe account. A person describes one and OpenVibe AI builds it, or starts from a template (a guestbook, an AI buddy, a poll, a reaction game, a trivia game, private to-dos, or a blank page), or forks someone else's. Then they change anything in a browser editor with a live preview. A space uses the visitor's account through the space SDK:\n\n- signing in with OpenVibe, which the visitor approves once;\n- shared lists;\n- each visitor's private storage;\n- its own AI, which answers on behalf of the visitor;\n- its own server code (functions), which runs in a sandbox on OpenVibe.Space, so things like a quiz's answers stay out of the page.\n\nThe gallery at `/spaces` lists published spaces.\n\n**Static sites** are served at `<name>.openvibe.website` from immutable deploys, with one-step rollback, previews, Git ingest and verified custom domains.\n\nThe forum moved back to [[OpenVibe.Community]] on 2026-10-08; every forum URL answers a permanent redirect there.\n\n## What waits for the public launch\n\nPublishing a space at its own address, and hosting anyone's static site, open together with Space's public hosting (`SPACE_PUBLIC_HOSTING`). That waits on abuse handling, a designated DMCA agent and a Public Suffix List entry. Until then OpenVibe staff publish, and everyone signed in can make, edit, preview and use the AI builder.\n",
       "summary": "Spaces (apps people make on their OpenVibe account, built by AI or from templates) and static hosting; publishing opens with public hosting.",
       "infobox": [
         {
@@ -2020,6 +2020,12 @@
           "title": "OpenVibe.Space README (commit 6b1e3d3), Spaces",
           "retrievedAt": "2026-10-16T21:00:00.000Z",
           "quote": "are small web apps people make here"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Space/blob/f11b5e83a3342950e38edbc2980c9ab0b608f0cf/README.md",
+          "title": "OpenVibe.Space README (commit f11b5e8), Spaces",
+          "retrievedAt": "2026-10-16T21:20:00.000Z",
+          "quote": "run in a QuickJS WebAssembly sandbox"
         }
       ]
     },
