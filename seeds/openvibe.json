@@ -2137,7 +2137,7 @@
       "title": "OpenVibe.Tips",
       "parent": "OpenVibe",
       "summary": "Creator support at openvibe.tips: tips, goals, paid messages, TTS, media requests, paid sounds and stream overlays, with every payment settled by OpenVibe.Billing.",
-      "body": "**OpenVibe.Tips** is the creator support product at `openvibe.tips`. A creator gets a tip page, goals and overlays for their stream; supporters tip, send paid messages and play paid sounds. Tips never moves money: [[OpenVibe.Billing]] settles every payment, and Tips keeps the interaction.\n\n## What it does\n\n- **Tips and paid messages**, with optional text-to-speech and media requests, each with a minimum the creator sets.\n- **Paid sounds.** A creator uploads up to 12 short sounds; a supporter pays to play one on the stream overlay, and chat names it.\n- **Goals** count settled payments only.\n- **Overlays** for streaming software use revocable, scoped links (never the creator's sign-in), and an alert can be replayed without charging again.\n- **Supporter privacy.** A supporter can stay anonymous, hide the amount or send a private message, and that holds on every page, overlay and chat line. Supporters can export and erase their data.\n- **Moderation.** A word filter, hiding and showing interactions, and invited moderators.\n\n## How it fits the network\n\n- [[OpenVibe.Billing]] settles payments, and tips made on a creator's own PowerChat page reach Tips from Billing.\n- Chat lines and alerts are posted through [[OpenVibe.Chat]].\n- [[OpenVibe.Live]] moves the channel's donation goal and tip history when Tips announces a settled tip.\n\n## Status\n\nSTATUS.json's stage is \"alpha\". Tips launched at openvibe.tips on 2026-10-17, right after Billing became the money ledger, and paid sounds were added the same day.",
+      "body": "**OpenVibe.Tips** is the creator support product at `openvibe.tips`. A creator gets a tip page, goals and overlays for their stream; supporters tip, send paid messages and play paid sounds. Tips never moves money: [[OpenVibe.Billing]] settles every payment, and Tips keeps the interaction.\n\n## What it does\n\n- **Tips and paid messages**, with optional text-to-speech and media requests, each with a minimum the creator sets.\n- **Paid sounds.** A creator uploads up to 12 short sounds; a supporter pays to play one on the stream overlay, and chat names it.\n- **Goals** count settled payments only.\n- **Overlays** for streaming software use revocable, scoped links (never the creator's sign-in), and an alert can be replayed without charging again.\n- **Supporter privacy.** A supporter can stay anonymous, hide the amount or send a private message, and that holds on every page, overlay and chat line. Supporters can export and erase their data.\n- **Other ways to support.** The tip page can link to a creator's Ko-fi, PayPal.me, Patreon and other pages; those payments happen outside OpenVibe and do not count toward goals.\n- **Moderation.** A word filter, hiding and showing interactions, and invited moderators.\n\n## How it fits the network\n\n- [[OpenVibe.Billing]] settles payments, and tips made on a creator's own PowerChat page reach Tips from Billing.\n- Chat lines and alerts are posted through [[OpenVibe.Chat]].\n- [[OpenVibe.Live]] moves the channel's donation goal and tip history when Tips announces a settled tip.\n\n## Status\n\nSTATUS.json's stage is \"alpha\". Tips launched at openvibe.tips on 2026-10-17, right after Billing became the money ledger, and paid sounds were added the same day.",
       "infobox": [
         {
           "key": "repository",
@@ -2172,14 +2172,14 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Tips/blob/d0636eb24ca4dcb1dcb4ac5c1b4b372be9fb22d4/README.md",
-          "title": "OpenVibe.Tips README.md (commit d0636eb)",
+          "url": "https://github.com/OpenVibers/OpenVibe.Tips/blob/1bfc56c5a48b15102f541a47719a1c5fdd314e91/README.md",
+          "title": "OpenVibe.Tips README.md (commit 1bfc56c)",
           "retrievedAt": "2026-10-17T06:00:00.000Z",
           "quote": "Creator support: tips, goals, paid messages, TTS, media requests and paid sounds, overlays."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Tips/blob/d0636eb24ca4dcb1dcb4ac5c1b4b372be9fb22d4/STATUS.json",
-          "title": "OpenVibe.Tips STATUS.json (commit d0636eb)",
+          "url": "https://github.com/OpenVibers/OpenVibe.Tips/blob/1bfc56c5a48b15102f541a47719a1c5fdd314e91/STATUS.json",
+          "title": "OpenVibe.Tips STATUS.json (commit 1bfc56c)",
           "retrievedAt": "2026-10-17T06:00:00.000Z",
           "quote": "Launched 2026-10-17 at https://openvibe.tips"
         }
@@ -2189,7 +2189,7 @@
       "title": "OpenVibe.VIP",
       "parent": "OpenVibe",
       "summary": "Memberships at openvibe.vip: creator plans, perks and benefits recognised across every OpenVibe site, with subscriptions and entitlements held by OpenVibe.Billing.",
-      "body": "**OpenVibe.VIP** is the membership product at `openvibe.vip`. A creator publishes a plan, a member joins it through [[OpenVibe.Billing]], and every OpenVibe product can ask VIP whether a person is a member and may see a members-only resource.\n\n## What it does\n\n- **Plans with fixed terms.** Every edit of a plan is a new, immutable version, and a membership always points at the version it was bought under. Plans carry no price: Billing sets and charges it.\n- **Perks** such as badges, emotes, members-only content, rooms and roles, bound to the products that show them.\n- **Members-only resources.** A product registers a resource as being for a creator's members, and VIP answers whether a person may see it.\n- **Membership checks for anyone's software.** An app or tool where a person signed in with OpenVibe can ask VIP, with that person's token, whether they are a member; an expired, unknown or unreachable answer is always no.\n- **Cards and badges** that other sites can embed.\n\n## How it fits the network\n\n- [[OpenVibe.Billing]] holds subscriptions and entitlements; VIP holds plans and perks.\n- [[OpenVibe.Community]], [[OpenVibe.Blog]], [[OpenVibe.Chat]] and [[OpenVibe.Wiki]] use VIP for members-only content.\n- Identities come from [[OpenVibe.Network]].\n\n## Status\n\nSTATUS.json's stage is \"alpha\". VIP launched at openvibe.vip on 2026-10-17 with checkout open, right after Billing became the money ledger.",
+      "body": "**OpenVibe.VIP** is the membership product at `openvibe.vip`. A creator publishes a plan, a member joins it through [[OpenVibe.Billing]], and every OpenVibe product can ask VIP whether a person is a member and may see a members-only resource.\n\n## What it does\n\n- **Tiers.** A creator sells up to ten tiers, one plan each, at the monthly price they set; Billing keeps and charges the price. A member holds one tier of a creator at a time.\n- **Plans with fixed terms.** Every edit of a plan is a new, immutable version, and a membership always points at the version it was bought under. Plans carry no price: Billing sets and charges it.\n- **Perks** such as badges, emotes, members-only content, rooms and roles, bound to the products that show them.\n- **Members-only resources.** A product registers a resource as being for a creator's members, and VIP answers whether a person may see it.\n- **Membership checks for anyone's software.** An app or tool where a person signed in with OpenVibe can ask VIP, with that person's token, whether they are a member; an expired, unknown or unreachable answer is always no.\n- **Cards and badges** that other sites can embed.\n\n## How it fits the network\n\n- [[OpenVibe.Billing]] holds subscriptions and entitlements; VIP holds plans and perks.\n- [[OpenVibe.Community]], [[OpenVibe.Blog]], [[OpenVibe.Chat]] and [[OpenVibe.Wiki]] use VIP for members-only content.\n- Identities come from [[OpenVibe.Network]].\n\n## Status\n\nSTATUS.json's stage is \"alpha\". VIP launched at openvibe.vip on 2026-10-17 with checkout open, right after Billing became the money ledger, and creators could sell tiers the same day. A channel page on OpenVibe.Live lists a creator's higher tiers next to its Subscribe button.",
       "infobox": [
         {
           "key": "repository",
@@ -2224,16 +2224,22 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.VIP/blob/db828941fde1a1b7c2afead5a2570d7e410570c9/README.md",
-          "title": "OpenVibe.VIP README.md (commit db82894)",
+          "url": "https://github.com/OpenVibers/OpenVibe.VIP/blob/8aa2dc9dc6c56ea9c4a60b6e4dc4ccf2ef2d48a2/README.md",
+          "title": "OpenVibe.VIP README.md (commit 8aa2dc9)",
           "retrievedAt": "2026-10-17T06:00:00.000Z",
           "quote": "Memberships: plans, perks and benefits recognised across every OpenVibe site."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.VIP/blob/db828941fde1a1b7c2afead5a2570d7e410570c9/STATUS.json",
-          "title": "OpenVibe.VIP STATUS.json (commit db82894)",
+          "url": "https://github.com/OpenVibers/OpenVibe.VIP/blob/8aa2dc9dc6c56ea9c4a60b6e4dc4ccf2ef2d48a2/STATUS.json",
+          "title": "OpenVibe.VIP STATUS.json (commit 8aa2dc9)",
           "retrievedAt": "2026-10-17T06:00:00.000Z",
           "quote": "Launched 2026-10-17 at https://openvibe.vip"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.VIP/blob/8aa2dc9dc6c56ea9c4a60b6e4dc4ccf2ef2d48a2/README.md",
+          "title": "OpenVibe.VIP README.md, tiers (commit 8aa2dc9)",
+          "retrievedAt": "2026-10-17T07:30:00.000Z",
+          "quote": "A creator publishes at most **one plan\n  per tier**"
         }
       ]
     },
