@@ -10,7 +10,7 @@
     {
       "title": "OpenVibe",
       "parent": null,
-      "body": "The **OpenVibe network** is a set of services built in the open by OpenVibers, whose repositories are published in the [OpenVibers](https://github.com/OpenVibers) GitHub organisation. [[OpenVibe.Network]] is the network's identity and account service. This space describes the network's products as their README and STATUS files state them at the cited commits.\n\n## Streaming and media\n\n- [[OpenVibe.Live]] — the streaming front: ingest, viewer playback, channels, streamer tools and moderation.\n- [[OpenVibe.Media]] — the multi-tenant media service for VODs, clips, files, thumbnails and storage tiering.\n- [[OpenVibe.Zone]] — private S3-compatible storage zones for every project.\n- [[OpenVibe.MediaHub]] — openvibe.download (a private drive), openvibe.video (uploads and AI edits) and openvibe.pics (pictures).\n- [[OpenRestream]] — the ingest and restream control plane extracted from OpenVibe.Live.\n\n## Community and content\n\n- [[OpenVibe.Community]] — pastes, the forum, the comment threads other products embed, Pulse and submissions.\n- [[OpenVibe.Blog]] — the official blog and a blog for every member.\n- [[OpenVibe.News]] — editor-written, source-backed stories assembled from collected news items.\n- [[OpenVibe.Reviews]] — review signals with provenance, entity resolution and honest aggregates.\n- [[OpenVibe.Chat]] — the communication authority for rooms, messages, DMs, calls, TTS and moderation.\n- [[OpenVibe.Space]] — a site for code, dynamic pages and spaces, still a home page today.\n- [[OpenVibe.Help]] — the help and support centre generated from the product manifests.\n- [[OpenVibe.Quest]] — one quest log across every OpenVibe site, awarding badges and OpenCoins.\n\n## Tools and games\n\n- [[OpenVibe.Tools]] — the tools suite: a tool registry, a run API, jobs and a shared guard.\n- [[OpenVibe.Games]] — Scraplandia, a persistent multiplayer physics sandbox in the browser, and worlds players build and publish.\n- [[OpenVibe.Play]] — achievements and leaderboards for every OpenVibe game.\n- [[OpenVibe.Food]] — food near a place, a meal planner, a pantry, AI recipes, and delivery apps and meal kits compared.\n\n## Developer platform\n\n- [[OpenVibe.Network]] — identity, OAuth2 SSO, notifications and the OpenCoins wallet.\n- [[OpenVibe.Events]] — the durable event backbone: delivery, retry, dead letters and replay.\n- [[OpenVibe.Search]] — permission-aware discovery with an ACL-filtered query API.\n- [[OpenVibe.Sources]] — the source registry and ingestion workers with recorded provenance.\n- [[OpenVibe.Publishing]] — the shared publishing packages the publication products build on.\n- [[OpenVibe.Wiki]] — this wiki: spaces, page trees, revisions, citations and discussion.\n- [[OpenVibe.Codes]] — the open coding-agent harness.\n- [[OpenVibe.Services]] — the developer console for projects, apps, credentials and grants.\n- [[OpenVibe.Host]] — the deployment and control plane (the ovhost CLI) and tenant static hosting.\n- [[OpenVibe.Run]] — the job service that places jobs on nodes and follows them to an end.\n\n## Agents and automation\n\n- [[OpenVibe.Actor]] — OpenVibe's own general agent and agent router.\n- [[OpenVibe.Bot]] — the open control panel for robots.\n- [[OpenVibe.Node]] — one service on your own computers and robots, used by Bot and Actor.\n- [[OpenVibe.AI]] — the AI authority for providers, workflows, runs and quotas.\n- [[OpenVibe.Watch]] — persistent, user-defined observations and conditions over pages, feeds and events.\n\n## Commerce\n\n- [[OpenVibe.Deals]] — community-submitted deals with observed prices and freshness.\n- [[OpenVibe.Coupons]] — coupon codes with merchant matching and validity reports.\n- [[OpenVibe.Trade]] — informational watchlists and sourced market context, with no order execution.\n- [[OpenVibe.Rent]] — every rental site in one search, a board for listings from anywhere, and OpenVibe.Homes for buying.\n- [[OpenVibe.Inventory]] — the network-wide inventory of items a person owns.\n- [[OpenVibe.Work]] — job listings gathered from open job boards.\n",
+      "body": "The **OpenVibe network** is a set of services built in the open by OpenVibers, whose repositories are published in the [OpenVibers](https://github.com/OpenVibers) GitHub organisation. [[OpenVibe.Network]] is the network's identity and account service. This space describes the network's products as their README and STATUS files state them at the cited commits.\n\n## Streaming and media\n\n- [[OpenVibe.Live]] — the streaming front: ingest, viewer playback, channels, streamer tools and moderation.\n- [[OpenVibe.Media]] — the multi-tenant media service for VODs, clips, files, thumbnails and storage tiering.\n- [[OpenVibe.Zone]] — private S3-compatible storage zones for every project.\n- [[OpenVibe.MediaHub]] — openvibe.download (a private drive), openvibe.video (uploads and AI edits) and openvibe.pics (pictures).\n- [[OpenRestream]] — the ingest and restream control plane extracted from OpenVibe.Live.\n\n## Community and content\n\n- [[OpenVibe.Community]] — pastes, the forum, the comment threads other products embed, Pulse and submissions.\n- [[OpenVibe.Blog]] — the official blog and a blog for every member.\n- [[OpenVibe.News]] — editor-written, source-backed stories assembled from collected news items.\n- [[OpenVibe.Reviews]] — review signals with provenance, entity resolution and honest aggregates.\n- [[OpenVibe.Chat]] — the communication authority for rooms, messages, DMs, calls, TTS and moderation.\n- [[OpenVibe.Space]] — a site for code, dynamic pages and spaces, still a home page today.\n- [[OpenVibe.Help]] — the help and support centre generated from the product manifests.\n- [[OpenVibe.Quest]] — one quest log across every OpenVibe site, awarding badges and OpenCoins.\n\n## Tools and games\n\n- [[OpenVibe.Tools]] — the tools suite: a tool registry, a run API, jobs and a shared guard.\n- [[OpenVibe.Games]] — Scraplandia, a persistent multiplayer physics sandbox in the browser, and worlds players build and publish.\n- [[OpenVibe.Play]] — achievements and leaderboards for every OpenVibe game.\n- [[OpenVibe.Food]] — food near a place, a meal planner, a pantry, AI recipes, and delivery apps and meal kits compared.\n\n## Developer platform\n\n- [[OpenVibe.Network]] — identity, OAuth2 SSO, notifications and the OpenCoins wallet.\n- [[OpenVibe.Events]] — the durable event backbone: delivery, retry, dead letters and replay.\n- [[OpenVibe.Search]] — permission-aware discovery with an ACL-filtered query API.\n- [[OpenVibe.Sources]] — the source registry and ingestion workers with recorded provenance.\n- [[OpenVibe.Publishing]] — the shared publishing packages the publication products build on.\n- [[OpenVibe.Wiki]] — this wiki: spaces, page trees, revisions, citations and discussion.\n- [[OpenVibe.Codes]] — the open coding-agent harness.\n- [[OpenVibe.Services]] — the developer console for projects, apps, credentials and grants.\n- [[OpenVibe.Host]] — the deployment and control plane (the ovhost CLI) and tenant static hosting.\n- [[OpenVibe.Run]] — the job service that places jobs on nodes and follows them to an end.\n\n## Agents and automation\n\n- [[OpenVibe.Actor]] — OpenVibe's own general agent and agent router.\n- [[OpenVibe.Bot]] — the open control panel for robots.\n- [[OpenVibe.Node]] — one service on your own computers and robots, used by Bot and Actor.\n- [[OpenVibe.AI]] — the AI authority for providers, workflows, runs and quotas.\n- [[OpenVibe.Watch]] — persistent, user-defined observations and conditions over pages, feeds and events.\n\n## Commerce\n\n- [[OpenVibe.Deals]] — community-submitted deals with observed prices and freshness.\n- [[OpenVibe.Coupons]] — coupon codes with merchant matching and validity reports.\n- [[OpenVibe.Trade]] — informational watchlists and sourced market context, with no order execution.\n- [[OpenVibe.Rent]] — every rental site in one search, a board for listings from anywhere, and OpenVibe.Homes for buying.\n- [[OpenVibe.Inventory]] — the network-wide inventory of items a person owns.\n- [[OpenVibe.Billing]] — the money ledger: payments, Vibes, subscriptions, entitlements, refunds and payouts.\n- [[OpenVibe.Tips]] — creator support at openvibe.tips: tips, goals, paid messages, paid sounds and overlays.\n- [[OpenVibe.VIP]] — memberships at openvibe.vip: creator plans and perks recognised across every site.\n- [[OpenVibe.Work]] — job listings gathered from open job boards.\n",
       "summary": "Overview of the OpenVibe network and the products described in this space, grouped by area, with their stated status at the cited commits.",
       "infobox": [
         {
@@ -2078,6 +2078,162 @@
           "title": "OpenVibe.Play STATUS.json (commit 33da87a)",
           "retrievedAt": "2026-10-14T23:30:00.000Z",
           "quote": "achievements and leaderboards for every OpenVibe game"
+        }
+      ]
+    },
+    {
+      "title": "OpenVibe.Billing",
+      "parent": "OpenVibe",
+      "summary": "The isolated money ledger of the OpenVibe network: providers, receipts, subscriptions, entitlements, refunds and payouts, the money authority since 2026-10-17.",
+      "body": "**OpenVibe.Billing** is the network's money ledger: one append-only, balanced, double-entry journal for every money and credit flow. Provider webhooks land here and nowhere else. Its staff console and a person's own balance are at `billing.openvibe.network`; its service API answers on the host's loopback only.\n\n## What it does\n\n- **One journal.** Every money and credit movement is a balanced journal entry, kept apart from loyalty points (OpenCoins and channel points), which are not money.\n- **Vibes.** Vibes are OpenVibe's real-money support currency. A person's Vibes to spend and the Vibes they received as a creator are accounts in the journal; every OpenVibe site's account menu shows them from `GET /api/me/vibes`.\n- **Providers.** PowerChat payments and webhooks settle here. A tip made on a creator's own PowerChat page is recorded and announced for [[OpenVibe.Tips]].\n- **Subscriptions and entitlements.** Billing holds whether a membership is paid and active; [[OpenVibe.VIP]] holds the plans and perks and asks Billing.\n- **Reconciliation and freeze.** Reconciliation runs every hour. Staff can freeze the economy before a risky change, and every staff action is in an audit log.\n\n## How it fits the network\n\n- [[OpenVibe.Live]] sends donations, cashouts and subscriptions through Billing and keeps its old money tables read-only.\n- [[OpenVibe.Tips]] and [[OpenVibe.VIP]] never move money themselves: Billing settles their payments.\n- Identities come from [[OpenVibe.Network]]; Billing's events travel over [[OpenVibe.Events]].\n\n## Status\n\nSTATUS.json's stage is \"alpha\". Billing ran in shadow from 2026-09-23, holding a reconciled copy of Live's money data. The cutover made it the money authority on 2026-10-17, between 04:50 and 04:56 UTC, with reconciliation clean before and after.",
+      "infobox": [
+        {
+          "key": "repository",
+          "label": "Repository",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.Billing"
+        },
+        {
+          "key": "domain",
+          "label": "Domain",
+          "type": "text",
+          "value": "billing.openvibe.network"
+        },
+        {
+          "key": "port",
+          "label": "Port",
+          "type": "number",
+          "value": 4600
+        },
+        {
+          "key": "runtime",
+          "label": "Runtime",
+          "type": "text",
+          "value": "Node 22, Express 4, PostgreSQL 18, Valkey"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "value": "alpha"
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Billing/blob/594782ed291aebc2a36c06429802bcebea2eb3fc/README.md",
+          "title": "OpenVibe.Billing README.md (commit 594782e)",
+          "retrievedAt": "2026-10-17T06:00:00.000Z",
+          "quote": "The isolated money ledger: providers, receipts, subscriptions, entitlements, refunds and payouts."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Billing/blob/594782ed291aebc2a36c06429802bcebea2eb3fc/STATUS.json",
+          "title": "OpenVibe.Billing STATUS.json (commit 594782e)",
+          "retrievedAt": "2026-10-17T06:00:00.000Z",
+          "quote": "The money ledger since the cutover of 2026-10-17 04:50-04:56 UTC"
+        }
+      ]
+    },
+    {
+      "title": "OpenVibe.Tips",
+      "parent": "OpenVibe",
+      "summary": "Creator support at openvibe.tips: tips, goals, paid messages, TTS, media requests, paid sounds and stream overlays, with every payment settled by OpenVibe.Billing.",
+      "body": "**OpenVibe.Tips** is the creator support product at `openvibe.tips`. A creator gets a tip page, goals and overlays for their stream; supporters tip, send paid messages and play paid sounds. Tips never moves money: [[OpenVibe.Billing]] settles every payment, and Tips keeps the interaction.\n\n## What it does\n\n- **Tips and paid messages**, with optional text-to-speech and media requests, each with a minimum the creator sets.\n- **Paid sounds.** A creator uploads up to 12 short sounds; a supporter pays to play one on the stream overlay, and chat names it.\n- **Goals** count settled payments only.\n- **Overlays** for streaming software use revocable, scoped links (never the creator's sign-in), and an alert can be replayed without charging again.\n- **Supporter privacy.** A supporter can stay anonymous, hide the amount or send a private message, and that holds on every page, overlay and chat line. Supporters can export and erase their data.\n- **Moderation.** A word filter, hiding and showing interactions, and invited moderators.\n\n## How it fits the network\n\n- [[OpenVibe.Billing]] settles payments, and tips made on a creator's own PowerChat page reach Tips from Billing.\n- Chat lines and alerts are posted through [[OpenVibe.Chat]].\n- [[OpenVibe.Live]] moves the channel's donation goal and tip history when Tips announces a settled tip.\n\n## Status\n\nSTATUS.json's stage is \"alpha\". Tips launched at openvibe.tips on 2026-10-17, right after Billing became the money ledger, and paid sounds were added the same day.",
+      "infobox": [
+        {
+          "key": "repository",
+          "label": "Repository",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.Tips"
+        },
+        {
+          "key": "domain",
+          "label": "Domain",
+          "type": "text",
+          "value": "openvibe.tips"
+        },
+        {
+          "key": "port",
+          "label": "Port",
+          "type": "number",
+          "value": 4610
+        },
+        {
+          "key": "runtime",
+          "label": "Runtime",
+          "type": "text",
+          "value": "Node 22, Express 4, PostgreSQL 18, Valkey"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "value": "alpha"
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Tips/blob/d0636eb24ca4dcb1dcb4ac5c1b4b372be9fb22d4/README.md",
+          "title": "OpenVibe.Tips README.md (commit d0636eb)",
+          "retrievedAt": "2026-10-17T06:00:00.000Z",
+          "quote": "Creator support: tips, goals, paid messages, TTS, media requests and paid sounds, overlays."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Tips/blob/d0636eb24ca4dcb1dcb4ac5c1b4b372be9fb22d4/STATUS.json",
+          "title": "OpenVibe.Tips STATUS.json (commit d0636eb)",
+          "retrievedAt": "2026-10-17T06:00:00.000Z",
+          "quote": "Launched 2026-10-17 at https://openvibe.tips"
+        }
+      ]
+    },
+    {
+      "title": "OpenVibe.VIP",
+      "parent": "OpenVibe",
+      "summary": "Memberships at openvibe.vip: creator plans, perks and benefits recognised across every OpenVibe site, with subscriptions and entitlements held by OpenVibe.Billing.",
+      "body": "**OpenVibe.VIP** is the membership product at `openvibe.vip`. A creator publishes a plan, a member joins it through [[OpenVibe.Billing]], and every OpenVibe product can ask VIP whether a person is a member and may see a members-only resource.\n\n## What it does\n\n- **Plans with fixed terms.** Every edit of a plan is a new, immutable version, and a membership always points at the version it was bought under. Plans carry no price: Billing sets and charges it.\n- **Perks** such as badges, emotes, members-only content, rooms and roles, bound to the products that show them.\n- **Members-only resources.** A product registers a resource as being for a creator's members, and VIP answers whether a person may see it.\n- **Membership checks for anyone's software.** An app or tool where a person signed in with OpenVibe can ask VIP, with that person's token, whether they are a member; an expired, unknown or unreachable answer is always no.\n- **Cards and badges** that other sites can embed.\n\n## How it fits the network\n\n- [[OpenVibe.Billing]] holds subscriptions and entitlements; VIP holds plans and perks.\n- [[OpenVibe.Community]], [[OpenVibe.Blog]], [[OpenVibe.Chat]] and [[OpenVibe.Wiki]] use VIP for members-only content.\n- Identities come from [[OpenVibe.Network]].\n\n## Status\n\nSTATUS.json's stage is \"alpha\". VIP launched at openvibe.vip on 2026-10-17 with checkout open, right after Billing became the money ledger.",
+      "infobox": [
+        {
+          "key": "repository",
+          "label": "Repository",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.VIP"
+        },
+        {
+          "key": "domain",
+          "label": "Domain",
+          "type": "text",
+          "value": "openvibe.vip"
+        },
+        {
+          "key": "port",
+          "label": "Port",
+          "type": "number",
+          "value": 4620
+        },
+        {
+          "key": "runtime",
+          "label": "Runtime",
+          "type": "text",
+          "value": "Node 22, Express 4, PostgreSQL 18, Valkey"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "value": "alpha"
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.VIP/blob/db828941fde1a1b7c2afead5a2570d7e410570c9/README.md",
+          "title": "OpenVibe.VIP README.md (commit db82894)",
+          "retrievedAt": "2026-10-17T06:00:00.000Z",
+          "quote": "Memberships: plans, perks and benefits recognised across every OpenVibe site."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.VIP/blob/db828941fde1a1b7c2afead5a2570d7e410570c9/STATUS.json",
+          "title": "OpenVibe.VIP STATUS.json (commit db82894)",
+          "retrievedAt": "2026-10-17T06:00:00.000Z",
+          "quote": "Launched 2026-10-17 at https://openvibe.vip"
         }
       ]
     },
