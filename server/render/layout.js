@@ -15,12 +15,12 @@ const { escapeHtml: esc } = require('openvibe-publishing/ssr');
 
 const SITE_NAME = 'OpenVibe.Wiki';
 const NETWORK_URL = 'https://openvibe.network';
-const DEFAULT_DESCRIPTION = 'OpenVibe.Wiki: wiki spaces with page trees, revision history, citations and discussion, part of the OpenVibe network.';
+const DEFAULT_DESCRIPTION = 'OpenVibe.Wiki: wikis with page trees, revision history, citations and discussion, part of the OpenVibe network.';
 // The one AI summary for the site: /llms.txt and /llms-full.txt publish it, and the home page carries it
 // as the shell's ai-summary meta / WebPage JSON-LD (openvibe-publishing/layout forwards `summary`).
-const AI_SUMMARY = 'Wiki spaces of the OpenVibe network: page trees, immutable revisions, citations attached to the revision that used them, infoboxes and internal links.';
+const AI_SUMMARY = 'Wikis of the OpenVibe network: page trees, immutable revisions, citations attached to the revision that used them, infoboxes and internal links.';
 const NAV_LINKS = [
-    { label: 'Spaces', href: '/' },
+    { label: 'Wikis', href: '/' },
     { label: 'Recent changes', href: '/recent' },
     { label: 'Search', href: '/search' },
 ];
@@ -49,7 +49,7 @@ function navConfig(o, config) {
         service: 'wiki',
         apiBase: NETWORK_URL,
         links: [
-            { label: 'Spaces', href: '/', active: o.active === 'home' },
+            { label: 'Wikis', href: '/', active: o.active === 'home' },
             { label: 'Recent changes', href: '/recent', active: o.active === 'recent' },
             { label: 'Search', href: '/search', active: o.active === 'search' },
         ],
@@ -84,7 +84,7 @@ function renderPage(o) {
         siteName: SITE_NAME,
         lang: 'en',
         // The front page's title says what the site is (search results show it); every other page is "<page> · OpenVibe.Wiki".
-        title: o.title ? `${o.title} · ${SITE_NAME}` : o.path === '/' ? `${SITE_NAME}: wiki spaces with history and citations` : SITE_NAME,
+        title: o.title ? `${o.title} · ${SITE_NAME}` : o.path === '/' ? `${SITE_NAME}: wikis with history and citations` : SITE_NAME,
         description: o.description || DEFAULT_DESCRIPTION,
         summary: o.summary,
         canonical: `${config.baseUrl}${o.path || '/'}`,
