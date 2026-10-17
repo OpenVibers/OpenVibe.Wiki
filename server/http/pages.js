@@ -77,7 +77,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     const errorPage = (req, res, status, title, message) => send(req, res, status, views.errorBody({ status, title, message }), { title, robots: 'noindex, nofollow' });
     const notFound = (req, res) => errorPage(req, res, 404, 'Page not found', 'Nothing lives at that address, or it is not visible to you.');
     const gone = (req, res) => errorPage(req, res, 410, 'Gone', 'This page was deleted. Its history is kept, but it is no longer published.');
-    // VIP (WS-K task 8): the join prompt for a VIP space or page the viewer is not admitted to (403, never cached).
+    // VIP (WS-K task 8): the join prompt for a VIP wiki or page the viewer is not admitted to (403, never cached).
     const vipGate = (req, res, space, page) => {
         const r = svc.access.vipRefusal(space, page, req.actor);
         if (!r) return false;
@@ -123,7 +123,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     router.get('/', wrap(async (req, res) => {
         if (req.actor.subject) await svc.access.prepareVip(req.actor, (await svc.vipSpaces()).map((space) => ({ space })));   // VIP spaces the viewer may see
         const [spaces, recent] = await Promise.all([svc.listSpaces(req.actor), svc.recentChanges(10)]);
-        // The official spaces' shelves: what is inside them, on the front page (only public spaces: the home is cached).
+        // The official wikis' shelves: what is inside them, on the front page (only public spaces: the home is cached).
         const shelves = new Map(await Promise.all(spaces.filter((s) => s.kind === 'official' && s.visibility === 'public').slice(0, 3)
             .map(async (s) => [s.id, await svc.shelf(s, req.actor, 48)])));
         // The site's one-line AI summary: the shell turns it into the ai-summary meta and the home's
@@ -142,19 +142,22 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     }));
 
     // ── Spaces ───────────────────────────────────────────────
+    // Wikis were called spaces until 2026-10-17 (openvibe.space is another product); the addresses stay, these are aliases.
+    router.get('/wikis', (req, res) => res.redirect(301, '/'));
+    router.get('/new-wiki', (req, res) => res.redirect(301, '/new-space'));
     router.get('/new-space', (req, res) => {
-        if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to start a space.');
-        send(req, res, 200, views.newSpacePage({ staff: req.actor.staff }), { title: 'Start a space', robots: 'noindex, nofollow' });
+        if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to start a wiki.');
+        send(req, res, 200, views.newSpacePage({ staff: req.actor.staff }), { title: 'Start a wiki', robots: 'noindex, nofollow' });
     });
     router.post('/new-space', B('wiki.space.create'), form, wrap(async (req, res) => {
-        if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to start a space.');
+        if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to start a wiki.');
         const b = req.body || {};
         try {
             const space = await svc.createSpace({ name: b.name, slug: b.slug || null, description: b.description || null, visibility: b.visibility, kind: b.official === '1' && req.actor.staff ? 'official' : 'user' }, req.actor);
             res.redirect(303, `/s/${encodeURIComponent(space.slug)}`);
         } catch (err) {
             if (!err.status || err.status >= 500) throw err;
-            send(req, res, err.status, views.newSpacePage({ values: b, error: err.message, staff: req.actor.staff }), { title: 'Start a space', robots: 'noindex, nofollow' });
+            send(req, res, err.status, views.newSpacePage({ values: b, error: err.message, staff: req.actor.staff }), { title: 'Start a wiki', robots: 'noindex, nofollow' });
         }
     }));
 
@@ -165,7 +168,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         const proposals = canEdit ? (await svc.pendingProposals(req.actor)).filter((p) => p.space_id === space.id) : [];
         const open = space.visibility === 'public';
         send(req, res, 200, views.spacePage({ space, tree: await svc.tree(space, req.actor), canEdit, canManage: svc.access.canManage(space, req.actor), proposals }), {
-            title: space.name, description: space.description || `${space.name}: a space on OpenVibe.Wiki.`, path: svc.spacePath(space),
+            title: space.name, description: space.description || `${space.name}: a wiki on OpenVibe.Wiki.`, path: svc.spacePath(space),
             robots: open ? 'index, follow' : 'noindex, nofollow', cache: open ? 'public' : null,
             jsonLd: open ? seo.structuredData.breadcrumbs([{ name: 'Wiki', url: `${config.baseUrl}/` }, { name: space.name, url: `${config.baseUrl}${svc.spacePath(space)}` }]) : null,
         });
@@ -173,8 +176,8 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
 
     function editorsOnly(req, res, space) {
         if (svc.access.canEdit(space, req.actor)) return true;
-        if (!req.actor.subject) needSignIn(req, res, 'Sign in to edit. Only editors of this space can change it.');
-        else errorPage(req, res, 403, 'Not an editor', 'Only editors of this space can do that. An owner of the space can give you a role.');
+        if (!req.actor.subject) needSignIn(req, res, 'Sign in to edit. Only editors of this wiki can change it.');
+        else errorPage(req, res, 403, 'Not an editor', 'Only editors of this wiki can do that. An owner of the wiki can give you a role.');
         return false;
     }
 
@@ -214,7 +217,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     router.get('/s/:space/settings', wrap(async (req, res) => {
         const space = await locateSpace(req, res);
         if (!space) return;
-        if (!svc.access.canManage(space, req.actor)) return req.actor.subject ? errorPage(req, res, 403, 'Owners only', 'Only an owner of this space can change its settings.') : needSignIn(req, res, 'Sign in as an owner of this space.');
+        if (!svc.access.canManage(space, req.actor)) return req.actor.subject ? errorPage(req, res, 403, 'Owners only', 'Only an owner of this wiki can change its settings.') : needSignIn(req, res, 'Sign in as an owner of this wiki.');
         send(req, res, 200, views.spaceSettingsPage({ space, roles: await svc.roles(space.id, req.actor), flash: req.query.saved ? 'Saved.' : null }), { title: `Settings of ${space.name}`, robots: 'noindex, nofollow' });
     }));
 
@@ -234,13 +237,13 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
         }
     }));
 
-    // Import pages into a space (owners): the same JSON bundle as POST /api/v1/spaces/:space/import,
+    // Import pages into a wiki (owners): the same JSON bundle as POST /api/v1/spaces/:space/import,
     // pasted into a form; the options come from the form's controls.
     const importForm = express.urlencoded({ extended: false, limit: '6mb' });
     function ownersOnly(req, res, space) {
         if (svc.access.canManage(space, req.actor)) return true;
-        if (!req.actor.subject) needSignIn(req, res, 'Sign in as an owner of this space to import pages.');
-        else errorPage(req, res, 403, 'Owners only', 'Only an owner of this space imports pages into it.');
+        if (!req.actor.subject) needSignIn(req, res, 'Sign in as an owner of this wiki to import pages.');
+        else errorPage(req, res, 403, 'Owners only', 'Only an owner of this wiki imports pages into it.');
         return false;
     }
     router.get('/s/:space/import', wrap(async (req, res) => {

@@ -11,11 +11,11 @@ const { infoboxToText } = require('../wiki/content');
 const { html, raw } = ssr;
 const t = (v) => raw(ssr.timeTag(v));
 const e = encodeURIComponent;
-const VIS_LABEL = { public: 'Public', members: 'Members (any signed-in OpenVibe account)', vip: 'VIP (the space owner\'s OpenVibe.VIP members)', private: 'Private (people with a role in this space)' };
+const VIS_LABEL = { public: 'Public', members: 'Members (any signed-in OpenVibe account)', vip: 'VIP (the wiki owner\'s OpenVibe.VIP members)', private: 'Private (people with a role in this wiki)' };
 
 function wpath(space, page) { return `/w/${e(space.slug)}/${e(page.slug)}`; }
 
-/** rel for outbound links (citations, infobox URLs): community spaces add ugc (see service.linkRel). */
+/** rel for outbound links (citations, infobox URLs): community wikis add ugc (see service.linkRel). */
 function outRel(space) { return space && space.kind === 'official' ? 'noopener nofollow' : 'nofollow ugc noopener'; }
 
 function notice(kind, text) { return html`<p class="wk-notice wk-${kind}" role="status">${text}</p>`; }
@@ -26,7 +26,7 @@ function errorBody({ status, title, message }) {
     return html`<section class="wk-error"><h1>${title}</h1><p>${message}</p><p class="wk-muted">HTTP ${String(status)}</p><p><a href="/">Back to the wiki</a></p></section>`;
 }
 
-/** A VIP space or page the viewer is not (yet) admitted to: the join prompt (WS-K task 8). */
+/** A VIP wiki or page the viewer is not (yet) admitted to: the join prompt (WS-K task 8). */
 function vipGateBody({ title, spaceName, joinUrl, signedIn, signInUrl }) {
     return html`<section class="wk-error"><h1>For VIP members</h1><p>${title ? html`<strong>${title}</strong> is` : 'This is'} for the VIP members of ${spaceName ? html`<strong>${spaceName}</strong>'s owner` : 'its owner'}.</p>
 <p>${signedIn ? '' : html`<a class="wk-btn" href="${signInUrl}">Sign in</a> `}${joinUrl ? html`<a class="wk-btn" href="${joinUrl}" rel="noopener">See their VIP plans</a>` : ''}</p><p><a href="/">Back to the wiki</a></p></section>`;
@@ -48,13 +48,13 @@ function home({ spaces, recent, shelves = new Map(), actor }) {
     const official = spaces.filter((s) => s.kind === 'official');
     const user = spaces.filter((s) => s.kind === 'user');
     const signedIn = !!(actor && actor.subject);
-    const start = signedIn ? { label: 'Start a space', href: '/new-space', primary: true } : { label: 'Sign in to start a space', href: '/auth/login?next=%2Fnew-space', primary: true };
+    const start = signedIn ? { label: 'Start a wiki', href: '/new-space', primary: true } : { label: 'Sign in to start a wiki', href: '/auth/login?next=%2Fnew-space', primary: true };
     const card = (s) => {
         const shelf = shelves.get(s.id);
         return html`<li><a class="wk-space" href="/s/${e(s.slug)}"><b>${s.name}</b>${s.visibility !== 'public' ? html` <span class="wk-tag">${s.visibility}</span>` : ''}${s.description ? html`<span class="wk-space-text">${s.description}</span>` : ''}${shelf && shelf.total ? html`<span class="wk-space-meta">${String(shelf.total)} page${shelf.total === 1 ? '' : 's'}${shelf.updated ? html` · updated ${t(shelf.updated)}` : ''}</span>` : ''}</a></li>`;
     };
-    // Each official space with pages: what is inside it, its pages one level down as cards with their summaries. A space
-    // without a shelf (not public, or empty) is a card under "Official spaces".
+    // Each official wiki with pages: what is inside it, its pages one level down as cards with their summaries. A space
+    // without a shelf (not public, or empty) is a card under "Official wikis".
     const shelved = official.filter((s) => shelves.get(s.id) && shelves.get(s.id).pages.length);
     const unshelved = official.filter((s) => !shelved.includes(s));
     const inside = shelved.map((s) => {
@@ -70,23 +70,23 @@ function home({ spaces, recent, shelves = new Map(), actor }) {
     return html`${raw(showcase.hero({
         eyebrow: 'OpenVibe.Wiki',
         title: 'Knowledge,', accent: 'with sources',
-        lede: 'Wiki spaces with page trees, revision history, citations and discussion. Official spaces are edited by OpenVibe staff; anyone signed in with an OpenVibe account can start a space of their own.',
-        actions: [start, { label: 'Browse the spaces', href: '#spaces' }],
+        lede: 'Wikis with page trees, revision history, citations and discussion. Official wikis are edited by OpenVibe staff; anyone signed in with an OpenVibe account can start a wiki of their own.',
+        actions: [start, { label: 'Browse the wikis', href: '#spaces' }],
     }))}
 <div id="spaces"></div>
 ${raw(inside)}
-${unshelved.length || !shelved.length ? html`<section class="sc-sec wk-home-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official spaces</h2>${unshelved.length ? html`<ul class="wk-spaces">${unshelved.map(card)}</ul>` : html`<p class="wk-muted">None yet.</p>`}</section>` : ''}
-<section class="sc-sec wk-home-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community spaces</h2>${user.length ? html`<ul class="wk-spaces">${user.map(card)}</ul>`
-        : html`<div class="wk-empty"><p><b>No community spaces yet.</b> Any OpenVibe account can start one: public, members-only, for its owner's VIP members, or private, with the editors it chooses.</p><p><a class="wk-button" href="${start.href}">${start.label}</a></p></div>`}</section>
+${unshelved.length || !shelved.length ? html`<section class="sc-sec wk-home-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official wikis</h2>${unshelved.length ? html`<ul class="wk-spaces">${unshelved.map(card)}</ul>` : html`<p class="wk-muted">None yet.</p>`}</section>` : ''}
+<section class="sc-sec wk-home-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community wikis</h2>${user.length ? html`<ul class="wk-spaces">${user.map(card)}</ul>`
+        : html`<div class="wk-empty"><p><b>No community wikis yet.</b> Any OpenVibe account can start one: public, members-only, for its owner's VIP members, or private, with the editors it chooses.</p><p><a class="wk-button" href="${start.href}">${start.label}</a></p></div>`}</section>
 ${raw(showcase.features({
-        title: 'What a space gets',
+        title: 'What a wiki gets',
         items: [
-            { icon: 'ov:wiki', title: 'Page trees', text: 'Pages nest under pages, so a space reads like a book.' },
+            { icon: 'ov:wiki', title: 'Page trees', text: 'Pages nest under pages, so a wiki reads like a book.' },
             { icon: 'ov:history', title: 'Revision history', text: 'Every published revision is kept; compare or restore any of them.' },
             { icon: 'ov:check', title: 'Citations', text: 'Claims carry their sources, listed with every page.' },
             { icon: 'ov:community', title: 'Discussion', text: 'Each page has a thread on OpenVibe.Community.' },
-            { icon: 'ov:account', title: 'Roles and visibility', text: 'Public, members-only, VIP or private spaces, with editors you choose.' },
-            { icon: 'ov:search', title: 'Search and feeds', text: 'Full-text search across the spaces you can see, and Atom and JSON feeds.' },
+            { icon: 'ov:account', title: 'Roles and visibility', text: 'Public, members-only, VIP or private wikis, with editors you choose.' },
+            { icon: 'ov:search', title: 'Search and feeds', text: 'Full-text search across the wikis you can see, and Atom and JSON feeds.' },
         ],
     }))}
 <section class="sc-sec wk-home-sec" aria-labelledby="wk-recent-h"><h2 id="wk-recent-h">Recently published</h2>${recent.length ? html`<ul class="wk-recent">${recent.map((r) => html`<li><span><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name}</span></span> <span class="wk-muted">${t(r.page.revision_published_at)}</span></li>`)}</ul>` : html`<p class="wk-muted">Nothing published yet.</p>`}
@@ -101,12 +101,12 @@ function treeHtml(nodes, space) {
 function spacePage({ space, tree, canEdit, canManage, proposals }) {
     return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name }])}
 <section><h1>${space.name}</h1>
-<p class="wk-muted">${space.kind === 'official' ? 'Official space' : 'Community space'} · ${VIS_LABEL[space.visibility]}</p>
+<p class="wk-muted">${space.kind === 'official' ? 'Official wiki' : 'Community wiki'} · ${VIS_LABEL[space.visibility]}</p>
 ${space.description ? html`<p>${space.description}</p>` : ''}
-${canEdit ? html`<p><a class="wk-button" href="/s/${e(space.slug)}/new">New page</a>${canManage ? html` <a href="/s/${e(space.slug)}/import">Import pages</a> <a href="/s/${e(space.slug)}/settings">Space settings</a>` : ''}</p>` : ''}
+${canEdit ? html`<p><a class="wk-button" href="/s/${e(space.slug)}/new">New page</a>${canManage ? html` <a href="/s/${e(space.slug)}/import">Import pages</a> <a href="/s/${e(space.slug)}/settings">Wiki settings</a>` : ''}</p>` : ''}
 ${proposals && proposals.length ? html`<p>${notice('info', `${proposals.length} AI proposal(s) wait for review.`)} <a href="/s/${e(space.slug)}/proposals">Review them</a></p>` : ''}
 <h2>Pages</h2>${tree.length ? raw(treeHtml(tree, space)) : html`<p class="wk-muted">No pages yet.</p>`}
-${space.visibility === 'public' ? html`<p class="wk-muted">Follow this space: <a href="/s/${e(space.slug)}/feed.atom" type="application/atom+xml">Atom</a> · <a href="/s/${e(space.slug)}/feed.json" type="application/feed+json">JSON Feed</a></p>` : ''}
+${space.visibility === 'public' ? html`<p class="wk-muted">Follow this wiki: <a href="/s/${e(space.slug)}/feed.atom" type="application/atom+xml">Atom</a> · <a href="/s/${e(space.slug)}/feed.json" type="application/feed+json">JSON Feed</a></p>` : ''}
 </section>`;
 }
 
@@ -190,7 +190,7 @@ function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolv
     trail.push({ name: rev.fields.title || page.title });
     const banners = [];
     if (flash) banners.push(notice('ok', flash));
-    if (page.state !== 'published') banners.push(notice('warn', `This page is ${page.state === 'scheduled' ? 'scheduled, not published yet' : page.state}. Only editors of the space can see it.`));
+    if (page.state !== 'published') banners.push(notice('warn', `This page is ${page.state === 'scheduled' ? 'scheduled, not published yet' : page.state}. Only editors of the wiki can see it.`));
     else if (!v.isPublishedRevision) banners.push(notice('warn', `You are looking at revision ${rev.number}, not the published revision ${page.published_revision}.`));
     else if (v.canEdit && v.headNumber > rev.number) banners.push(html`<p class="wk-notice wk-info" role="status">Revision ${String(v.headNumber)} is newer than the published one and only editors can see it. <a href="${base}?rev=${String(v.headNumber)}">View it</a> · <a href="${base}/diff/${String(rev.number)}/${String(v.headNumber)}">compare</a></p>`);
     if (v.disclosure) banners.push(html`<p class="wk-notice wk-ai" role="note"><strong>${v.disclosure.short}.</strong> ${v.disclosure.long}</p>`);
@@ -292,15 +292,15 @@ function formValuesFromRevision(rev, page) {
 }
 
 function newSpacePage({ values = {}, error = null, staff = false }) {
-    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: 'New space' }])}
-<section><h1>Start a space</h1>${error ? notice('error', error) : ''}
+    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: 'New wiki' }])}
+<section><h1>Start a wiki</h1>${error ? notice('error', error) : ''}
 <form method="post" action="/new-space" class="wk-form">
 <label>Name <input type="text" name="name" required maxlength="120" value="${values.name || ''}"></label>
 <label>Address (optional; lowercase letters, digits and dashes) <input type="text" name="slug" maxlength="63" pattern="[a-z0-9][a-z0-9-]{1,62}" value="${values.slug || ''}"></label>
 <label>Description <input type="text" name="description" maxlength="1000" value="${values.description || ''}"></label>
 <label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${(values.visibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
-${staff ? html`<label class="wk-check"><input type="checkbox" name="official" value="1"> Official (editorial) space</label>` : ''}
-<p><button type="submit">Create space</button></p></form></section>`;
+${staff ? html`<label class="wk-check"><input type="checkbox" name="official" value="1"> Official (editorial) wiki</label>` : ''}
+<p><button type="submit">Create wiki</button></p></form></section>`;
 }
 
 const IMPORT_EXAMPLE = JSON.stringify({ pages: [
@@ -334,7 +334,7 @@ function spaceSettingsPage({ space, roles, error = null, flash = null }) {
 <label>Name <input type="text" name="name" maxlength="120" value="${space.name}"></label>
 <label>Description <input type="text" name="description" maxlength="1000" value="${space.description || ''}"></label>
 <label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${space.visibility === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
-<p class="wk-muted">Making a space members-only or private removes its pages from sitemaps, feeds and OpenVibe.Search.</p>
+<p class="wk-muted">Making a wiki members-only or private removes its pages from sitemaps, feeds and OpenVibe.Search.</p>
 <p><button type="submit" name="op" value="settings">Save settings</button></p></form>
 <h2>Roles</h2>
 <table><thead><tr><th scope="col">Person</th><th scope="col">Role</th><th scope="col">Since</th><th scope="col"></th></tr></thead><tbody>
@@ -345,7 +345,7 @@ ${roles.map((r) => html`<tr><td><code>${r.subject}</code></td><td>${r.role}</td>
 <label>Role <select name="role"><option value="editor">editor</option><option value="viewer">viewer</option><option value="owner">owner</option></select></label>
 <p><button type="submit">Grant role</button></p></form>
 <h2>Import</h2><p><a href="/s/${e(space.slug)}/import">Import pages from a bundle</a></p>
-<h2>Delete</h2><form method="post" action="/s/${e(space.slug)}/settings" class="wk-form"><input type="hidden" name="op" value="delete"><label class="wk-check"><input type="checkbox" name="confirm" value="yes" required> Delete this space and take every page offline (addresses answer 410 Gone)</label><p><button type="submit">Delete space</button></p></form>
+<h2>Delete</h2><form method="post" action="/s/${e(space.slug)}/settings" class="wk-form"><input type="hidden" name="op" value="delete"><label class="wk-check"><input type="checkbox" name="confirm" value="yes" required> Delete this wiki and take every page offline (addresses answer 410 Gone)</label><p><button type="submit">Delete wiki</button></p></form>
 </section>`;
 }
 
@@ -353,7 +353,7 @@ function pageSettingsPage({ space, page, v, parents, error = null, flash = null,
     const base = wpath(space, page);
     return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name, url: `/s/${e(space.slug)}` }, { name: page.title, url: base }, { name: 'Settings' }])}
 <section><h1>Settings of ${page.title}</h1>${error ? notice('error', error) : ''}${flash ? notice('ok', flash) : ''}
-<p>State: <strong>${page.state}</strong>${page.published_revision ? html` · published revision ${String(page.published_revision)}` : ''} · visibility ${page.visibility} (space: ${space.visibility})</p>
+<p>State: <strong>${page.state}</strong>${page.published_revision ? html` · published revision ${String(page.published_revision)}` : ''} · visibility ${page.visibility} (wiki: ${space.visibility})</p>
 <h2>Publish</h2>
 <form method="post" action="${base}/settings" class="wk-form"><input type="hidden" name="op" value="publish">
 <label>Revision <input type="number" name="revision" min="1" value="${String(v.headNumber)}"></label>

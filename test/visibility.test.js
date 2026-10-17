@@ -60,7 +60,7 @@ async function lastIndexEvent(h, pageId) {
         assert.strictEqual(r.status, 200);
         assert.match(r.headers.get('content-type'), /^text\/plain/);
         assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=3600, stale-while-revalidate=3600');
-        assert.ok(r.text.startsWith('# OpenVibe.Wiki') && r.text.includes('> Wiki spaces of the OpenVibe network'), 'the llms.txt header comes first');
+        assert.ok(r.text.startsWith('# OpenVibe.Wiki') && r.text.includes('> Wikis of the OpenVibe network'), 'the llms.txt header comes first');
         assert.ok(r.text.includes('http://wiki.test/w/notes/open-page') && r.text.includes('http://wiki.test/w/notes/second-page'));
         assert.ok(!r.text.includes('unsourced-page'), 'only indexable pages, not merely listable ones');
         assert.ok(Buffer.byteLength(r.text) <= 512 * 1024, 'the page stays within maxBytes');
