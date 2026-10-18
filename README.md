@@ -1,6 +1,6 @@
 # OpenVibe.Wiki
 
-> Wiki spaces with page trees, revisions, citations, media and discussion — editable together, source-backed.
+> Wikis with page trees, revisions, citations, media and discussion — editable together, source-backed.
 
 **Status:** alpha (roadmap Wave 16, Wiki half). **Public at https://openvibe.wiki since 2026-09-23**
 (the launch release also removed the domain from [OpenVibe.Sites](https://github.com/OpenVibers/OpenVibe.Sites)).
@@ -12,7 +12,7 @@ so every page is `noindex` and none is in Search.
 
 ## Purpose
 
-The knowledge product of the network: spaces (official editorial spaces and user spaces), page
+The knowledge product of the network: wikis (official editorial wikis and community ones, called spaces in the code and API), page
 trees with canonical slugs, immutable revisions with diff and revert, manual editing by permitted
 people, typed infoboxes, `[[internal links]]`, citations attached to the revision that used them,
 Media attachments and Community discussion. AI proposes revisions; a person approves them; Wiki
