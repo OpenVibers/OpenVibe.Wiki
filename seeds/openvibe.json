@@ -1014,7 +1014,7 @@
     {
       "title": "OpenVibe.News",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.News** is a publication product, served at `openvibe.news`, that turns collected news items into editor-written, source-backed stories. The README calls it \"A publication product, not an autonomous headline generator\".\n\n## What it does\n\n[[OpenVibe.Sources]] collects news items, and News normalises them, removes duplicates, groups them into explainable clusters, and gives editors tools to write stories. Every paragraph an editor publishes cites the source items it rests on, and the README states a story with no sources cannot be published. Stories have immutable revisions, timelines, editor-written perspectives, corrections, updates and final retractions. Ingestion works two ways: an Events webhook and a cursor pull. Discussion threads are referenced from [[OpenVibe.Community]], and optional [[OpenVibe.AI]] drafts need a person's review. Pages are server-rendered and useful without JavaScript.\n\n## What it does not do yet\n\nThe home page shows the latest items from the source wires, each linking to its source. Full article text from sources is never stored, shown, fed or indexed. Edited stories exist only once an editor opens one from a cluster and publishes it, and none has been published yet.\n## How it fits the network\n\nNews depends on [[OpenVibe.Sources]] for items, [[OpenVibe.Events]] for events, [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Community]] for comments and [[OpenVibe.Search]] for indexing.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 17, News half), public at `openvibe.news` since 2026-10-09, and that STATUS.json records it deployed. License: AGPL-3.0.",
+      "body": "**OpenVibe.News** is a publication product, served at `openvibe.news`, that turns collected news items into editor-written, source-backed stories. The README calls it \"A publication product, not an autonomous headline generator\".\n\n## What it does\n\n[[OpenVibe.Sources]] collects news items, and News normalises them, removes duplicates, groups them into explainable clusters, and gives editors tools to write stories. Every paragraph an editor publishes cites the source items it rests on, and the README states a story with no sources cannot be published. Stories have immutable revisions, timelines, editor-written perspectives, corrections, updates and final retractions. Ingestion works two ways: an Events webhook and a cursor pull. Discussion threads are referenced from [[OpenVibe.Community]], and optional [[OpenVibe.AI]] drafts need a person's review. Pages are server-rendered and useful without JavaScript.\n\nBeside the stories, News has AI briefs: what a cluster's reports say, written by [[OpenVibe.AI]] and labelled as AI on every page. Every paragraph cites the reports it rests on, claims the model did not cite are dropped and listed under \"What the AI left out\", and a run with no cited text makes no brief. A reader can ask for a brief in another tone, or for how the outlets put it, and `/live` shows the newest reports as they arrive, marking as Breaking a subject that three or more reports covered in the last two hours. Briefs and Live are noindex: they are AI text and other publishers' headlines, not News' writing.\n\n## What it does not do yet\n\nThe home page shows the latest items from the source wires, each linking to its source. Full article text from sources is never stored, shown, fed or indexed. Edited stories exist only once an editor opens one from a cluster and publishes it, and none has been published yet.\n\n## How it fits the network\n\nNews depends on [[OpenVibe.Sources]] for items, [[OpenVibe.Events]] for events, [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Community]] for comments, [[OpenVibe.Search]] for indexing and [[OpenVibe.AI]] for briefs.\n\n## Status\n\nThe README states the status is alpha (roadmap Wave 17, News half), public at `openvibe.news` since 2026-10-09, and that STATUS.json records it deployed. License: AGPL-3.0.",
       "summary": "A publication product that turns news items collected by OpenVibe.Sources into editor-written, source-backed stories with cited paragraphs.",
       "infobox": [
         {
@@ -1056,16 +1056,34 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/648dbd9af3ebc1b86da85fa919cac379bdf779f3/README.md",
-          "title": "OpenVibe.News README (commit 648dbd9)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
-          "quote": "Source-backed stories: clustered coverage, cited paragraphs, perspectives, timelines"
+          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/f3cd38d8ad8fbbbd434364f599a2fdd3a396f1d1/README.md",
+          "title": "OpenVibe.News README (commit f3cd38d)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "A publication product, not an autonomous headline generator"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/648dbd9af3ebc1b86da85fa919cac379bdf779f3/STATUS.json",
-          "title": "OpenVibe.News STATUS.json (commit 648dbd9)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
-          "quote": "stories exist only once an editor opens and publishes one"
+          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/f3cd38d8ad8fbbbd434364f599a2fdd3a396f1d1/README.md",
+          "title": "OpenVibe.News README (commit f3cd38d)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "written by OpenVibe.AI and labelled as AI on every page"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/f3cd38d8ad8fbbbd434364f599a2fdd3a396f1d1/README.md",
+          "title": "OpenVibe.News README (commit f3cd38d)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "claims the model did not cite are dropped and listed under \"What the AI left out\""
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/f3cd38d8ad8fbbbd434364f599a2fdd3a396f1d1/README.md",
+          "title": "OpenVibe.News README (commit f3cd38d)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "on a subject three or more reports covered in the last two hours"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.News/blob/f3cd38d8ad8fbbbd434364f599a2fdd3a396f1d1/README.md",
+          "title": "OpenVibe.News README (commit f3cd38d)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "they are AI text and other publishers' headlines, not News' writing"
         }
       ]
     },
@@ -1870,8 +1888,8 @@
     {
       "title": "OpenVibe.Quest",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Quest** is \"One quest log across every OpenVibe site\" at `openvibe.quest` on port 4980. A quest counts something a person really did somewhere in the network and pays a badge on their profile; when OpenCoins are on, it also credits OpenCoins through [[OpenVibe.Network]]'s wallet.\n\n## What it does\n\nThe quest catalog holds 12 first-party quests in code, each with steps, the events that count them, a badge, OpenCoins and any item reward, plus the whole list of events Quest listens to. Quest runs no activities of its own: it consumes domain events from [[OpenVibe.Events]] at `POST /internal/events`, taking the person from the field each event's schema defines. Progress is stored per step, with one completion per person per quest and one badge per person, all once-only under a redelivery. Six quests grant one of [[OpenVibe.Live]]'s items through [[OpenVibe.Inventory]]. The API exposes the catalog, a quest, your own log and a badges endpoint; the pages are server-rendered.\n\n## What it does not do yet\n\nQuest is deployed and public since 2026-10-08. OpenCoins are off until the feature is turned on (`QUEST_COINS`, default `off`). Community-made quests, leaderboards and repeatable quests are not implemented.\n## How it fits the network\n\nQuest depends on [[OpenVibe.Network]] for sign-in and crediting coins, [[OpenVibe.Events]] for deliveries, and [[OpenVibe.Inventory]] for item rewards. It counts events from [[OpenVibe.Live]], [[OpenVibe.Community]], [[OpenVibe.Space]], [[OpenVibe.Chat]], [[OpenVibe.Wiki]], [[OpenVibe.Games]] and [[OpenVibe.Tools]].\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. The README calls it a \"first release\". License: AGPL-3.0.",
-      "summary": "One quest log across every OpenVibe site: it counts domain events the sites emit to award badges and, when enabled, OpenCoins through Network’s wallet.",
+      "body": "**OpenVibe.Quest** is \"One quest log across every OpenVibe site\" at `openvibe.quest` on port 4980. A quest counts something a person really did somewhere in the network and pays a badge on their profile, and credits OpenCoins through [[OpenVibe.Network]]'s wallet, which it has done in production since 2026-10-14.\n\n## What it does\n\nThe quest catalog holds 12 first-party quests in code, each with steps, the events that count them, a badge, OpenCoins and any item reward, plus the whole list of events Quest listens to. Quest runs no activities of its own: it consumes domain events from [[OpenVibe.Events]] at `POST /internal/events`, taking the person from the field each event's schema defines. Progress is stored per step, with one completion per person per quest and one badge per person, all once-only under a redelivery. Six quests grant one of [[OpenVibe.Live]]'s items through [[OpenVibe.Inventory]]. The API exposes the catalog, a quest, your own log and a badges endpoint; the pages are server-rendered.\n\n## What it does not do yet\n\nQuest is deployed and public since 2026-10-08. Community-made quests, leaderboards and repeatable quests are not implemented.\n\n## How it fits the network\n\nQuest depends on [[OpenVibe.Network]] for sign-in and crediting coins, [[OpenVibe.Events]] for deliveries, and [[OpenVibe.Inventory]] for item rewards. It counts events from [[OpenVibe.Live]], [[OpenVibe.Community]], [[OpenVibe.Space]], [[OpenVibe.Chat]], [[OpenVibe.Wiki]], [[OpenVibe.Games]] and [[OpenVibe.Tools]].\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. The README calls it a \"first release\". License: AGPL-3.0.",
+      "summary": "One quest log across every OpenVibe site: it counts domain events the sites emit to award badges, OpenCoins through Network's wallet and some of Live's items.",
       "infobox": [
         {
           "key": "repository",
@@ -1912,16 +1930,22 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/e7c7d996e288eb3f5f07c22a459e10a80cf16a54/README.md",
-          "title": "OpenVibe.Quest README (commit e7c7d99)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/d6e1350534addd23ac8f3ea90fb3d416707df56d/README.md",
+          "title": "OpenVibe.Quest README (commit d6e1350)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
           "quote": "Quests across the whole network."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/e7c7d996e288eb3f5f07c22a459e10a80cf16a54/STATUS.json",
-          "title": "OpenVibe.Quest STATUS.json (commit e7c7d99)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
-          "quote": "OpenVibe.Quest — the network's shared quest and rewards system"
+          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/d6e1350534addd23ac8f3ea90fb3d416707df56d/README.md",
+          "title": "OpenVibe.Quest README (commit d6e1350)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "OpenCoins have been credited in production since 2026-10-14"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Quest/blob/d6e1350534addd23ac8f3ea90fb3d416707df56d/README.md",
+          "title": "OpenVibe.Quest README (commit d6e1350)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Six quests also give one of Live's items"
         }
       ]
     },
