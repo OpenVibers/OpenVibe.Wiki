@@ -624,7 +624,7 @@
     {
       "title": "OpenVibe.Services",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Services** is the developer platform of the OpenVibe network, serving `https://openvibe.services` on port 4930 (service id `services`). It is alpha. Its README describes it as \"one console for projects and apps over OpenVibe.Network\".\n\n## What it does\n\nIt shows and forwards what the signed-in person asks for, with that person's own [[OpenVibe.Network]] token: projects, members, apps, credentials, capability grants and quotas; a per-project usage page from Network's rollups; project export as JSON and a full archive as a zip; OAuth and webhook tools that speak signature v2 only; and Media and Events playgrounds. Its merged resource index reads each authority with its own token and merges the pages, naming any authority it could not read.\n\nIt also sends control requests to the service that holds a resource, which decides:\n- **project resources:** an admin can suspend, resume, stop or delete them (watches, event subscriptions, Actor tasks, Media objects, Space sites, Zone zones);\n- **a person's own resources**, on \"Your resources\": they can stop or resume their robot, archive a chat room, suspend or resume a restream, and delete a paste.\n\nEvery request is idempotent and audited. An agent's sensitive request waits for its owner's approval. Secrets are shown once and never stored. Everything is server-rendered and usable without JavaScript.\n\n## What it does not do yet\n\nThe developer portal moved here from [[OpenVibe.Codes]] on 2026-10-08, when its production data was nil, so nothing was copied. The playgrounds have never been used on production; the one end-to-end run used curl and is not a committed, repeatable check. Not built yet: Billing sandbox, Chat bot and Realtime playgrounds, a CLI and scaffolding, templates, and a third-party consent screen. Governance material is in drafts pending owner review.\n\n## How it fits the network\n\nServices depends on [[OpenVibe.Network]] for identity, projects and the registry; on [[OpenVibe.Events]] for the outbox relay and the Events playground; and on [[OpenVibe.Media]] for uploads and the archive. It never copies another authority's data, and it never fetches a URL a developer types.\n\n## Runtime and status\n\nNode 22 and Express 4, PostgreSQL 18 (`ov_services`) and Valkey 9, unit `openvibe-services.service` on `127.0.0.1:4930`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
+      "body": "**OpenVibe.Services** is the developer platform of the OpenVibe network, serving `https://openvibe.services` on port 4930 (service id `services`). It is alpha. Its README describes it as \"one console for projects and apps over OpenVibe.Network\".\n\n## What it does\n\nIt shows and forwards what the signed-in person asks for, with that person's own [[OpenVibe.Network]] token: projects, members, apps, credentials, capability grants and quotas; a per-project usage page from Network's rollups; project export as JSON and a full archive as a zip; OAuth and webhook tools that speak signature v2 only; and Media and Events playgrounds. Its merged resource index reads each authority with its own token and merges the pages, naming any authority it could not read.\n\nIt also sends control requests to the service that holds a resource, which decides:\n- **project resources:** an admin can suspend, resume, stop or delete them (watches, event subscriptions, Actor tasks, Media objects, Space sites, Zone zones);\n- **a person's own resources**, on \"Your resources\": they can stop or resume their robot, archive a chat room, suspend or resume a restream, and delete a paste.\n\nEvery request is idempotent and audited. An agent's sensitive request waits for its owner's approval. Secrets are shown once and never stored. Everything is server-rendered and usable without JavaScript.\n\n## What it does not do yet\n\nThe developer portal moved here from [[OpenVibe.Codes]] on 2026-10-08, when its production data was nil, so nothing was copied. The README's acceptance list says a developer's path from an account to a working integration is only partly shown on production: one run on 2026-09-23 used curl, not the SDK or the playgrounds, is not committed as a repeatable check, and did not cover webhook delivery to an external endpoint, publishing a release or revoking credentials. Inspecting, scoping, rotating and revoking credentials works through Network's API but has not been used on production yet. The community documents (code of conduct, contributing, the moderation policy) are [[OpenVibe.Codes]]' pages.\n\n## How it fits the network\n\nServices depends on [[OpenVibe.Network]] for identity, projects and the registry; on [[OpenVibe.Events]] for the outbox relay and the Events playground; and on [[OpenVibe.Media]] for uploads and the archive. It never copies another authority's data, and it never fetches a URL a developer types.\n\n## Runtime and status\n\nNode 22 and Express 4, PostgreSQL 18 (`ov_services`) and Valkey 9, unit `openvibe-services.service` on `127.0.0.1:4930`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
       "summary": "The developer platform: a console over OpenVibe.Network for projects, apps, credentials and grants, plus a merged resource index over every service.",
       "infobox": [
         {
@@ -666,24 +666,36 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Services/blob/9bf5051e82b3aa4d0609274edcdc72fc64b666d4/README.md",
-          "title": "OpenVibe.Services README (commit 9bf5051)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Services/blob/87212942ee8bc4ba013b18bbb20f0fd05d702a32/README.md",
+          "title": "OpenVibe.Services README (commit 8721294)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
           "quote": "The developer platform of the OpenVibe network: one console for projects and apps over OpenVibe.Network"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Services/blob/9bf5051e82b3aa4d0609274edcdc72fc64b666d4/STATUS.json",
-          "title": "OpenVibe.Services STATUS.json (commit 9bf5051)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "serving https://openvibe.services (the Sites placeholder left on 2026-10-08)."
+          "url": "https://github.com/OpenVibers/OpenVibe.Services/blob/87212942ee8bc4ba013b18bbb20f0fd05d702a32/README.md",
+          "title": "OpenVibe.Services README (commit 8721294)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "It is not committed as a repeatable check, and it did not cover webhook delivery to an external endpoint, publishing a release or revoking credentials."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Services/blob/87212942ee8bc4ba013b18bbb20f0fd05d702a32/README.md",
+          "title": "OpenVibe.Services README (commit 8721294)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "tested against a stand-in; not yet used on production"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Services/blob/87212942ee8bc4ba013b18bbb20f0fd05d702a32/README.md",
+          "title": "OpenVibe.Services README (commit 8721294)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "what the signed-in person owns outside any project, such as robots, chat rooms, streams, watches and Actor tasks"
         }
       ]
     },
     {
       "title": "OpenVibe.AI",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.AI** is the reusable AI authority of the OpenVibe network, on `127.0.0.1:4700` and public at `https://ai.openvibe.services` since 2026-10-07 (unit `openvibe-ai.service`). It is alpha.\n\n## What it does\n\nThe README describes it as owning \"providers, models, routing, prompt templates, workflows, runs, citations, cache and quotas for every product\". Products run registered, versioned workflows, and every run returns a draft and evidence package (structured output plus citations and provenance) attributed to a workflow, its version, a model and a run id, never to a person. Providers include a deterministic `stub`, any OpenAI-compatible API, the OpenAI Responses API, Anthropic, an HTTP seam, whisper.cpp and a local llama.cpp model. Routing can fall back, with circuit breakers; quotas refuse before any provider call; a person's own provider key is encrypted at rest. A staff operator console is server-rendered and needs [[OpenVibe.Network]] SSO.\n\n## What it does not do yet\n\nThe README states that AI never owns publication truth: Wiki, Blog, News, Live and the rest decide what is published. Developer-app runs stay on local capacity while no tier budget governs their project, and metered models are not yet in use there. Live's VOD and clip overviews do not yet call `media.analyze`; speech and embedding routes still have a single upstream and answer `503 provider.unavailable` when it fails. `/metrics` is built but not deployed.\n\n## How it fits the network\n\n[[OpenVibe.Live]] runs with `AI_SERVICE=remote`, so its shared-key calls become runs here, and [[OpenVibe.Network]]'s footer copy calls `network.site_copy`. AI depends on [[OpenVibe.Network]], [[OpenVibe.Events]] for the `ai.run.*` outbox relay, [[OpenVibe.Media]] for recordings, and [[OpenVibe.Host]] data roles. Publishing products call AI's workflows for drafts; AI never publishes them.\n\n## Runtime and status\n\nNode 22 and Express on PostgreSQL (`ov_ai`); the local model runs as `openvibe-llm.service` on `127.0.0.1:8090`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
-      "summary": "The second-party AI authority: providers, models, routing, versioned workflows, runs with citations and provenance, cache and quotas, used in production by OpenVibe.Live and OpenVibe.Network.",
+      "body": "**OpenVibe.AI** is the reusable AI authority of the OpenVibe network, on `127.0.0.1:4700` and public at `https://ai.openvibe.services` since 2026-10-07 (unit `openvibe-ai.service`). It is alpha.\n\n## What it does\n\nThe README describes it as owning \"providers, models, routing, prompt templates, workflows, runs, citations, cache and quotas for every product\". Products run registered, versioned workflows, and every run returns a draft and evidence package (structured output plus citations and provenance) attributed to a workflow, its version, a model and a run id, never to a person. Providers include a deterministic `stub`, any OpenAI-compatible API, the OpenAI Responses API, Anthropic, an HTTP seam, whisper.cpp and a local llama.cpp model. Routing can fall back, with circuit breakers; quotas refuse before any provider call; a person's own provider key is encrypted at rest. A staff operator console is server-rendered and needs [[OpenVibe.Network]] SSO.\n\nIt also answers OpenAI's Chat Completions: `POST /v1/chat/completions` and `GET /v1/models`, so a client built for OpenAI's API, such as an SDK or a coding agent, points its base URL at `https://ai.openvibe.services/v1` with an app's or a first-party service's Network token. Speech-to-text runs on this host: NVIDIA Parakeet TDT 0.6B v3 for English and 24 European languages, and whisper.cpp for the rest.\n\n## What it does not do yet\n\nThe README states that AI never owns publication truth: Wiki, Blog, News, Live and the rest decide what is published. Developer-app runs stay on local capacity while no tier budget governs their project, and metered models are not yet in use there. Live's VOD and clip overviews do not yet call `media.analyze`; speech and embedding routes still have a single upstream and answer `503 provider.unavailable` when it fails.\n\n## How it fits the network\n\n[[OpenVibe.Live]] runs with `AI_SERVICE=remote`, so its shared-key calls become runs here, and [[OpenVibe.Network]]'s footer copy calls `network.site_copy`. [[OpenVibe.Space]]'s builder and a space's own AI run here, and [[OpenVibe.Codes]]' harnesses use the OpenAI-compatible endpoint. AI depends on [[OpenVibe.Network]], [[OpenVibe.Events]] for the `ai.run.*` outbox relay, [[OpenVibe.Media]] for recordings, and [[OpenVibe.Host]] data roles. Publishing products call AI's workflows for drafts; AI never publishes them.\n\n## Runtime and status\n\nNode 22 and Express on PostgreSQL (`ov_ai`); the local model runs as `openvibe-llm.service` on `127.0.0.1:8090`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
+      "summary": "The second-party AI authority: providers, models, routing, versioned workflows, runs with citations and provenance, cache and quotas, with an OpenAI-compatible endpoint, used in production by OpenVibe.Live, OpenVibe.Network and OpenVibe.Space.",
       "infobox": [
         {
           "key": "repository",
@@ -724,16 +736,34 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.AI/blob/ced9b343547c939eed409de61aa7275ea050348a/README.md",
-          "title": "OpenVibe.AI README (commit ced9b34)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.AI/blob/abde2698ce7c75e45526af8ded7bb9d543bea6f5/README.md",
+          "title": "OpenVibe.AI README (commit abde269)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
           "quote": "Providers, models, routing, prompt templates, workflows, runs, citations, cache and quotas for every product."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.AI/blob/ced9b343547c939eed409de61aa7275ea050348a/STATUS.json",
-          "title": "OpenVibe.AI STATUS.json (commit ced9b34)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "Live fa22de5 runs AI_SERVICE=remote in production since 2026-09-23"
+          "url": "https://github.com/OpenVibers/OpenVibe.AI/blob/abde2698ce7c75e45526af8ded7bb9d543bea6f5/README.md",
+          "title": "OpenVibe.AI README (commit abde269)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "points its base URL at `https://ai.openvibe.services/v1`"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.AI/blob/abde2698ce7c75e45526af8ded7bb9d543bea6f5/README.md",
+          "title": "OpenVibe.AI README (commit abde269)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "NVIDIA Parakeet TDT 0.6B v3 (`parakeet-cli`) for English and 24 European"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.AI/blob/abde2698ce7c75e45526af8ded7bb9d543bea6f5/README.md",
+          "title": "OpenVibe.AI README (commit abde269)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "until a second upstream exists, an unavailable sole provider answers `503 provider.unavailable`"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.AI/blob/abde2698ce7c75e45526af8ded7bb9d543bea6f5/README.md",
+          "title": "OpenVibe.AI README (commit abde269)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "on route `space.build`"
         }
       ]
     },
