@@ -114,7 +114,7 @@
     {
       "title": "OpenVibe.Live",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Live** is the streaming front of the OpenVibe network, on port 3000 at `openvibe.live`. Its README says it \"takes a streamer's video in, plays it to viewers, and gives the channel its page, chat, clips and tools.\"\n\n## What it does\n\nLive owns streaming ingest and viewer playback: RTMP through `node-media-server` on ports 1935/9935 at `ingest.openvibe.live`, optional WebRTC through `mediasoup`, JSMPEG, and WHIP/HTTP ingestion on `whip.openvibe.live`. It owns channels and streams (go-live, stream keys, managed streams, heartbeats, channel pages at `/@username`), the watch experience, streamer tools (dashboard, restreaming, song requests, AI viewers), channel points, Vibes tipping flows, moderation, the Arena (ARENA ALERT, a drama desk fed by what streamers do: rage quits, meltdowns heard on mic, viewer crashes, chat explosions, comebacks and beefs, with the Lolcow Index and the Clout Rankings). Live transcripts come from NVIDIA Parakeet TDT on the server, with whisper for other languages. Its local data lives in PostgreSQL `ov_live`.\n\n## What it does not do yet\n\nIdentity, sessions, follows, blocks, notifications and OpenCoins belong to [[OpenVibe.Network]]. Chat and its messages belong to [[OpenVibe.Chat]] \"since 2026-09-23\"; Live dropped the twelve tables it still held. Recordings, clips, thumbnails and files belong to [[OpenVibe.Media]]; pastes and comments belong to [[OpenVibe.Community]]; AI belongs to [[OpenVibe.AI]], and the README says Live calls no model provider itself except for live-stream captions.\n\n## How it fits the network\n\nLive signs in through [[OpenVibe.Network]] as OAuth client `live` and verifies tokens offline. It depends on [[OpenVibe.Media]] for VOD recording and storage, and calls [[OpenVibe.Chat]], [[OpenVibe.Community]], [[OpenVibe.AI]], [[OpenVibe.Events]], [[OpenVibe.Tools]] and [[OpenVibe.Search]] with its service token.\n\n## Status\n\nIts STATUS.json marks the stage \"stable\" and records a production release layout under `/opt/openvibe.live`.",
+      "body": "**OpenVibe.Live** is the streaming front of the OpenVibe network, on port 3000 at `openvibe.live`. Its README says it \"takes a streamer's video in, plays it to viewers, and gives the channel its page, chat, clips and tools.\"\n\n## What it does\n\nLive owns streaming ingest and viewer playback: RTMP through `node-media-server` on ports 1935/9935 at `ingest.openvibe.live`, optional WebRTC through `mediasoup`, JSMPEG, and WHIP/HTTP ingestion on `whip.openvibe.live`, open to browsers so a web page can publish without OBS. It owns channels and streams (go-live, stream keys, managed streams, heartbeats, channel pages at `/@username`), the watch experience, streamer tools (dashboard, restreaming, song requests, AI viewers), channel points, tipping flows, moderation of its own surfaces, after-show recaps and The Rundown, which writes up what streamers talked about from their speech: topics, takes in their own words and every stream as an episode. The Rundown replaced the Arena on 2026-10-19. Live transcripts come from NVIDIA Parakeet TDT on the server, with whisper for other languages. Its local data lives in PostgreSQL `ov_live`.\n\n## What it does not do yet\n\nIdentity, sessions, follows, blocks, notifications and OpenCoins belong to [[OpenVibe.Network]]. Chat and its messages belong to [[OpenVibe.Chat]] \"since 2026-09-23\"; Live dropped the twelve tables it still held. Recordings, clips, thumbnails and files belong to [[OpenVibe.Media]], and since 2026-10-19 recordings and clips are watched on OpenVibe.Video, served by [[OpenVibe.MediaHub]]: Live's old `/vod/` and `/clip/` addresses redirect there. Money belongs to [[OpenVibe.Billing]] since the cutover of 2026-10-17, so every tip, checkout, balance and cash-out is a Billing call. Pastes and comments belong to [[OpenVibe.Community]], robots to [[OpenVibe.Bot]], and AI to [[OpenVibe.AI]]; the README says Live calls no model provider itself, and live-stream captions run in Live's own speech-to-text.\n\n## How it fits the network\n\nLive signs in through [[OpenVibe.Network]] as OAuth client `live` and verifies tokens offline. It depends on [[OpenVibe.Media]] for VOD recording and storage, and calls [[OpenVibe.Chat]], [[OpenVibe.Community]], [[OpenVibe.AI]], [[OpenVibe.Events]], [[OpenRestream]], [[OpenVibe.Billing]], [[OpenVibe.Tips]], [[OpenVibe.VIP]], [[OpenVibe.Tools]] and [[OpenVibe.Search]] with its service token.\n\n## Status\n\nIts STATUS.json marks the stage \"stable\" and records a production release layout under `/opt/openvibe.live`.",
       "summary": "The streaming front of the OpenVibe network: ingest (RTMP, WHIP, WebRTC, JSMPEG), viewer playback, channels, the watch page, streamer tools, moderation and restreaming.",
       "infobox": [
         {
@@ -150,22 +150,40 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/eb6c501701a571b4546c2ac80498e59859c7e2ca/README.md",
-          "title": "OpenVibe.Live README (commit eb6c501)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "Live is where people go live and watch."
+          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/054c8bae6131aad0c83061a743c3dcde7351b1f1/README.md",
+          "title": "OpenVibe.Live README (commit 054c8ba)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "It takes a streamer's video in, plays it to viewers, and gives the channel its page, chat, clips and tools."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/eb6c501701a571b4546c2ac80498e59859c7e2ca/STATUS.json",
-          "title": "OpenVibe.Live STATUS.json (commit eb6c501)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "Production release layout /opt/openvibe.live"
+          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/054c8bae6131aad0c83061a743c3dcde7351b1f1/README.md",
+          "title": "OpenVibe.Live README (commit 054c8ba)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "replacing the Arena on 2026-10-19"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/94db1cd6f0b9a11205039070ae85af5a6e98edeb/README.md",
-          "title": "OpenVibe.Live README (commit 94db1cd)",
-          "retrievedAt": "2026-10-16T19:00:00.000Z",
-          "quote": "Live transcripts come from NVIDIA Parakeet TDT on the server (whisper for other languages)."
+          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/054c8bae6131aad0c83061a743c3dcde7351b1f1/README.md",
+          "title": "OpenVibe.Live README (commit 054c8ba)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "are OpenVibe.Billing's since the cutover of 2026-10-17"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/054c8bae6131aad0c83061a743c3dcde7351b1f1/README.md",
+          "title": "OpenVibe.Live README (commit 054c8ba)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Recordings and clips are watched on **OpenVibe.Video**"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/054c8bae6131aad0c83061a743c3dcde7351b1f1/README.md",
+          "title": "OpenVibe.Live README (commit 054c8ba)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Robots are OpenVibe.Bot's (plan T15)."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Live/blob/054c8bae6131aad0c83061a743c3dcde7351b1f1/STATUS.json",
+          "title": "OpenVibe.Live STATUS.json (commit 054c8ba)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "\"stage\": \"stable\""
         }
       ]
     },
@@ -780,7 +798,7 @@
     {
       "title": "OpenVibe.Watch",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Watch** is a service for persistent, user-defined observations and conditions over pages, feeds, APIs, webhooks and OpenVibe events, served at `openvibe.watch`. A person or an agent defines what to watch and is told when it changes or fires.\n\n## What it does\n\nThe README states that the registry, the check engine, the pull carriers and the public site exist. The `http`, `feed` and `api` carriers are implemented, plus `event` and `webhook` sources. Every page of the public site is server-rendered and complete without JavaScript, with sign-in through [[OpenVibe.Network]] using OAuth 2 with PKCE (S256). A check uses a conditional GET, so it never polls when an ETag or an event will do, and the API is loopback-only.\n\n## What it does not do yet\n\nThe README states that the event, webhook, Node and Run rungs and the actions do not yet work in full: a `run` source (browser or code polling through [[OpenVibe.Run]]) and a `node` probe are later steps, and a kind without a carrier is accepted but never fetched. The site offers only page, price, feed and JSON watches; the `ai` extraction is not a check.\n\n## How it fits the network\n\nWatch depends on [[OpenVibe.Network]] for signing keys and notifications, [[OpenVibe.Events]] for outbound events, and PostgreSQL 18. It does not own structured source ingestion (that is [[OpenVibe.Sources]]), expensive execution ([[OpenVibe.Run]]) or local probes.\n\n## Status\n\nThe README states the status is alpha (plan T18 steps 2-3 and step 8). STATUS.json says the public site has been live since 2026-10-08 and that on 2026-10-10 it held no watches yet, so no check has run against a real site in production. License: AGPL-3.0.",
+      "body": "**OpenVibe.Watch** is a service for persistent, user-defined observations and conditions over pages, feeds, APIs, webhooks and OpenVibe events, served at `openvibe.watch`. A person or an agent defines what to watch and is told when it changes or fires.\n\n## What it does\n\nThe README states that the registry, the check engine, the pull carriers (`http`, `feed`, `api`), the push sources (OpenVibe events and signed webhooks), Node probes from the owner's own machine, the actions and the public site exist. A check uses a conditional GET, so it never polls when an ETag or an event will do, and the API is loopback-only. Every page of the public site is server-rendered and complete without JavaScript, with sign-in through [[OpenVibe.Network]] using OAuth 2 with PKCE (S256).\n\nThe site has seven starting points: a page that changes, a price that drops below a value, a new item in a feed, a JSON value, something that happens on OpenVibe (an event from [[OpenVibe.Events]], such as a channel going live), a webhook arriving at the watch's own signed address, and something on the person's own network going down, checked by their own computer through [[OpenVibe.Bot]] and [[OpenVibe.Node]]. When a condition fires, Watch can notify the owner on OpenVibe, emit an event, post a webhook, give a task to the owner's [[OpenVibe.Actor]] agent or run one of their agents, run a job on [[OpenVibe.Run]], or start a coding task on [[OpenVibe.Codes]].\n\n## What it does not do yet\n\nBrowser or code polling through [[OpenVibe.Run]] (the `run` source) is a later step, and a kind without a carrier is accepted but never fetched. The `ai` extraction is not a check.\n\n## How it fits the network\n\nWatch depends on [[OpenVibe.Network]] for signing keys and notifications, [[OpenVibe.Events]] for event sources and outbound events, and PostgreSQL 18. Products compose it instead of each growing a watcher: [[OpenVibe.Work]] and [[OpenVibe.Rent]] hand a search to it as a feed. It does not own structured source ingestion (that is [[OpenVibe.Sources]]) or expensive execution ([[OpenVibe.Run]]).\n\n## Status\n\nThe README states the status is alpha (plan T18), and the public site has been live since 2026-10-08. License: AGPL-3.0.",
       "summary": "A service for persistent, user-defined observations and conditions over pages, feeds, APIs, webhooks and OpenVibe events.",
       "infobox": [
         {
@@ -822,16 +840,28 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Watch/blob/8772b3a8b7adc72adcd87ba8d1d669d6e6abe625/README.md",
-          "title": "OpenVibe.Watch README (commit 8772b3a)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Watch/blob/eaea38b93e00493fbc180d8e06248b0bdd0516b3/README.md",
+          "title": "OpenVibe.Watch README (commit eaea38b)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
           "quote": "Persistent, user-defined observations and conditions over pages, feeds, APIs, webhooks and OpenVibe events"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Watch/blob/8772b3a8b7adc72adcd87ba8d1d669d6e6abe625/STATUS.json",
-          "title": "OpenVibe.Watch STATUS.json (commit 8772b3a)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "no check has run against a real external site in production yet"
+          "url": "https://github.com/OpenVibers/OpenVibe.Watch/blob/eaea38b93e00493fbc180d8e06248b0bdd0516b3/README.md",
+          "title": "OpenVibe.Watch README (commit eaea38b)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "The Run rung (browser or code polling through OpenVibe.Run) and the `ai` extraction do not yet."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Watch/blob/eaea38b93e00493fbc180d8e06248b0bdd0516b3/README.md",
+          "title": "OpenVibe.Watch README (commit eaea38b)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "**Seven starting points**"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Watch/blob/eaea38b93e00493fbc180d8e06248b0bdd0516b3/README.md",
+          "title": "OpenVibe.Watch README (commit eaea38b)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "products compose it instead of each growing a watcher"
         }
       ]
     },
@@ -1540,7 +1570,7 @@
     {
       "title": "OpenVibe.Chat",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Chat** is \"The communication authority extracted from OpenVibe.Live\": rooms, messages, DMs, calls, TTS and audio queues, moderation and presence, at `openvibe.chat` on port 4400. Since the cutover on 2026-09-23, Chat is the authority for openvibe.live's chat in every mode, and Live runs no chat of its own.\n\n## What it does\n\nChat moved Live's WebSocket chat server, DMs, chat history, TTS, soundboards, moderation and word filter behind a service boundary. The TTS and sound queue persists requests in `audio_requests`, played one at a time per room and surviving a Chat restart. Chat owns its own PostgreSQL tables for messages, DMs, channel sounds, relay users and moderation actions, plus the six chat tables (moderators, moderation settings, emotes, tags, AI summaries, timeline). openvibe.chat adds public and private rooms with roles, the DM inbox, settings and calls. Member badges come from OpenVibe.VIP, chat-AI summaries run through [[OpenVibe.AI]], and emote image bytes live in [[OpenVibe.Media]].\n\n## What it does not do yet\n\nLive's voice and video calls are ported but not switched over yet (`CHAT_CALLS=1`). Chat produces no mention notifications; the @mention highlight is drawn by Live's chat client. Bans, channel moderation settings and the media-request queue are still Live's, reached through `live-context`.\n\n## How it fits the network\n\nChat depends on [[OpenVibe.Network]] for identity and the `chat.preferences` user module, [[OpenVibe.Live]] until the rest of chat's data moves, [[OpenVibe.Events]], [[OpenVibe.Media]], OpenVibe.VIP and OpenVibe.Contracts. It is also served on openvibe.live's origin through an nginx include.\n\n## Status\n\nNode 22 with Express and ws, PostgreSQL through `openvibe-sdk/db`, and Valkey for per-actor limits. It is deployed as `openvibe-chat.service` on `127.0.0.1:4400`. Its stage is alpha. License: AGPL-3.0.",
+      "body": "**OpenVibe.Chat** is \"The communication authority extracted from OpenVibe.Live\": rooms, messages, DMs, calls, TTS and audio queues, moderation and presence, at `openvibe.chat` on port 4400. Since the cutover on 2026-09-23, Chat is the authority for openvibe.live's chat in every mode, and Live runs no chat of its own; Live's `CHAT_AUTHORITY` switch was retired on 2026-10-11.\n\n## What it does\n\nChat moved Live's WebSocket chat server, DMs, chat history, TTS, soundboards, moderation and word filter behind a service boundary. The TTS and sound queue persists requests in `audio_requests`, played one at a time per room and surviving a Chat restart. Chat owns its own PostgreSQL tables for messages, DMs, channel sounds, relay users and moderation actions, plus the six chat tables (moderators, moderation settings, emotes, tags, AI summaries, timeline). openvibe.chat adds public and private rooms with roles, servers that group rooms as text and voice channels, the DM inbox, settings and calls. Member badges come from [[OpenVibe.VIP]], chat-AI summaries run through [[OpenVibe.AI]], and emote image bytes live in [[OpenVibe.Media]].\n\nLive's voice and video calls moved to Chat at the calls cutover of 2026-10-10: the `/ws/call` server keeps a permanent public lobby, one temporary channel per person (private for a 1:1 call) and stream-linked channels, with up to 8 participants. On openvibe.chat a 1:1 conversation has **Call**, which rings the other person; they answer or decline.\n\n## What it does not do yet\n\nChat produces no mention notifications; the @mention highlight, tab flash and sound are drawn by Live's chat client. Bans, IP approvals and the media-request queue are still Live's, reached through `live-context`.\n\n## How it fits the network\n\nChat depends on [[OpenVibe.Network]] for identity and the `chat.preferences` user module, [[OpenVibe.Live]] for accounts, streams, channels and bans through `live-context`, [[OpenVibe.Events]], [[OpenVibe.Media]], [[OpenVibe.VIP]] and OpenVibe.Contracts. It is also served on openvibe.live's origin through an nginx include.\n\n## Status\n\nNode 22 with Express and ws, PostgreSQL through `openvibe-sdk/db`, and Valkey for per-actor limits. It is deployed as `openvibe-chat.service` on `127.0.0.1:4400`. Its stage is alpha. License: AGPL-3.0.",
       "summary": "The communication authority extracted from OpenVibe.Live: rooms, messages, DMs, calls, TTS and audio queues, moderation and presence.",
       "infobox": [
         {
@@ -1582,16 +1612,40 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/bc800b387f0e0248b71b5113bac9bf652518cd2c/README.md",
-          "title": "OpenVibe.Chat README (commit bc800b3)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "Rooms, messages, DMs, calls, TTS and audio queues, moderation and presence — one identity, every conversation."
+          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/799acd0861206b00258712d0da7080251c23ac72/README.md",
+          "title": "OpenVibe.Chat README (commit 799acd0)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Live runs no chat of its own (its `CHAT_AUTHORITY` switch was retired on 2026-10-11)"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/bc800b387f0e0248b71b5113bac9bf652518cd2c/STATUS.json",
-          "title": "OpenVibe.Chat STATUS.json (commit bc800b3)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "Live's global, stream and channel chat (authority since 2026-09-23; Live reads Chat's internal read API)"
+          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/799acd0861206b00258712d0da7080251c23ac72/README.md",
+          "title": "OpenVibe.Chat README (commit 799acd0)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "which production has run since the calls cutover of 2026-10-10"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/799acd0861206b00258712d0da7080251c23ac72/README.md",
+          "title": "OpenVibe.Chat README (commit 799acd0)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "servers (groups of rooms as text and voice channels, with server roles and invites)"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/799acd0861206b00258712d0da7080251c23ac72/README.md",
+          "title": "OpenVibe.Chat README (commit 799acd0)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Mentions: Chat produces no mention notifications"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/799acd0861206b00258712d0da7080251c23ac72/README.md",
+          "title": "OpenVibe.Chat README (commit 799acd0)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Stays in Live: `media_requests`, `media_request_settings`."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Chat/blob/799acd0861206b00258712d0da7080251c23ac72/STATUS.json",
+          "title": "OpenVibe.Chat STATUS.json (commit 799acd0)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "\"stage\": \"alpha\""
         }
       ]
     },
@@ -1656,8 +1710,8 @@
     {
       "title": "OpenVibe.Work",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Work** is the network's job-listings service at `openvibe.work` on port 4960. It gathers listings from public job boards, keeps each one's provenance and a short plain-text excerpt, and makes them searchable without an account.\n\n## What it does\n\nWork reads three boards, Arbeitnow, Remotive and RemoteOK, through their public APIs, on the terms each publishes, naming the source and linking back on every page. Its own PostgreSQL tables `work_listings`, `work_saved_searches` and `work_source_fetches` hold one row per listing (upserted on source and source id), saved searches and fetch records. Only a short excerpt, the README says \"never the full description\", is kept, and listings expire after 30 days unseen. Search has facets, a cursor and 30 per page, and one listing carries a `JobPosting` JSON-LD whose url is the original. A signed-in person can keep a search and see a `new_count` of what appeared since they last looked.\n\n## What it does not do yet\n\nThe README's status says the agent pillar, \"help preparing and tracking an application\", is not written yet. Alerts are not built; they would come through [[OpenVibe.Watch]] with the agent pillar. The service manifest lists no capabilities, so app and agent tokens cannot call the person-only saved-search routes.\n\n## How it fits the network\n\nWork depends on [[OpenVibe.Network]] for SSO sign-in and JWKS verification, and on [[OpenVibe.Events]] for the two account subscriptions it creates at boot. It fetches only the three boards' public APIs and holds only person subjects on its own rows.\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. The ingest is off unless `WORK_INGEST=on`. It is deployed as `openvibe-work.service` on `127.0.0.1:4960`; STATUS.json records it public at https://openvibe.work since 2026-10-08 with stage \"beta\". License: AGPL-3.0.",
-      "summary": "Gathers job listings from three public job boards under their terms, keeping provenance and a short excerpt, with search, facets and private saved searches.",
+      "body": "**OpenVibe.Work** is the network's job-listings service at `openvibe.work` on port 4960. It gathers listings from public job boards, keeps each one's provenance and a short plain-text excerpt, and makes them searchable without an account. A signed-in person can also track the jobs they apply to and ask their [[OpenVibe.Actor]] agent to help prepare an application.\n\n## What it does\n\nWork reads three boards, Arbeitnow, Remotive and RemoteOK, through their public APIs, on the terms each publishes, naming the source and linking back on every page. Its PostgreSQL tables hold one row per listing (upserted on source and source id), saved searches, applications and fetch records. Only a short excerpt is kept, and a listing expires when no board has shown it for 30 days. Search has facets, a cursor and 30 per page, and one listing carries a `JobPosting` JSON-LD whose url is the original. Each search is also an Atom feed, and **Get alerts** opens [[OpenVibe.Watch]]'s feed form with it filled in, so Watch tells the person, or runs their agent, when a listing that fits appears.\n\nA signed-in person can keep a search and see a `new_count` of what appeared since they last looked. They can track the jobs they apply to with notes, dates, next steps and a status history, and ask their Actor agent to help prepare one: Work posts a task to [[OpenVibe.Actor]] with its own service token and hands back the task's link. An app or agent token with the `work.application.manage` capability may manage applications for the person it acts for.\n\n## What it does not do yet\n\nThe agent's help is one-shot: Work posts a task and hands back its link. An approval at each step, the agent proposing an action and the person approving it, comes with the rest of the agent pillar. More boards, and a per-source schedule finer than the same six hours for everyone, are not done either. The saved-search routes stay person-only and name no capability.\n\n## How it fits the network\n\nWork depends on [[OpenVibe.Network]] for SSO sign-in and JWKS verification, on [[OpenVibe.Events]] for the two account subscriptions it creates at boot, and on [[OpenVibe.Actor]] for the agent's help. It fetches only the three boards' public APIs and holds only person subjects on its own rows.\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. The ingest is off unless `WORK_INGEST=on`. It is deployed as `openvibe-work.service` on `127.0.0.1:4960`; STATUS.json records it public at https://openvibe.work since 2026-10-08 with stage \"beta\". License: AGPL-3.0.",
+      "summary": "Gathers job listings from three public job boards under their terms, with search, saved searches and alerts, and helps a signed-in person track and prepare applications with their Actor agent.",
       "infobox": [
         {
           "key": "repository",
@@ -1698,16 +1752,40 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/2660c3204a94ac756910f07553a4d12ed20319b5/README.md",
-          "title": "OpenVibe.Work README (commit 2660c32)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/178694031d87deda47c87bcebc087dc15345195b/README.md",
+          "title": "OpenVibe.Work README (commit 1786940)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
           "quote": "Find work on open job boards."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/2660c3204a94ac756910f07553a4d12ed20319b5/STATUS.json",
-          "title": "OpenVibe.Work STATUS.json (commit 2660c32)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "Job listings gathered from open boards with their provenance, search and saved searches; the agent pillar comes next."
+          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/178694031d87deda47c87bcebc087dc15345195b/README.md",
+          "title": "OpenVibe.Work README (commit 1786940)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "the listings, the search and the agent pillar are live"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/178694031d87deda47c87bcebc087dc15345195b/README.md",
+          "title": "OpenVibe.Work README (commit 1786940)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "opens OpenVibe.Watch's feed form with it filled in"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/178694031d87deda47c87bcebc087dc15345195b/README.md",
+          "title": "OpenVibe.Work README (commit 1786940)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "when no board has shown one for 30 days"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/178694031d87deda47c87bcebc087dc15345195b/README.md",
+          "title": "OpenVibe.Work README (commit 1786940)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "has listed it since 0.147.0"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Work/blob/178694031d87deda47c87bcebc087dc15345195b/STATUS.json",
+          "title": "OpenVibe.Work STATUS.json (commit 1786940)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "\"stage\": \"beta\""
         }
       ]
     },
