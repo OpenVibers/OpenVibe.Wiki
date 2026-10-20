@@ -1548,7 +1548,7 @@
     {
       "title": "OpenVibe.Bot",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Bot** is \"The open control panel for robots\" at `openvibe.bot` on port 4630. It pairs a robot's machines, keeps their state and gates every operator command: a device opens one outbound WebSocket to `/device`, and a person drives it from `/control` or the REST API through the same gate of roles, per-robot limits, cooldowns and the turn budget.\n\n## What it does\n\nBot owns robots, their profiles, per-robot limits, allow lists, roles and operators; the curated kit catalogue; devices and their hashed credentials; pairing codes; the `/device` and `/control` WebSockets, the command gate and the latched e-stop; and a command audit kept 30 days. A `sim.rover` robot is driven by an in-process simulator so the panel works before hardware exists, and server-side ONVIF cameras attach in-process. The panel renders from the robot's profile, with a touch joystick, keyboard and gamepad, a latency meter and one camera tile per camera. Owner-only streaming and recording toggles record live sessions to [[OpenVibe.Media]] or mirror them to the owner's [[OpenVibe.Live]] channel.\n\n## What it does not do yet\n\nBot does not own identity, which is [[OpenVibe.Network]]'s, or video: a device publishes over WHIP to [[OpenRestream]]. When OpenVibe.Billing is unset, job usage readings wait in `run_usage_outbox` rather than being dropped.\n\n## How it fits the network\n\nBot depends on [[OpenVibe.Network]] for user and service tokens, node tokens and identity resolution, [[OpenRestream]] for the WHIP ingest base devices publish to, and OpenVibe.Billing for job usage readings. A device's installer command points at the released OpenVibe.Node script.\n\n## Status\n\nProduction runs the Node process under systemd as `openvibe-bot.service` on port 4630 behind nginx, which terminates TLS and upgrades the WebSockets. PostgreSQL applies `migrations/` at boot; Valkey is optional for shared per-actor limit counters. STATUS.json records stage alpha and the service deployed.",
+      "body": "**OpenVibe.Bot** is \"The open control panel for robots\" at `openvibe.bot` on port 4630. It pairs a robot's machines, keeps their state and gates every operator command: a device opens one outbound WebSocket to `/device`, and a person drives it from `/control` or the REST API through the same gate of roles, per-robot limits, cooldowns and the turn budget.\n\n## What it does\n\nBot owns robots, their profiles, per-robot limits, allow lists, roles and operators; the curated kit catalogue; devices and their hashed credentials; pairing codes; the `/device` and `/control` WebSockets, the command gate and the latched e-stop; and a command audit kept 30 days. A `sim.rover` robot is driven by an in-process simulator so the panel works before hardware exists, and server-side ONVIF cameras attach in-process. The panel renders from the robot's profile, with a touch joystick, keyboard and gamepad, a latency meter and one camera tile per camera. Owner-only streaming and recording toggles record live sessions to [[OpenVibe.Media]] or mirror them to the owner's [[OpenVibe.Live]] channel, where the robot's read-only panel can also be embedded.\n\nSince its first release Bot has added:\n- a public robot directory at `/robots`, and `/try`, where anyone drives a rover that runs in their own browser, without an account;\n- a phone as the robot: the pairing page shows a QR code that makes the phone's browser the device;\n- routines: the owner writes a robot's steps one per line and runs them on demand, on a schedule or when the robot comes online, each step through the same gate;\n- the owner's [[OpenVibe.Actor]] agent can read and drive the robot once the owner turns that on in the panel's Your agent card;\n- webhooks for a robot's events, and community robots whose driver is their own [[OpenVibe.Node]] plugin;\n- a person's own computer for their agents: a machine set up with OpenVibe.Node's `computer` plugin takes commands, file access and screen reads at the level its owner set, and the owner can watch its screen live.\n\n## What it does not do yet\n\nBot does not own identity, which is [[OpenVibe.Network]]'s, or video: a device publishes over WHIP to [[OpenRestream]]. When OpenVibe.Billing is unset, job usage readings wait in `run_usage_outbox` rather than being dropped.\n\n## How it fits the network\n\nBot depends on [[OpenVibe.Network]] for user and service tokens, node tokens and identity resolution, [[OpenRestream]] for the WHIP ingest base devices publish to, and OpenVibe.Billing for job usage readings. A device's installer command points at the released OpenVibe.Node script.\n\n## Status\n\nProduction runs the Node process under systemd as `openvibe-bot.service` on port 4630 behind nginx, which terminates TLS and upgrades the WebSockets. PostgreSQL applies `migrations/` at boot; Valkey is optional for shared per-actor limit counters. STATUS.json records stage alpha and the service deployed.",
       "summary": "The open control panel for robots: it pairs a robot's machines over one outbound WebSocket and gates every operator command through roles, per-robot limits, cooldowns, a turn budget and a latched e-stop.",
       "infobox": [
         {
@@ -1584,16 +1584,46 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/9de57ef33460a8fd773e9c3022adbbde98a3561b/README.md",
-          "title": "OpenVibe.Bot README (commit 9de57ef)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/7f1b5ce59b910ac039f44385b25226d4957099c0/README.md",
+          "title": "OpenVibe.Bot README (commit 7f1b5ce)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
           "quote": "The open control panel for robots (openvibe.bot)."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/9de57ef33460a8fd773e9c3022adbbde98a3561b/STATUS.json",
-          "title": "OpenVibe.Bot STATUS.json (commit 9de57ef)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "device WebSocket /device: one outbound socket per machine, credential or Network node token"
+          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/7f1b5ce59b910ac039f44385b25226d4957099c0/README.md",
+          "title": "OpenVibe.Bot README (commit 7f1b5ce)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "the same panel on a rover that runs in the visitor's own browser"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/7f1b5ce59b910ac039f44385b25226d4957099c0/README.md",
+          "title": "OpenVibe.Bot README (commit 7f1b5ce)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "A phone as the robot (`phone.camera`, driver `phone`)"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/7f1b5ce59b910ac039f44385b25226d4957099c0/README.md",
+          "title": "OpenVibe.Bot README (commit 7f1b5ce)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "or each time the robot comes online"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/7f1b5ce59b910ac039f44385b25226d4957099c0/README.md",
+          "title": "OpenVibe.Bot README (commit 7f1b5ce)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Let my OpenVibe.Actor agent drive this robot"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/7f1b5ce59b910ac039f44385b25226d4957099c0/README.md",
+          "title": "OpenVibe.Bot README (commit 7f1b5ce)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "runs OpenVibe.Node's `computer` plugin as the person's own account"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Bot/blob/7f1b5ce59b910ac039f44385b25226d4957099c0/README.md",
+          "title": "OpenVibe.Bot README (commit 7f1b5ce)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "to the pages that may frame a robot's read-only panel"
         }
       ]
     },
