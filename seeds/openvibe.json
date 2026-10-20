@@ -1712,8 +1712,8 @@
     {
       "title": "OpenVibe.Trade",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Trade** is an informational product at `openvibe.trade` on port 4860: instruments with deterministic resolution, sourced market observations, filings from [[OpenVibe.Sources]], private watchlists, alert rules and editor-written context. Its stated scope is \"Informational watchlists, sourced market context and alerts. No custody, no order execution.\"\n\n## What it does\n\nTrade owns nine charter tables in its own PostgreSQL database, including immutable market observations and alert deliveries. Resolution is exact and deterministic (CIK, ticker, normalised name), with no fuzzy or prefix matching. Observations carry required `observed_at` and `retrieved_at` timestamps and show their source; where no observation exists the page says no number is shown. Per-source freshness renders a \"stale since <time>\" badge, and alerts fire on a crossing or a newly seen document, once per trigger. Editors publish cited context; [[OpenVibe.AI]] output is a labelled draft that cannot be published before a person on the editor list approves it, and advice is refused.\n\n## What it does not do yet\n\nThe scope is informational only: there is no custody, no order execution, no escrow and no listing between users. No market data feed is configured, since the one seeded Sources trade source is disabled and carries filings, not prices, so a fresh deployment holds no instruments and no numbers at all until a source states values. Network notifications for `trade.alert.triggered` are not built yet.\n\n## How it fits the network\n\nTrade depends on [[OpenVibe.Sources]] for items, [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Events]] for events, [[OpenVibe.Search]] for index documents and [[OpenVibe.AI]] for drafts.\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. It is public at its domain since 2026-10-09, after a pre-launch security review; `/api/ready` reports `degraded` because there is no feed. Its stage is alpha (roadmap Wave 19). License: AGPL-3.0.",
-      "summary": "An informational product: instruments with deterministic resolution, sourced market observations, filings, private watchlists, alerts and cited editor context, with no custody and no order execution.",
+      "body": "**OpenVibe.Trade** is an informational product at `openvibe.trade` on port 4860: instruments with deterministic resolution, sourced market observations, filings from [[OpenVibe.Sources]], private watchlists, alert rules and editor-written context. Its stated scope is \"Informational watchlists, sourced market context and alerts. No custody, no order execution.\"\n\n## What it does\n\nTrade owns nine charter tables in its own PostgreSQL database, including immutable market observations and alert deliveries. Resolution is exact and deterministic (CIK, ticker, normalised name), with no fuzzy or prefix matching. Observations carry required `observed_at` and `retrieved_at` timestamps and show their source; where no observation exists the page says no number is shown. Per-source freshness renders a \"stale since <time>\" badge, and alerts fire on a crossing or a newly seen document, once per trigger. Editors publish cited context; [[OpenVibe.AI]] output is a labelled draft that cannot be published before a person on the editor list approves it, and advice is refused.\n\nSince 2026-10-15 it carries about 8,000 US-listed companies from the SEC's own ticker list, one instrument per CIK with other share classes as aliases; their XBRL filings, read from the SEC's feed every 15 minutes; the key numbers in those filings (revenue, net income, operating income, diluted EPS and operating cash flow for the last five quarters and two years, and assets, liabilities, equity, cash, long-term debt and shares outstanding at the last five quarter ends); and euro reference rates. Short AI briefs are written from a company's numbers and filings only: every kept point cites Trade's own rows, text that reads as advice is refused, and each brief is labelled \"AI-written, not reviewed by a person\".\n\n## What it does not do yet\n\nThe scope is informational only: there is no custody, no order execution, no escrow and no listing between users. Every page says it is information only, not investment advice. No price feed is configured, and discussion through [[OpenVibe.Community]] is not wired yet.\n\n## How it fits the network\n\nTrade depends on [[OpenVibe.Sources]] for items, [[OpenVibe.Network]] for SSO and subjects, [[OpenVibe.Events]] for events, [[OpenVibe.Search]] for index documents and [[OpenVibe.AI]] for drafts and briefs. Network renders and delivers alert notifications from `trade.alert.triggered`.\n\n## Status\n\nNode 22, Express 4, PostgreSQL 18 and Valkey 9. It is public at its domain since 2026-10-09, after a pre-launch security review. Its stage is alpha (roadmap Wave 19). License: AGPL-3.0.",
+      "summary": "An informational product: about 8,000 US-listed companies with their SEC filings, filed numbers and cited AI briefs, plus private watchlists and alerts, with no custody and no order execution.",
       "infobox": [
         {
           "key": "repository",
@@ -1754,16 +1754,34 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Trade/blob/c76485c3ff4cfdd65fa2cf5d027e25a6c8b06ced/README.md",
-          "title": "OpenVibe.Trade README (commit c76485c)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Trade/blob/5a33333080fa664d5067b7a1beed5444fa4c4d37/README.md",
+          "title": "OpenVibe.Trade README (commit 5a33333)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
           "quote": "Informational watchlists, sourced market context and alerts. No custody, no order execution."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Trade/blob/c76485c3ff4cfdd65fa2cf5d027e25a6c8b06ced/STATUS.json",
-          "title": "OpenVibe.Trade STATUS.json (commit c76485c)",
-          "retrievedAt": "2026-10-11T12:00:00.000Z",
-          "quote": "informational only: a route-inventory test refuses any execution, custody or advice endpoint"
+          "url": "https://github.com/OpenVibers/OpenVibe.Trade/blob/5a33333080fa664d5067b7a1beed5444fa4c4d37/README.md",
+          "title": "OpenVibe.Trade README (commit 5a33333)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Since 2026-10-15 it carries about 8,000 US-listed companies from the SEC's own ticker list"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Trade/blob/5a33333080fa664d5067b7a1beed5444fa4c4d37/README.md",
+          "title": "OpenVibe.Trade README (commit 5a33333)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "every kept point cites Trade's own observation or document rows"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Trade/blob/5a33333080fa664d5067b7a1beed5444fa4c4d37/README.md",
+          "title": "OpenVibe.Trade README (commit 5a33333)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "Network renders and delivers them from `trade.alert.triggered`"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Trade/blob/5a33333080fa664d5067b7a1beed5444fa4c4d37/README.md",
+          "title": "OpenVibe.Trade README (commit 5a33333)",
+          "retrievedAt": "2026-10-20T22:00:00.000Z",
+          "quote": "no price feed is configured"
         }
       ]
     },
