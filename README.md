@@ -179,8 +179,8 @@ Each public space has its own feed of published pages, `/s/<space>/feed.atom` an
 the space page (the site-wide `/feed.atom` and `/feed.json` stay).
 
 Not built yet: page-level talk moderation, media upload from Wiki (attach existing Media objects
-only), consuming Media/Sources change events (Media does not emit deletion events yet; checks are
-pull-based), full-text ranking (Wiki's own `/api/v1/search` is a simple title/text
+only), consuming Media/Sources change events (Media publishes `media.object.deleted` and
+`media.object.visibility_changed`, but Wiki subscribes to neither; its checks are pull-based), full-text ranking (Wiki's own `/api/v1/search` is a simple title/text
 match; network search is OpenVibe.Search).
 
 ## Routes
