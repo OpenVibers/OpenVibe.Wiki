@@ -190,7 +190,7 @@
     {
       "title": "OpenVibe.Media",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Media** is the standalone multi-tenant media service extracted from the OpenVibe.Live predecessor, at `openvibe.media` on port 4100. Its README states that it \"Owns VOD ingest/recording, storage tiering (local → Backblaze B2 → Cloudflare R2), clips, generic files, the canonical object model and thumbnails, for all OpenVibe apps.\"\n\n## What it does\n\nMedia records VODs from RTMP pull or RTP ingest, ingests browser chunks, finalizes with remux, probe and thumbnail, and cuts clips. It tiers storage across local, Backblaze B2 and Cloudflare R2 with copy verification and a disk guardian, and serves public paths (`/v`, `/c`, `/t`, `/f`, `/o`). It implements a canonical object model under `/api/v2` (objects, locations, variants, holds, derivatives, lifecycle, namespaces) and a media jobs queue. It serves first-party tenants (`live`, `community`, `tools`, `games`, `wiki`, `blog`, `inventory`, `media-hub`) and developer-project tenants.\n\nIt also answers a subset of Amazon's S3 API (ADR-031), so S3 tools such as the AWS CLI and rclone work against it. Each bucket is a zone of a project environment, and zones are made and deleted through [[OpenVibe.Zone]]. Media issues and checks the `ovk_` access keys, and every object stays an ordinary Media object. The surface answers at `https://s3.openvibe.network` until its intended name, `s3.openvibe.media`, has a DNS record. A signed-in person sees their own objects, uploads and usage in the object explorer at `/me`, and thumbnails come in WebP, AVIF or JPEG at the width a page asks for.\n\n## What it does not do yet\n\nPastes belong to [[OpenVibe.Community]] \"since 2026-09-22\"; Media's read-only paste API is gone and `/p/:slug` redirects there. Channels and streams belong to [[OpenVibe.Live]], identity to [[OpenVibe.Network]], and AI analysis of recordings to [[OpenVibe.AI]]. The song-request media queue, server-side live thumbnail grabbers and JSMPEG stdin recording are listed as \"Not ported.\"\n\n## How it fits the network\n\nMedia verifies [[OpenVibe.Network]] tokens offline through JWKS, uses [[OpenVibe.Live]]'s lineage resolve, and announces outcomes as [[OpenVibe.Events]] events through the SDK outbox, which the README calls the only outcome announcement now that webhooks ended.\n\n## Status\n\nIts STATUS.json marks the stage \"beta\" and records it deployed with `sudo ovhost deploy media`.",
+      "body": "**OpenVibe.Media** is the standalone multi-tenant media service extracted from the OpenVibe.Live predecessor, at `openvibe.media` on port 4100. Its README states that it \"Owns VOD ingest/recording, storage tiering (local → Backblaze B2 → Cloudflare R2), clips, generic files, the canonical object model and thumbnails, for all OpenVibe apps.\"\n\n## What it does\n\nMedia records VODs from RTMP pull or RTP ingest, ingests browser chunks, finalizes with remux, probe and thumbnail, and cuts clips. It tiers storage across local, Backblaze B2 and Cloudflare R2 with copy verification and a disk guardian, and serves public paths (`/v`, `/c`, `/t`, `/f`, `/o`). It implements a canonical object model under `/api/v2` (objects, locations, variants, holds, derivatives, lifecycle, namespaces) and a media jobs queue. It serves first-party tenants (`live`, `community`, `tools`, `games`, `wiki`, `blog`, `inventory`, `media-hub`) and developer-project tenants.\n\nIt also answers a subset of Amazon's S3 API (ADR-031), so S3 tools such as the AWS CLI and rclone work against it. Each bucket is a zone of a project environment, and zones are made and deleted through [[OpenVibe.Zone]]. Media issues and checks the `ovk_` access keys, and every object stays an ordinary Media object. The surface answers at `https://s3.openvibe.media`. That name skips Cloudflare's proxy, so one object may be larger than the 100 MB a proxied request carries; `https://s3.openvibe.network` is the same surface behind Cloudflare. A signed-in person sees their own objects, uploads and usage in the object explorer at `/me`, and thumbnails come in WebP, AVIF or JPEG at the width a page asks for.\n\n## What it does not do yet\n\nPastes belong to [[OpenVibe.Community]] \"since 2026-09-22\"; Media's read-only paste API is gone and `/p/:slug` redirects there. Channels and streams belong to [[OpenVibe.Live]], identity to [[OpenVibe.Network]], and AI analysis of recordings to [[OpenVibe.AI]]. The song-request media queue, server-side live thumbnail grabbers and JSMPEG stdin recording are listed as \"Not ported.\"\n\n## How it fits the network\n\nMedia verifies [[OpenVibe.Network]] tokens offline through JWKS, uses [[OpenVibe.Live]]'s lineage resolve, and announces outcomes as [[OpenVibe.Events]] events through the SDK outbox, which the README calls the only outcome announcement now that webhooks ended.\n\n## Status\n\nIts STATUS.json marks the stage \"beta\" and records it deployed with `sudo ovhost deploy media`.",
       "summary": "The multi-tenant media service: VOD ingest and recording, storage tiering across local, B2 and R2, clips, files, thumbnails and the canonical object model.",
       "infobox": [
         {
@@ -226,40 +226,46 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/09714340b04c6ba97bc98c121de4bcb4b094bbd7/README.md",
-          "title": "OpenVibe.Media README (commit 0971434)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/6a3a1c7b869b38a854b37df270322d49351f55a3/README.md",
+          "title": "OpenVibe.Media README (commit 6a3a1c7)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "Owns VOD ingest/recording, storage tiering"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/09714340b04c6ba97bc98c121de4bcb4b094bbd7/STATUS.json",
-          "title": "OpenVibe.Media STATUS.json (commit 0971434)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/6a3a1c7b869b38a854b37df270322d49351f55a3/STATUS.json",
+          "title": "OpenVibe.Media STATUS.json (commit 6a3a1c7)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "Public at https://openvibe.media"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/09714340b04c6ba97bc98c121de4bcb4b094bbd7/README.md",
-          "title": "OpenVibe.Media README (commit 0971434)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
-          "quote": "Media answers a subset of S3 at `https://s3.openvibe.network`"
-        },
-        {
-          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/09714340b04c6ba97bc98c121de4bcb4b094bbd7/README.md",
-          "title": "OpenVibe.Media README (commit 0971434)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/6a3a1c7b869b38a854b37df270322d49351f55a3/README.md",
+          "title": "OpenVibe.Media README (commit 6a3a1c7)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "Each bucket is a zone of a project environment, and zones are managed by OpenVibe.Zone."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/09714340b04c6ba97bc98c121de4bcb4b094bbd7/README.md",
-          "title": "OpenVibe.Media README (commit 0971434)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/6a3a1c7b869b38a854b37df270322d49351f55a3/README.md",
+          "title": "OpenVibe.Media README (commit 6a3a1c7)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "A signed-in person sees the objects whose `owner_subject` is their Network"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/09714340b04c6ba97bc98c121de4bcb4b094bbd7/README.md",
-          "title": "OpenVibe.Media README (commit 0971434)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/6a3a1c7b869b38a854b37df270322d49351f55a3/README.md",
+          "title": "OpenVibe.Media README (commit 6a3a1c7)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "the width snaps up to 64, 96, 160, 320, 480 or 640"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/6a3a1c7b869b38a854b37df270322d49351f55a3/README.md",
+          "title": "OpenVibe.Media README (commit 6a3a1c7)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
+          "quote": "Media answers a subset of S3 at `https://s3.openvibe.media`"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Media/blob/6a3a1c7b869b38a854b37df270322d49351f55a3/README.md",
+          "title": "OpenVibe.Media README (commit 6a3a1c7)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
+          "quote": "DNS-only since 2026-10-21, so an object may be larger than Cloudflare's 100 MB"
         }
       ]
     },
@@ -632,7 +638,7 @@
     {
       "title": "OpenVibe.Codes",
       "parent": "OpenVibe",
-      "body": "**OpenVibe.Codes** is the open coding-agent harness of the OpenVibe network, public at `https://openvibe.codes` on port 4900 (service id `codes`). It is alpha.\n\n## What it does\n\nCodes is \"the open coding-agent harness for Claude Code, Codex, OpenCode, Command Code, Aider, the DeepSeek API and models you host yourself\". The `openvibe-codes` command, a CLI and Node.js module, runs a coding task on an agent that fits it, hands the task to the next agent when one fails or goes quiet, and keeps every run. Every adapter turns its agent's output into one Claude Code `stream-json`-shaped event stream, with keys, tokens and private keys redacted. The site carries the agent catalog, a public routing API (`POST /api/v1/harnesses/route`), getting started, Improve OpenVibe and the community documents. Everything is server-rendered and usable without JavaScript.\n\nOne of its agents is [[OpenVibe.AI]]: the harness's own agent loop runs on AI's OpenAI-compatible endpoint with an app's Network token, and each answer reports its cost. Since 2026-10-15 Codes also runs **OpenVibe Git**, Forgejo at `openvibe.codes/git`, signed in with an OpenVibe account, with read mirrors of the OpenVibers GitHub repositories.\n\n## What it does not do yet\n\nOn 2026-10-08 the developer console that used to live here moved to [[OpenVibe.Services]], and every former console address answers a permanent redirect there. Codes is now the open coding-agent harness and its CLI. Not built yet:\n\n- a hosted runner on [[OpenVibe.Run]] workers, with budgets and metering, for people who do not run agents themselves;\n- [[OpenVibe.Actor]] using Codes for its coding work;\n- Improve OpenVibe as a guided run on the site (repository, change, tests, review, pull request); today it is the harness plus the contributor path on GitHub;\n- the community documents, which are drafts pending the owner's review.\n\n## How it fits the network\n\nCodes signs in with [[OpenVibe.Network]] and depends on PostgreSQL 18 and Valkey 9 on [[OpenVibe.Host]]. It does not own accounts, projects or grants ([[OpenVibe.Network]]) or provider keys ([[OpenVibe.AI]]). The harness runs on a person's own machine with their own CLIs and keys; nothing goes through OpenVibe unless they pick the OpenVibe.AI agent.\n\n## Runtime and status\n\nNode 22 and Express 4, PostgreSQL 18 (`ov_codes`) and Valkey 9, unit `openvibe-codes.service` on `127.0.0.1:4900`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
+      "body": "**OpenVibe.Codes** is the open coding-agent harness of the OpenVibe network, public at `https://openvibe.codes` on port 4900 (service id `codes`). It is alpha.\n\n## What it does\n\nCodes is \"the open coding-agent harness for Claude Code, Codex, OpenCode, Command Code, Aider, the DeepSeek API and models you host yourself\". The `openvibe-codes` command, a CLI and Node.js module, runs a coding task on an agent that fits it, hands the task to the next agent when one fails or goes quiet, and keeps every run. Every adapter turns its agent's output into one Claude Code `stream-json`-shaped event stream, with keys, tokens and private keys redacted. The site carries the agent catalog, a public routing API (`POST /api/v1/harnesses/route`), getting started, Improve OpenVibe and the community documents. Everything is server-rendered and usable without JavaScript.\n\nOne of its agents is [[OpenVibe.AI]]: the harness's own agent loop runs on AI's OpenAI-compatible endpoint with an app's Network token, and each answer reports its cost. Since 2026-10-15 Codes also runs **OpenVibe Git**, Forgejo at `git.openvibe.codes` (its first address, `openvibe.codes/git`, redirects there), signed in with an OpenVibe account, with read mirrors of the OpenVibers GitHub repositories.\n\n## What it does not do yet\n\nOn 2026-10-08 the developer console that used to live here moved to [[OpenVibe.Services]], and every former console address answers a permanent redirect there. Codes is now the open coding-agent harness and its CLI. Not built yet:\n\n- a hosted runner on [[OpenVibe.Run]] workers, with budgets and metering, for people who do not run agents themselves;\n- [[OpenVibe.Actor]] using Codes for its coding work;\n- Improve OpenVibe as a guided run on the site (repository, change, tests, review, pull request); today it is the harness plus the contributor path on GitHub;\n- the community documents, which are drafts pending the owner's review.\n\n## How it fits the network\n\nCodes signs in with [[OpenVibe.Network]] and depends on PostgreSQL 18 and Valkey 9 on [[OpenVibe.Host]]. It does not own accounts, projects or grants ([[OpenVibe.Network]]) or provider keys ([[OpenVibe.AI]]). The harness runs on a person's own machine with their own CLIs and keys; nothing goes through OpenVibe unless they pick the OpenVibe.AI agent.\n\n## Runtime and status\n\nNode 22 and Express 4, PostgreSQL 18 (`ov_codes`) and Valkey 9, unit `openvibe-codes.service` on `127.0.0.1:4900`. STATUS.json records the stage as \"alpha\" and the service deployed. License: AGPL-3.0.",
       "summary": "The open coding-agent harness: the openvibe-codes CLI routes coding tasks across coding agents, while the former developer console now redirects to OpenVibe.Services.",
       "infobox": [
         {
@@ -674,34 +680,40 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/f98b6bc9589714f979c6db4f5f8b8a949ddfc86f/README.md",
-          "title": "OpenVibe.Codes README (commit f98b6bc)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/0b4776903e5803c752aaba9c4eae4f4f3bad64ff/README.md",
+          "title": "OpenVibe.Codes README (commit 0b47769)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "the open coding-agent harness for Claude Code, Codex, OpenCode, Command Code, Aider"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/f98b6bc9589714f979c6db4f5f8b8a949ddfc86f/STATUS.json",
-          "title": "OpenVibe.Codes STATUS.json (commit f98b6bc)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/0b4776903e5803c752aaba9c4eae4f4f3bad64ff/STATUS.json",
+          "title": "OpenVibe.Codes STATUS.json (commit 0b47769)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "Since 2026-10-08 Codes is the open coding-agent harness"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/f98b6bc9589714f979c6db4f5f8b8a949ddfc86f/README.md",
-          "title": "OpenVibe.Codes README (commit f98b6bc)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/0b4776903e5803c752aaba9c4eae4f4f3bad64ff/README.md",
+          "title": "OpenVibe.Codes README (commit 0b47769)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "signed in with your OpenVibe account, with read mirrors of the OpenVibers GitHub repositories"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/f98b6bc9589714f979c6db4f5f8b8a949ddfc86f/README.md",
-          "title": "OpenVibe.Codes README (commit f98b6bc)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/0b4776903e5803c752aaba9c4eae4f4f3bad64ff/README.md",
+          "title": "OpenVibe.Codes README (commit 0b47769)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "the same loop against AI's `/v1/chat/completions`; each answer reports its cost"
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/f98b6bc9589714f979c6db4f5f8b8a949ddfc86f/STATUS.json",
-          "title": "OpenVibe.Codes STATUS.json (commit f98b6bc)",
-          "retrievedAt": "2026-10-21T14:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/0b4776903e5803c752aaba9c4eae4f4f3bad64ff/STATUS.json",
+          "title": "OpenVibe.Codes STATUS.json (commit 0b47769)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "OpenVibe.Actor using Codes for its coding work"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Codes/blob/0b4776903e5803c752aaba9c4eae4f4f3bad64ff/README.md",
+          "title": "OpenVibe.Codes README (commit 0b47769)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
+          "quote": "Forgejo at [git.openvibe.codes](https://git.openvibe.codes/) (its first address, openvibe.codes/git, redirects there)"
         }
       ]
     },
@@ -2577,7 +2589,7 @@
       "title": "OpenVibe.Zone",
       "parent": "OpenVibe",
       "summary": "Private S3-compatible storage zones for OpenVibe projects at openvibe.zone: named buckets per project environment, scoped access keys and quotas, with the objects kept by OpenVibe.Media.",
-      "body": "**OpenVibe.Zone** gives every OpenVibe project private storage zones at `openvibe.zone`. A zone is an S3 bucket of one project environment, sandbox or production.\n\n## What it does\n\n- **Default zones.** Each environment has a default zone, which holds its existing objects.\n- **Named zones.** A project creates more zones by name, each with an optional quota.\n- **Names are never reused.** A zone's name is never given to another zone, even after it is deleted, so a URL signed for one bucket can never reach a different one.\n- **Access keys** read, write or both. A key can be limited to some zones, and its secret is shown once.\n- **S3 tools.** The AWS SDKs, rclone and backup tools reach zones over S3, path style.\n- **Large files and copies.** Multipart uploads carry big objects in parts, and server-side copies (CopyObject and UploadPartCopy) move data between zones without downloading it.\n- **Usage.** Requests, egress and stored bytes are counted per zone by the hour. The console shows each zone's month so far, and the project's usage page adds them up.\n- **Deletion.** Deleting a zone removes every object and every copy of it. A zone holding an object under a retention hold cannot be deleted.\n\n## How it fits the network\n\n- **Zone owns** the zone records and their control API.\n- **[[OpenVibe.Media]] owns** what is inside a zone: the objects, their bytes and copies, the S3 surface, the access keys, quota enforcement and the one deletion path. Every object in a zone is an ordinary Media object, reachable through Media's own API too.\n- Projects and roles come from [[OpenVibe.Network]].\n- [[OpenVibe.Services]] lists zones beside a project's other resources and can delete one.\n\n## Status\n\nSTATUS.json's stage is \"alpha\". Multipart uploads, server-side copies and per-zone usage were added on 2026-10-15. The S3 endpoint is `s3.openvibe.network` until `s3.openvibe.media` has its DNS record.",
+      "body": "**OpenVibe.Zone** gives every OpenVibe project private storage zones at `openvibe.zone`. A zone is an S3 bucket of one project environment, sandbox or production.\n\n## What it does\n\n- **Default zones.** Each environment has a default zone, which holds its existing objects.\n- **Named zones.** A project creates more zones by name, each with an optional quota.\n- **Names are never reused.** A zone's name is never given to another zone, even after it is deleted, so a URL signed for one bucket can never reach a different one.\n- **Access keys** read, write or both. A key can be limited to some zones, and its secret is shown once.\n- **S3 tools.** The AWS SDKs, rclone and backup tools reach zones over S3, path style.\n- **Large files and copies.** Multipart uploads carry big objects in parts, and server-side copies (CopyObject and UploadPartCopy) move data between zones without downloading it.\n- **Usage.** Requests, egress and stored bytes are counted per zone by the hour. The console shows each zone's month so far, and the project's usage page adds them up.\n- **Deletion.** Deleting a zone removes every object and every copy of it. A zone holding an object under a retention hold cannot be deleted.\n\n## How it fits the network\n\n- **Zone owns** the zone records and their control API.\n- **[[OpenVibe.Media]] owns** what is inside a zone: the objects, their bytes and copies, the S3 surface, the access keys, quota enforcement and the one deletion path. Every object in a zone is an ordinary Media object, reachable through Media's own API too.\n- Projects and roles come from [[OpenVibe.Network]].\n- [[OpenVibe.Services]] lists zones beside a project's other resources and can delete one.\n\n## Status\n\nSTATUS.json's stage is \"alpha\". Multipart uploads, server-side copies and per-zone usage were added on 2026-10-15. The S3 endpoint is `s3.openvibe.media`, and the control API also answers at `api.openvibe.zone`.",
       "infobox": [
         {
           "key": "repository",
@@ -2612,16 +2624,28 @@
       ],
       "citations": [
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ce6a762353936082b3ef5b688c1b8bd5c9b94c60/README.md",
-          "title": "OpenVibe.Zone README (commit ce6a762)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ee191283c1c1da8440211a0b3fb1de4d218ab40c/README.md",
+          "title": "OpenVibe.Zone README (commit ee19128)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "Private S3-compatible storage zones for OpenVibe projects, at https://openvibe.zone."
         },
         {
-          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ce6a762353936082b3ef5b688c1b8bd5c9b94c60/STATUS.json",
-          "title": "OpenVibe.Zone STATUS.json (commit ce6a762)",
-          "retrievedAt": "2026-10-14T23:30:00.000Z",
+          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ee191283c1c1da8440211a0b3fb1de4d218ab40c/STATUS.json",
+          "title": "OpenVibe.Zone STATUS.json (commit ee19128)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
           "quote": "private S3-compatible storage zones for OpenVibe projects"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ee191283c1c1da8440211a0b3fb1de4d218ab40c/README.md",
+          "title": "OpenVibe.Zone README (commit ee19128)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
+          "quote": "bucket at `https://s3.openvibe.media`, path style. That name is DNS-only"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Zone/blob/ee191283c1c1da8440211a0b3fb1de4d218ab40c/README.md",
+          "title": "OpenVibe.Zone README (commit ee19128)",
+          "retrievedAt": "2026-10-21T19:00:00.000Z",
+          "quote": "(`https://api.openvibe.zone/api/v1` is the same API)"
         }
       ]
     },
