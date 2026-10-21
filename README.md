@@ -4,7 +4,7 @@
 
 **Status:** alpha (roadmap Wave 16, Wiki half). **Public at https://openvibe.wiki since 2026-09-23**
 (the launch release also removed the domain from [OpenVibe.Sites](https://github.com/OpenVibers/OpenVibe.Sites)).
-The only content is the official space's 10 AI-assisted seed pages; no person has reviewed them yet,
+The only content is the official space's 42 AI-assisted seed pages, one for each network repository; no person has reviewed them yet,
 so every page is `noindex` and none is in Search.
 **Domain:** `openvibe.wiki` · **Port:** 4800 · **Service id:** `wiki`
 **Plan:** OpenVibe End-to-End Realignment & Implementation Plan, revision 3 — roadmap Wave 16, §15.13, §29, §32.
@@ -161,7 +161,7 @@ and, with the workers on (production), flushes it every minute and runs the rete
   the accountable person and where the text comes from; `ai_assisted: true` keeps every page noindex
   until a person reviews it. Existing slugs stop the import (409) unless `on_existing: "skip"`.
   Twenty imports per hour per address. Format: [server/wiki/import.js](server/wiki/import.js).
-- **Seed**: `npm run seed` imports the official "OpenVibe" space (`seeds/openvibe.json`): ten pages
+- **Seed**: `npm run seed` imports the official "OpenVibe" space (`seeds/openvibe.json`): 42 pages
   about the network's repositories, summarised from their README/STATUS files at pinned commits,
   each cited with a GitHub permalink and retrieval time, authorship recorded as `imported` with
   `importedFrom.aiAssisted: true` ("summarised with AI assistance"). Idempotent. Being generated
@@ -414,7 +414,7 @@ held (plan §12.12); the launch release went out on 2026-09-23:
 
 The launch release removed `openvibe.wiki` from `OpenVibe.Sites/sites.json`, switched routing to this
 service and opened its Network hub entry in the same release. A placeholder is never counted as an
-implemented service. Still open: a person's review of the 10 seed pages (until then they stay
+implemented service. Still open: a person's review of the 42 seed pages (until then they stay
 `noindex`).
 
 ---
