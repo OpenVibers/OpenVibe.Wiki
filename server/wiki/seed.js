@@ -96,6 +96,10 @@ async function seed(svc, data, { publish = true, revise = false, log = console }
     if (!space) {
         space = await svc.createSpace({ slug: data.space.slug, name: data.space.name, description: data.space.description, kind: data.space.kind || 'official', visibility: data.space.visibility || 'public' }, SYSTEM);
         log.log(`[seed] created space ${space.slug}`);
+    } else if (revise && ((data.space.description || null) !== (space.description || null) || (data.space.name && data.space.name !== space.name))) {
+        // --revise brings the wiki's own name and description in line with the seed too (they show on the home).
+        space = await svc.updateSpace(space.slug, { name: data.space.name || space.name, description: data.space.description || null }, SYSTEM);
+        log.log(`[seed] revised the description of space ${space.slug}`);
     }
     const bySlug = new Map();
     const created = [];

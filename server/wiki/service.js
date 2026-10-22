@@ -19,6 +19,12 @@ const hooks = require('openvibe-publishing/index-hooks');
 const authorship = require('openvibe-publishing/authorship');
 const ssr = require('openvibe-publishing/ssr');
 
+/** An infobox entry's text value by key (a revision's fields.infobox), or null. */
+function infoboxText(box, key) {
+    const x = Array.isArray(box) ? box.find((e) => e && e.key === key) : null;
+    return x && x.value != null && String(x.value).trim() ? String(x.value).trim() : null;
+}
+
 /** The first sentence of a summary (a shelf card has room for one), or the summary cut at a word near 160 characters. */
 function firstSentence(text) {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
@@ -138,6 +144,26 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         recentInSpace: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
                             WHERE s.slug = ? AND p.state = 'published' AND s.deleted_at IS NULL AND s.visibility = 'public' AND p.visibility = 'public'
                             ORDER BY p.revision_published_at DESC, p.id LIMIT ?`),
+        // The home's numbers and rankings: public wikis and their published public pages only (the home is cached for
+        // everyone). A revision counts as a reader sees it in the history: up to the published one, never an AI
+        // proposal that was not approved; a link counts when both ends are such pages.
+        homeStats: db.prepare(`WITH pub AS (SELECT p.id, p.slug, p.published_revision, s.slug AS space_slug FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
+                                   WHERE p.state = 'published' AND p.visibility = 'public' AND s.deleted_at IS NULL AND s.visibility = 'public')
+                               SELECT (SELECT COUNT(*) FROM wiki_spaces WHERE deleted_at IS NULL AND visibility = 'public') AS wikis,
+                                      (SELECT COUNT(*) FROM pub) AS pages,
+                                      (SELECT COUNT(*) FROM wiki_page_revisions r JOIN pub ON pub.id = r.entity_id AND r.number <= pub.published_revision
+                                        WHERE NOT EXISTS (SELECT 1 FROM wiki_ai_proposals a WHERE a.page_id = r.entity_id AND a.revision = r.number AND a.status <> 'approved')) AS revisions,
+                                      (SELECT COUNT(*) FROM wiki_citations c JOIN pub ON pub.id = c.entity_id AND c.revision = pub.published_revision) AS citations,
+                                      (SELECT COUNT(DISTINCT COALESCE(c.url, c.source_item_id)) FROM wiki_citations c JOIN pub ON pub.id = c.entity_id AND c.revision = pub.published_revision) AS sources,
+                                      (SELECT COUNT(*) FROM wiki_page_links l JOIN pub f ON f.id = l.from_page_id AND l.from_revision = f.published_revision
+                                        JOIN pub t ON t.space_slug = l.target_space AND t.slug = l.target_slug WHERE t.id <> f.id) AS links`),
+        mostLinked: db.prepare(`WITH pub AS (SELECT p.id, p.slug, p.published_revision, s.slug AS space_slug FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
+                                    WHERE p.state = 'published' AND p.visibility = 'public' AND s.deleted_at IS NULL AND s.visibility = 'public')
+                                SELECT t.id, COUNT(DISTINCT f.id) AS n FROM wiki_page_links l
+                                JOIN pub f ON f.id = l.from_page_id AND l.from_revision = f.published_revision
+                                JOIN pub t ON t.space_slug = l.target_space AND t.slug = l.target_slug
+                                WHERE t.id <> f.id GROUP BY t.id ORDER BY n DESC, t.id LIMIT ?`),
+        pagesByIds: db.prepare('SELECT * FROM wiki_pages WHERE id = ANY(?)'),
         allPublishedPublic: db.prepare(`SELECT p.* FROM wiki_pages p JOIN wiki_spaces s ON s.id = p.space_id
                             WHERE p.state = 'published' AND s.deleted_at IS NULL AND s.visibility = 'public' AND p.visibility = 'public'
                             ORDER BY p.id LIMIT 50000`),
@@ -681,8 +707,12 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const level = roots.length === 1 ? roots[0].children : roots;
             const pages = level.map((n) => n.page).filter((p) => p.state === 'published' && p.published_revision).slice(0, limit);
             const revs = pages.length ? await revisions.getMany(pages.map((p) => ({ entityId: p.id, revision: p.published_revision }))) : [];
+            // A wiki with one root page (an overview over everything else): that page, for a "start here" link.
+            const top = roots.length === 1 && roots[0].page.state === 'published' && roots[0].page.published_revision ? roots[0].page : null;
+            const topRev = top ? (await revisions.getMany([{ entityId: top.id, revision: top.published_revision }]))[0] : null;
             return {
-                pages: pages.map((page, i) => ({ page, summary: revs[i] ? firstSentence(revs[i].fields.summary || ssr.markdownToText(revs[i].content, 240)) : '' })),
+                root: top ? { page: top, summary: topRev ? firstSentence(topRev.fields.summary || ssr.markdownToText(topRev.content, 240)) : '' } : null,
+                pages: pages.map((page, i) => ({ page, summary: revs[i] ? firstSentence(revs[i].fields.summary || ssr.markdownToText(revs[i].content, 240)) : '', domain: revs[i] ? infoboxText(revs[i].fields.infobox, 'domain') : null })),
                 total, updated: updated || null,
             };
         },
@@ -1140,6 +1170,21 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         // Discovery (public, indexable only) -----------------------------------------------
         async publishedPublic() { return await expandPublished(await q.allPublishedPublic.all()); },
 
+        /** The home's numbers (public wikis and pages only): wikis, pages, revisions, citations, distinct sources, links between pages. */
+        async homeStats() {
+            const r = (await q.homeStats.get()) || {};
+            const n = (v) => Number(v) || 0;
+            return { wikis: n(r.wikis), pages: n(r.pages), revisions: n(r.revisions), citations: n(r.citations), sources: n(r.sources), links: n(r.links) };
+        },
+        /** Public published pages that the most other public pages link to: [{ space, page, rev, links }], most first. */
+        async mostLinked(limit = 6) {
+            const ranked = await q.mostLinked.all(Math.min(50, Math.max(1, limit)));
+            if (!ranked.length) return [];
+            const byId = new Map((await q.pagesByIds.all(ranked.map((r) => r.id))).map((p) => [p.id, p]));
+            const pages = ranked.map((r) => byId.get(r.id)).filter(Boolean);
+            const counts = new Map(ranked.map((r) => [r.id, Number(r.n) || 0]));
+            return (await expandPublished(pages)).map((x) => ({ ...x, links: counts.get(x.page.id) || 0 }));
+        },
         async recentChanges(limit = 50) { return await expandPublished(await q.recent.all(Math.min(200, Math.max(1, limit)))); },
         /** The same, for one public space (its feed): null when the slug names no public, live space. */
         async recentChangesIn(slug, limit = 50) {

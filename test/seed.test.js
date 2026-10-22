@@ -65,16 +65,18 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'seeds', 'ope
         // space's own description and page count as the section's lede. No "Official spaces" list repeats it.
         const homePage = await H.req(h, 'GET', '/');
         assert.strictEqual(homePage.status, 200);
-        const shelf = (/<section class="sc-sec" id="inside-openvibe"[\s\S]*?<\/section>/.exec(homePage.text) || [''])[0];
-        assert.ok(shelf.includes('The OpenVibe space'), 'the section names the space');
+        const shelf = (/<section class="sc-sec wk-h-shelf" id="inside-openvibe"[\s\S]*?<\/section>/.exec(homePage.text) || [''])[0];
+        assert.ok(shelf.includes('The OpenVibe wiki'), 'the section names the wiki');
         assert.match(shelf, new RegExp(`${data.pages.length} pages, updated \\d{4}-\\d{2}-\\d{2}\\.`), 'its page count and date');
         const roots = data.pages.filter((p) => !p.parent);
-        const shelfCards = (shelf.match(/class="sc-card"/g) || []).length;
+        const shelfCards = (shelf.match(/class="sc-card /g) || []).length;
         assert.strictEqual(shelfCards, data.pages.length - roots.length, 'one card for each page under the root');
         assert.ok(shelf.includes('href="/w/openvibe/openvibe-live"'), 'cards link the pages');
         assert.ok(!/<small>[^<]{241,}<\/small>/.test(shelf), 'a card carries one short sentence');
         assert.ok(!homePage.text.includes('>Official wikis<'), 'a shelved space is not listed again');
-        assert.ok(homePage.text.includes('No community wikis yet.'), 'the community section says how to start one');
+        assert.ok(!homePage.text.includes('>Community wikis<'), 'no community wikis: no empty section');
+        assert.ok(homePage.text.includes('Start a wiki of your own'), 'the home says how to start one');
+        assert.ok(shelf.includes('Start with OpenVibe'), 'the root page is the place to start');
         // Absent from sitemaps, feeds and Search until reviewed.
         assert.strictEqual(((await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.match(/<loc>/g) || []).length, 0);
         const atomFeed = await H.req(h, 'GET', '/feed.atom');

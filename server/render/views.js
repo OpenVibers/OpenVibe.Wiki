@@ -44,7 +44,27 @@ function shelfIcon(slug) {
     return `ov:${m && RING.has(m[1]) ? m[1] : 'wiki'}`;
 }
 
-function home({ spaces, recent, shelves = new Map(), actor }) {
+const ovIcons = require('openvibe-shared/ov-icons');
+
+/** A ring icon in a showcase card's tile (openvibe-shared/showcase's own markup, for the cards this file draws itself). */
+function ringTile(slug) {
+    const name = shelfIcon(slug).slice(3);
+    return raw(`<span class="sc-ic sc-ic-ov"><span class="ov-icon sc-ovi" data-icon="${ssr.escapeHtml(name)}" style="--ovi-size:40px" aria-hidden="true">${ovIcons.svg(name)}</span></span>`);
+}
+// A product name or host may break after its dots ("OpenVibe.<wbr>Coupons"), never inside a word, on narrow tiles.
+const dotBreaks = (text) => raw(ssr.escapeHtml(text).replace(/\./g, '.<wbr>'));
+const plural = (n, one, many = `${one}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
+
+// The questions the home answers, shown on the page and given to search engines as FAQPage (only what is on the page).
+const FAQ = [
+    { q: 'Who can start a wiki?', a: 'Anyone signed in with an OpenVibe account. A wiki can be public, for members (any signed-in account), for its owner\'s OpenVibe.VIP members, or private to the people given a role in it. Its owner picks the editors.' },
+    { q: 'Who writes the OpenVibe wiki?', a: 'OpenVibe staff. Each page summarises one product or library from its README and STATUS files at a pinned commit, and cites those files. Pages written with AI assistance say so at the top and stay out of search engines until a person reviews them.' },
+    { q: 'Can I see what changed on a page?', a: 'Yes. Every page keeps each published revision. Its history compares any two revisions word by word or line by line, and its sources view lists what each revision cited.' },
+    { q: 'Where do I talk about a page?', a: 'Each page has a discussion thread on OpenVibe.Community, shown under the page. Sign in with your OpenVibe account to post.' },
+    { q: 'How do I follow changes?', a: 'The whole site and each public wiki have Atom and JSON feeds, and signed-in readers can watch a page. Every public page is also served as JSON: add .json to its address.' },
+];
+
+function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], groups = null, actor }) {
     const official = spaces.filter((s) => s.kind === 'official');
     const user = spaces.filter((s) => s.kind === 'user');
     const signedIn = !!(actor && actor.subject);
@@ -53,31 +73,79 @@ function home({ spaces, recent, shelves = new Map(), actor }) {
         const shelf = shelves.get(s.id);
         return html`<li><a class="wk-space" href="/s/${e(s.slug)}"><b>${s.name}</b>${s.visibility !== 'public' ? html` <span class="wk-tag">${s.visibility}</span>` : ''}${s.description ? html`<span class="wk-space-text">${s.description}</span>` : ''}${shelf && shelf.total ? html`<span class="wk-space-meta">${String(shelf.total)} page${shelf.total === 1 ? '' : 's'}${shelf.updated ? html` · updated ${t(shelf.updated)}` : ''}</span>` : ''}</a></li>`;
     };
-    // Each official wiki with pages: what is inside it, its pages one level down as cards with their summaries. A space
-    // without a shelf (not public, or empty) is a card under "Official wikis".
+    const pageCard = (s, { page, summary, domain }) => html`<a class="sc-card wk-h-card" href="${wpath(s, page)}">${ringTile(page.slug)}<span><b>${dotBreaks(page.title)}</b>${summary ? html`<small>${summary}</small>` : ''}${domain ? html`<span class="wk-h-host">${dotBreaks(domain)}</span>` : ''}</span></a>`;
+    // Each official wiki with pages: its pages one level down as cards, shelved by the Frame's site groups when the
+    // Network has told us them (a page's domain → the launcher's group), else one grid.
     const shelved = official.filter((s) => shelves.get(s.id) && shelves.get(s.id).pages.length);
     const unshelved = official.filter((s) => !shelved.includes(s));
     const inside = shelved.map((s) => {
         const shelf = shelves.get(s.id);
         const day = shelf.updated ? new Date(Number(shelf.updated)).toISOString().slice(0, 10) : null;
-        return showcase.features({
-            id: `inside-${s.slug}`, title: `The ${s.name} space`,
-            lede: `${s.description ? `${s.description.replace(/\.?\s*$/, '.')} ` : ''}${shelf.total} pages${day ? `, updated ${day}` : ''}.`,
-            items: shelf.pages.map(({ page, summary }) => ({ icon: shelfIcon(page.slug), title: page.title, text: summary, href: wpath(s, page) })),
-        }) + html`<p class="wk-more"><a href="/s/${e(s.slug)}">Every page of ${s.name}, as a tree</a></p>`;
-    }).join('');
-    // What OpenVibe.Wiki is for (openvibe-shared/showcase), then the spaces, what is inside them, and what was published.
+        let body;
+        if (groups) {
+            const byGroup = new Map(groups.groups.map((g) => [g.id, []]));
+            const rest = [];
+            for (const item of shelf.pages) {
+                let host = null;
+                try { host = item.domain ? new URL(`https://${item.domain.replace(/^https?:\/\//, '')}`).hostname : null; } catch { /* not a host */ }
+                const g = host && groups.hosts.get(host);
+                (g && byGroup.has(g) ? byGroup.get(g) : rest).push(item);
+            }
+            const blocks = groups.groups.filter((g) => byGroup.get(g.id).length).map((g) => ({ name: g.name, items: byGroup.get(g.id) }));
+            if (rest.length) blocks.push({ name: 'Platform and libraries', items: rest });
+            body = blocks.map((b) => html`<div class="wk-h-group"><h3>${b.name} <span>${plural(b.items.length, 'page')}</span></h3><div class="sc-grid">${b.items.map((item) => pageCard(s, item))}</div></div>`);
+        } else {
+            body = html`<div class="sc-grid">${shelf.pages.map((item) => pageCard(s, item))}</div>`;
+        }
+        const lede = `${s.description ? `${s.description.replace(/\.?\s*$/, '.')} ` : ''}${plural(shelf.total, 'page')}${day ? `, updated ${day}` : ''}.`;
+        return html`<section class="sc-sec wk-h-shelf" id="inside-${s.slug}" aria-labelledby="wk-in-${s.slug}"><h2 id="wk-in-${s.slug}">The ${s.name} wiki</h2><p class="sc-lede">${lede}</p>
+${shelf.root ? html`<p class="wk-h-root"><a href="${wpath(s, shelf.root.page)}"><b>Start with ${shelf.root.page.title}</b>${shelf.root.summary ? html`<span>${shelf.root.summary}</span>` : ''}</a></p>` : ''}
+${body}<p class="wk-more"><a href="/s/${e(s.slug)}">Every page of ${s.name}, as a tree</a></p></section>`;
+    });
+    // The numbers beside the hero: public wikis and pages only, and only the ones there are.
+    const tiles = stats ? [
+        stats.wikis > 1 ? ['Public wikis', stats.wikis] : null,
+        ['Published pages', stats.pages],
+        ['Revisions kept', stats.revisions],
+        stats.citations ? ['Citations', stats.citations] : null,
+        stats.wikis > 1 && stats.sources ? ['Sources cited', stats.sources] : null,
+        stats.links ? ['Links between pages', stats.links] : null,
+    ].filter(Boolean) : [];
+    const firstOfficial = shelved[0];
+    const aside = stats && stats.pages ? html`<div class="wk-h-panel"><h2 class="wk-h-panel-h">The wiki today</h2><dl class="wk-h-stats">${tiles.map(([k, v]) => html`<div><dt>${k}</dt><dd>${v.toLocaleString('en-US')}</dd></div>`)}</dl>
+<form class="wk-h-search" action="/search" method="get" role="search"><label for="wk-hq">Search every public page</label><span><input id="wk-hq" name="q" type="search" placeholder="Search pages"><button type="submit">Search</button></span></form></div>` : '';
+    const steps = showcase.steps({
+        title: 'How a page comes together',
+        items: [
+            { title: 'Start a wiki', text: 'Name it, choose who can read it and add the editors you trust.', href: start.href },
+            { title: 'Write pages', text: 'Markdown with [[links]] between pages, an infobox of facts, and pages nested under pages.' },
+            { title: 'Cite your sources', text: 'Attach the source behind a claim: its link, the quote and when it was read. The citation stays with that revision.' },
+            { title: 'Publish and keep going', text: 'Publish now or schedule it. Every revision stays in the history, ready to compare or restore.' },
+        ],
+    });
+    const links = [
+        { href: '/recent', title: 'Recent changes', text: 'Every public page, newest revision first.' },
+        { href: '/search', title: 'Search', text: 'Titles and text across the wikis you can read.' },
+        firstOfficial ? { href: `/s/${e(firstOfficial.slug)}`, title: `The ${firstOfficial.name} page tree`, text: 'Every page of the official wiki, nested.' } : null,
+        { href: start.href, title: 'Start a wiki', text: 'Public, members-only, VIP or private.' },
+        { href: '/feed.atom', title: 'Atom and JSON feeds', text: 'Follow new revisions in any reader.' },
+        { href: '/updates', title: 'What shipped', text: 'Every change to OpenVibe.Wiki itself.' },
+    ].filter(Boolean);
     return html`${raw(showcase.hero({
         eyebrow: 'OpenVibe.Wiki',
         title: 'Knowledge,', accent: 'with sources',
-        lede: 'Wikis with page trees, revision history, citations and discussion. Official wikis are edited by OpenVibe staff; anyone signed in with an OpenVibe account can start a wiki of their own.',
-        actions: [start, { label: 'Browse the wikis', href: '#spaces' }],
+        lede: 'Read the OpenVibe wiki or start one of your own. Every page keeps its full revision history, lists the sources behind it and has a discussion thread.',
+        actions: [start, firstOfficial ? { label: `Read the ${firstOfficial.name} wiki`, href: `#inside-${firstOfficial.slug}` } : { label: 'Browse the wikis', href: '#spaces' }],
+        aside: aside ? { html: String(aside) } : undefined,
     }))}
 <div id="spaces"></div>
-${raw(inside)}
-${unshelved.length || !shelved.length ? html`<section class="sc-sec wk-home-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official wikis</h2>${unshelved.length ? html`<ul class="wk-spaces">${unshelved.map(card)}</ul>` : html`<p class="wk-muted">None yet.</p>`}</section>` : ''}
-<section class="sc-sec wk-home-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community wikis</h2>${user.length ? html`<ul class="wk-spaces">${user.map(card)}</ul>`
-        : html`<div class="wk-empty"><p><b>No community wikis yet.</b> Any OpenVibe account can start one: public, members-only, for its owner's VIP members, or private, with the editors it chooses.</p><p><a class="wk-button" href="${start.href}">${start.label}</a></p></div>`}</section>
+${inside}
+${linked.length ? html`<section class="sc-sec" aria-labelledby="wk-linked-h"><h2 id="wk-linked-h">Most linked pages</h2><p class="sc-lede">The pages other pages point to most often: a good place to start reading.</p>
+<ol class="wk-h-rank">${linked.map((x) => html`<li><a href="${wpath(x.space, x.page)}">${x.page.title}</a><span class="wk-h-count">Linked from ${plural(x.links, 'page')}</span>${x.rev && x.rev.fields && x.rev.fields.summary ? html`<p>${x.rev.fields.summary}</p>` : ''}</li>`)}</ol></section>` : ''}
+${recent.length ? html`<section class="sc-sec" aria-labelledby="wk-recent-h"><h2 id="wk-recent-h">Recently revised</h2><ul class="wk-recent">${recent.map((r) => html`<li><span><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name} · revision ${String(r.page.published_revision)}</span></span> <span class="wk-muted">${t(r.page.revision_published_at)}</span></li>`)}</ul>
+<p class="wk-more"><a href="/recent">All recent changes</a> · <a href="/feed.atom">Atom</a> · <a href="/feed.json">JSON Feed</a></p></section>` : ''}
+${unshelved.length ? html`<section class="sc-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official wikis</h2><ul class="wk-spaces">${unshelved.map(card)}</ul></section>` : ''}
+${user.length ? html`<section class="sc-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community wikis</h2><ul class="wk-spaces">${user.map(card)}</ul></section>` : ''}
 ${raw(showcase.features({
         title: 'What a wiki gets',
         items: [
@@ -89,8 +157,26 @@ ${raw(showcase.features({
             { icon: 'ov:search', title: 'Search and feeds', text: 'Full-text search across the wikis you can see, and Atom and JSON feeds.' },
         ],
     }))}
-<section class="sc-sec wk-home-sec" aria-labelledby="wk-recent-h"><h2 id="wk-recent-h">Recently published</h2>${recent.length ? html`<ul class="wk-recent">${recent.map((r) => html`<li><span><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name}</span></span> <span class="wk-muted">${t(r.page.revision_published_at)}</span></li>`)}</ul>` : html`<p class="wk-muted">Nothing published yet.</p>`}
-<p class="wk-more"><a href="/recent">All recent changes</a> · <a href="/feed.atom">Atom</a> · <a href="/feed.json">JSON Feed</a></p></section>`;
+${raw(steps)}
+<section class="sc-sec wk-h-faq" aria-labelledby="wk-faq-h"><h2 id="wk-faq-h">Questions</h2>${FAQ.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>
+<section class="sc-sec" aria-labelledby="wk-links-h"><h2 id="wk-links-h">Find your way around</h2><ul class="wk-h-links">${links.map((l) => html`<li><a href="${l.href}"><b>${l.title}</b><small>${l.text}</small></a></li>`)}</ul></section>
+${raw(showcase.cta({ title: 'Start a wiki of your own', text: 'A team handbook, a game guide, a project\'s docs: write it with history and sources from the first page.', actions: [start] }))}`;
+}
+
+/** The home's structured data: the site (with its search), the official pages it lists, and the questions it answers. */
+function homeJsonLd({ shelves = new Map(), spaces = [], baseUrl }) {
+    const SITE = String(baseUrl).replace(/\/+$/, '');
+    const out = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: 'OpenVibe.Wiki', url: `${SITE}/`,
+        potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${SITE}/search?q={search_term_string}` }, 'query-input': 'required name=search_term_string' } }];
+    const items = [];
+    for (const s of spaces) {
+        const shelf = shelves.get(s.id);
+        if (!shelf) continue;
+        for (const { page } of shelf.pages) items.push({ name: page.title, url: `${SITE}${wpath(s, page)}` });
+    }
+    if (items.length) out.push({ '@context': 'https://schema.org', '@type': 'ItemList', name: 'Pages of the OpenVibe wiki', numberOfItems: items.length, itemListElement: items.map((x, i) => ({ '@type': 'ListItem', position: i + 1, name: x.name, url: x.url })) });
+    out.push({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
+    return out;
 }
 
 function treeHtml(nodes, space) {
@@ -434,7 +520,7 @@ function signInPage({ next, message }) {
 
 module.exports = {
     vipGateBody,
-    home, spacePage, articlePage, historyPage, sourcesPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
+    home, homeJsonLd, spacePage, articlePage, historyPage, sourcesPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
     spaceSettingsPage, importPage, pageSettingsPage, revertPage, confirmPublishPage, proposalsPage, searchPage, recentPage,
     signInPage, errorBody, wpath, VIS_LABEL,
 };

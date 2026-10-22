@@ -38,6 +38,10 @@ function load(env = process.env) {
         networkUrl,
         networkInternalUrl: trim(env.OV_NETWORK_INTERNAL_URL || 'http://127.0.0.1:4000'),
         networkIssuer: trim(env.OV_NETWORK_ISSUER || networkUrl),
+        // The Frame's site groups (the launcher's "Watch & stream", "Build & automate", …) shelve the official wiki's
+        // product pages on the home (server/http/frame-groups.js). Read from the Network in production; WIKI_FRAME_URL
+        // sets another address, and an empty value turns it off (one flat shelf).
+        frameUrl: env.WIKI_FRAME_URL != null ? trim(env.WIKI_FRAME_URL) : isProduction ? `${trim(env.OV_NETWORK_INTERNAL_URL || 'http://127.0.0.1:4000')}/api/chrome` : '',
         networkPublicKey: env.OV_NETWORK_PUBLIC_KEY ? String(env.OV_NETWORK_PUBLIC_KEY).replace(/\\n/g, '\n') : null,
         // A browser's user JWT is accepted when its aud contains one of these.
         userAudiences: list(env.WIKI_USER_AUDIENCES, 'openvibe.wiki,openvibe.network'),
