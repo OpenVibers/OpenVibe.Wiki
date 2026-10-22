@@ -33,7 +33,9 @@ h2 { font-size: 1.3rem; margin: 1.6em 0 .5em; border-bottom: 1px solid var(--wk-
 .wk-notice.wk-error { border-color: var(--wk-red); }
 .wk-notice.wk-ok { border-color: var(--wk-ok); }
 .wk-notice.wk-ai { border-color: #a78bfa; }
-.wk-button, button { display: inline-block; background: var(--wk-accent); color: #0a0f1c; border: 0; border-radius: 6px; padding: 6px 14px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
+/* Filled controls use the theme's readable pair (openvibe-shared deriveTokens: 4.5:1 or better in every theme); dark text on
+   the raw accent read at 3.8:1 in the light themes (axe, 2026-10-22). */
+.wk-button, button { display: inline-block; background: var(--accent-strong, var(--wk-accent)); color: var(--on-accent-strong, #0a0f1c); border: 0; border-radius: 6px; padding: 6px 14px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
 input, select, textarea { font: inherit; color: var(--wk-text); background: var(--wk-panel); border: 1px solid var(--wk-line); border-radius: 6px; padding: 6px 8px; max-width: 100%; }
 textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
 .wk-form label { display: block; margin: 10px 0; }
