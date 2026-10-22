@@ -90,6 +90,14 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
         assert.strictEqual(await h.stores.revisions.headNumber(beta.id), 2, 'still exactly one new revision');
         assert.strictEqual(await h.stores.revisions.headNumber(alpha.id), 1);
 
+        // --revise also brings the wiki's description in line with the seed; a plain run leaves it alone.
+        const described = clone(changed);
+        described.space.description = 'The revised fixture description';
+        await seed(h.svc, described, { log: H.quiet });
+        assert.strictEqual((await h.svc.findSpace('tests')).description, 'Seed revise fixture');
+        await seed(h.svc, described, { revise: true, log: H.quiet });
+        assert.strictEqual((await h.svc.findSpace('tests')).description, 'The revised fixture description');
+
         // Without --revise the changed page is left alone (unchanged semantics).
         const plain = await seed(h.svc, changed, { log: H.quiet });
         assert.strictEqual(plain.created.length, 0);

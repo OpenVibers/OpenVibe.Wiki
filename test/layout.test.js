@@ -52,7 +52,7 @@ const robotsOf = (head) => /<meta name="robots" content="([^"]*)">/.exec(head)[1
         // The home page: indexable by an explicit robots string, plus the showcase kit's stylesheet.
         r = await H.req(h, 'GET', '/');
         let { head } = frameOf(r.text, '/');
-        assert.ok(head.includes('<title>OpenVibe.Wiki: wikis with history and citations</title>'), `the home title says what the site is: ${(/<title>[^<]*<\/title>/.exec(head) || [''])[0]}`);
+        assert.ok(head.includes('<title>OpenVibe.Wiki: wikis with full history and cited sources</title>'), `the home title says what the site is: ${(/<title>[^<]*<\/title>/.exec(head) || [''])[0]}`);
         assert.ok(/<link rel="canonical" href="https?:\/\/[^"\/]+\/">/.test(head), 'the home canonical');
         assert.strictEqual(robotsOf(head), 'index, follow');
         assert.ok(/<link rel="stylesheet" href="\/shared\/[^"]*showcase[^"]*">/.test(head), 'the extra openvibe-shared stylesheet');

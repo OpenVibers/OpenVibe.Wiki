@@ -5,7 +5,7 @@
  * ones enter feeds. Members/private/deleted content never appears.
  *
  *   /robots.txt          crawl rules + sitemap location + explicit automated-consumer policy
- *   /sitemap.xml         sitemap index → /sitemaps/spaces.xml, /sitemaps/pages-<n>.xml
+ *   /sitemap.xml         sitemap index → /sitemaps/spaces.xml (the home and every public wiki), /sitemaps/pages-<n>.xml
  *   /feed.atom           recent changes (Atom), /feed.json (JSON Feed 1.1)
  *   /llms.txt            orientation for language models
  *   /llms-full.txt       the same orientation plus an excerpt of every indexable page, bounded
@@ -51,12 +51,15 @@ function createMachine({ svc, config }) {
             if (!page.revision_published_at) continue;
             newestPage.set(space.id, Math.max(newestPage.get(space.id) || 0, page.revision_published_at));
         }
-        return (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public').map((s) => {
+        // A space index is navigation, not an article: no word or source minimum. The same for the home, listed first.
+        const navigation = (url) => seo.evaluate({ state: 'published', visibility: 'public', canonicalUrl: url, wordCount: 0 }, { policy: { minWords: 0, requireSources: false }, now: Date.now() });
+        const spaces = (await svc.listSpaces({ kind: 'anonymous' })).filter((s) => s.visibility === 'public').map((s) => {
             const url = seo.canonicalUrl(origin, svc.spacePath(s));
-            // A space index is navigation, not an article: no word or source minimum.
-            const decision = seo.evaluate({ state: 'published', visibility: 'public', canonicalUrl: url, wordCount: 0 }, { policy: { minWords: 0, requireSources: false }, now: Date.now() });
-            return { loc: url, lastmod: Math.max(s.updated_at, newestPage.get(s.id) || 0), decision };
+            return { loc: url, lastmod: Math.max(s.updated_at, newestPage.get(s.id) || 0), decision: navigation(url) };
         });
+        const home = seo.canonicalUrl(origin, '/');
+        const newest = Math.max(0, ...spaces.map((x) => x.lastmod || 0));
+        return [{ loc: home, lastmod: newest || undefined, decision: navigation(home) }, ...spaces];
     }
 
     router.get('/sitemap.xml', wrap(async (_req, res) => {

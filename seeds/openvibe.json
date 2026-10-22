@@ -2,7 +2,7 @@
   "space": {
     "slug": "openvibe",
     "name": "OpenVibe",
-    "description": "Official space describing the OpenVibe network and its repositories, summarised from their README and STATUS files.",
+    "description": "The official wiki of the OpenVibe network: one page for every product and library, summarised from its README and STATUS files, with citations.",
     "kind": "official",
     "visibility": "public"
   },

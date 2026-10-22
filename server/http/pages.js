@@ -38,8 +38,12 @@ const showcase = require('openvibe-shared/showcase');
 const content = require('../wiki/content');
 const { actorMiddleware, resolveCitations, resolveBundleCitations, citationsFromForm } = require('./common');
 const importer = require('../wiki/import');
+const { createFrameGroups } = require('./frame-groups');
 
-function createPages({ svc, viewers, platform, config, log = console, limits }) {
+// What the home says in search results and share cards (≤ 160 characters).
+const HOME_DESCRIPTION = 'Read the OpenVibe wiki or start your own: every page keeps its full revision history, lists the sources behind it and has a discussion thread.';
+
+function createPages({ svc, viewers, platform, config, log = console, limits, frameGroups = createFrameGroups({ url: config.frameUrl }) }) {
     const router = express.Router();
     const form = express.urlencoded({ extended: false, limit: '600kb' });
     router.use(actorMiddleware(viewers, { services: false }));
@@ -122,15 +126,16 @@ function createPages({ svc, viewers, platform, config, log = console, limits }) 
     // ── Home, recent, search ─────────────────────────────────
     router.get('/', wrap(async (req, res) => {
         if (req.actor.subject) await svc.access.prepareVip(req.actor, (await svc.vipSpaces()).map((space) => ({ space })));   // VIP spaces the viewer may see
-        const [spaces, recent] = await Promise.all([svc.listSpaces(req.actor), svc.recentChanges(10)]);
+        const [spaces, recent, stats, linked, groups] = await Promise.all([svc.listSpaces(req.actor), svc.recentChanges(8), svc.homeStats(), svc.mostLinked(6), frameGroups.get()]);
         // The official wikis' shelves: what is inside them, on the front page (only public spaces: the home is cached).
         const shelves = new Map(await Promise.all(spaces.filter((s) => s.kind === 'official' && s.visibility === 'public').slice(0, 3)
-            .map(async (s) => [s.id, await svc.shelf(s, req.actor, 48)])));
+            .map(async (s) => [s.id, await svc.shelf(s, req.actor, 60)])));
         // The site's one-line AI summary: the shell turns it into the ai-summary meta and the home's
         // WebPage JSON-LD (openvibe-publishing/layout v1.3.0 forwards `summary`).
-        send(req, res, 200, views.home({ spaces, recent, shelves, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
+        send(req, res, 200, views.home({ spaces, recent, shelves, stats, linked, groups, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
             robots: 'index, follow', cache: 'public', active: 'home', path: '/', styles: [showcase.STYLESHEET],
-            summary: AI_SUMMARY,
+            summary: AI_SUMMARY, description: HOME_DESCRIPTION,
+            jsonLd: views.homeJsonLd({ shelves, spaces: spaces.filter((s) => s.kind === 'official' && s.visibility === 'public'), baseUrl: config.baseUrl }),
         });
     }));
     // What shipped on OpenVibe.Wiki: the shared update log every OpenVibe site has.
