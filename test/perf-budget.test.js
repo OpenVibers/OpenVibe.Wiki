@@ -15,7 +15,7 @@ const BUDGETS = {
     htmlRawKB: 34,   // 31.5 on 2026-10-22: the home's how-it-works steps, questions (and their FAQPage JSON-LD), links around the site and closing call; 24.9 (fresh database; 2026-09-29 the showcase hero and features with six inline ring icons)
     htmlBrotliKB: 8.5,   // 7.7 (2026-10-22 the richer home); 6.3
     jsFiles: 5,   // 5 (theme-loader, web-runtime, navbar, footer, boost: openvibe-shared/shell adds web-runtime, 2026-10-04)
-    jsRawKB: 250,   // 246.2 with openvibe-shared 4.2.x (Ask Actor in the navbar, 2026-10-15); 239.1 (197.7 before openvibe-shared/shell's web-runtime.js)
+    jsRawKB: 256,   // 254.1 with openvibe-shared 4.9.0 (status text twins in every theme, 2026-10-23); 246.2 with openvibe-shared 4.2.x (Ask Actor in the navbar, 2026-10-15); 239.1 (197.7 before openvibe-shared/shell's web-runtime.js)
     jsBrotliKB: 60,   // 59.1 with openvibe-shared 4.4.0 (every site in the launcher, 2026-10-17); 56.3 (45.6 before web-runtime.js)
     cssFiles: 2,   // 1
     cssRawKB: 25,   // 23.5 on 2026-10-22 (the home's numbers, shelves by site group, ranked pages, questions and links); 19.1 (wiki.css + the cached /shared/showcase.css; 2026-10-15 the home's space cards, shelf and recent list)
