@@ -10,7 +10,7 @@ const assert = require('assert');
 const H = require('./helpers');
 const content = require('../server/wiki/content');
 const { checkUrl, sniff } = require('../server/integrations/image-fetch');
-const { normalizePlan, spaceSlugFor, contentsOf } = require('../server/wiki/vibe');
+const { normalizePlan, spaceSlugFor, contentsOf, stripMarkers, creditOf } = require('../server/wiki/vibe');
 
 const MED = (n) => `med_01J8Z6Q3KX0000000000000${String(n).padStart(3, '0')}`;
 const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
@@ -33,6 +33,9 @@ const LONG = 'Kim Possible is a teenager who saves the world between classes, wi
     const plan = normalizePlan({ title: 'KP', summary: 's', pages: [{ title: 'Ron', kind: 'character', outline: ['A'] }, { title: 'Kim Possible', kind: 'overview' }, { title: 'ron', kind: 'person' }, { title: 'Bad [[x]]|', kind: 'weird' }] }, 'Kim Possible', 3);
     assert.deepStrictEqual(plan.pages.map((p) => [p.title, p.kind]), [['Kim Possible', 'overview'], ['Ron', 'character'], ['Bad x', 'other']], 'main page first, duplicates out, kinds known, link syntax stripped');
     assert.match(contentsOf(plan), /### Characters\n\n- \[\[Ron\]\]/);
+    assert.strictEqual(stripMarkers('Her stories.[0][2][4] See [the site](https://x.test) and [[Ron]] [3, 5].'), 'Her stories. See [the site](https://x.test) and [[Ron]].');
+    assert.strictEqual(creditOf({ author: null, source_url: 'https://kimpossible.fandom.com/wiki/Shego', free: false, license: 'Fandom wiki picture' }), 'Picture: kimpossible.fandom.com, © its owners');
+    assert.strictEqual(creditOf({ author: 'Jane', free: true, license: 'CC BY 2.0' }), 'Picture: Jane, CC BY 2.0');
 }
 
 (async () => {
@@ -51,7 +54,7 @@ const LONG = 'Kim Possible is a teenager who saves the world between classes, wi
         facts: [], topic_wiki: { name: 'Kim Possible Wiki', url: 'https://kimpossible.fandom.com' }, providers: { wikipedia: { ok: true, count: 1 }, fandom: { ok: true, count: 1 }, deepseek: { ok: false, skipped: 'not configured' } }, usage: {},
     });
     const page = (title) => ({
-        title, summary: `${title} is part of Kim Possible.`, lead: `**${title}** is part of the show. ${title === 'Kim Possible' ? 'Her friend is [[Ron Stoppable]].' : 'He is friends with [[Kim Possible]].'} ${LONG}`,
+        title, summary: `${title} is part of Kim Possible.`, lead: `**${title}** is part of the show.[0][1] ${title === 'Kim Possible' ? 'Her friend is [[Ron Stoppable]].' : 'He is friends with [[Kim Possible]].'} ${LONG}`,
         sections: [{ heading: 'Premise', body: LONG, citations: [0] }, { heading: 'Legacy', body: LONG, citations: [1] }],
         infobox: [{ label: 'Created by', value: 'Bob Schooley and Mark McCorkle', citations: [0] }, { label: 'Network', value: 'Disney Channel', citations: [0] }],
         images: [{ index: 0, caption: `${title} on screen`, section: 'lead' }, { index: 7, caption: 'out of range', section: 'Premise' }],
@@ -160,6 +163,7 @@ const LONG = 'Kim Possible is a teenager who saves the world between classes, wi
         assert.match(r.text, new RegExp(`class="wk-ib-pic"[\\s\\S]*?<img src="https://openvibe.media/o/${MED(1)}"`), 'the lead picture in the infobox');
         assert.match(r.text, /Kim Possible on screen \(Picture: Jane Doe, CC BY-SA 4.0\)/, 'captioned with its credit');
         assert.match(r.text, /<th scope="row">Created by<\/th><td>Bob Schooley and Mark McCorkle<\/td>/);
+        assert.ok(!/\[0\]\[1\]/.test(r.text), 'source numbers left in the text are removed');
         assert.match(r.text, /<h2[^>]*>In this wiki<\/h2>/);
         assert.match(r.text, /<a class="ov-wikilink" href="\/w\/kim-possible\/ron-stoppable">Ron Stoppable<\/a>/, 'a blue link to the page written after it');
         assert.match(r.text, /href="https:\/\/en.wikipedia.org\/wiki\/Kim_Possible"[^>]*>Kim Possible — Wikipedia<\/a>, retrieved/);
