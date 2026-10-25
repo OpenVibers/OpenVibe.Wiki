@@ -34,6 +34,10 @@
  *   GET    /proposals/:id                  wiki.page.read
  *   POST   /proposals/:id/review           wiki.revision.publish { decision: approved|rejected, note?, publish? }  a person
  *   GET    /search?q=&space=&limit=        wiki.search.query
+ *   POST   /vibes                          wiki.space.create     { topic, size?: quick|standard|big, visibility?: public|private, lang? }  a person: a whole
+ *                                                                generated wiki (server/wiki/vibe.js) → 202 { vibe }, then poll
+ *   GET    /vibes                                                the caller's generated wikis (a person)
+ *   GET    /vibes/:vibe                    wiki.page.read        progress: status, pages written, the wiki's address
  */
 const express = require('express');
 const contracts = require('openvibe-contracts');
@@ -78,7 +82,7 @@ function serializeTree(nodes, svc, space) {
 
 function int(v) { const n = Number(v); return Number.isInteger(n) ? n : undefined; }
 
-function createApi({ svc, viewers, platform, config, log = console, limits }) {
+function createApi({ svc, viewers, platform, config, log = console, limits, vibes = null }) {
     const router = express.Router();
     const ownOrigin = new URL(config.baseUrl).origin;
     router.use(http.middleware());
@@ -131,6 +135,20 @@ function createApi({ svc, viewers, platform, config, log = console, limits }) {
         return { page, space };
     };
     const pageOut = async (page) => serializePage(page, svc, await svc.spaceById(page.space_id));
+
+    // Generated wikis ("vibe a wiki")
+    const vibesOn = () => { if (!vibes) throw new svc.WikiError(503, 'vibe.unavailable', 'Generated wikis are not available here'); return vibes; };
+    router.post('/vibes', guard('wiki.space.create'), B('wiki.vibe.create'), R(async (req) => {
+        const b = req.body || {};
+        const { vibe, space } = await vibesOn().start({ topic: b.topic, size: b.size || 'standard', visibility: b.visibility || 'public', lang: b.lang || 'en' }, req.actor);
+        return { vibe: await vibesOn().get(vibe.id, req.actor), space: serializeSpace(space), progress_url: `${config.baseUrl}/vibe/${vibe.id}` };
+    }, 202));
+    router.get('/vibes', R(async (req) => ({ vibes: await vibesOn().mine(req.actor) })));
+    router.get('/vibes/:vibe', guard('wiki.page.read'), R(async (req) => {
+        const v = await vibesOn().get(req.params.vibe, req.actor);
+        if (!v) throw new svc.WikiError(404, 'vibe.not_found', 'No such generated wiki');
+        return { vibe: v };
+    }));
 
     // Spaces
     router.get('/spaces', R(async (req) => ({ spaces: (await svc.listSpaces(req.actor)).map(serializeSpace) })));

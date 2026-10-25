@@ -7,6 +7,8 @@
  *   [[Title|label]]            with its own label
  *   [[space-slug:Title]]       a page in another space (the prefix must look like a space slug:
  *                              lowercase letters, digits and dashes; anything else is part of the title)
+ *   [[media:med_…|caption]]    a picture attached to the page, shown where it stands (on a line of its own it is a
+ *                              figure); one the page does not have, or that Media no longer shares, shows nothing
  * Markdown itself goes through openvibe-publishing/ssr (escaped first, a fixed tag set, no raw HTML).
  */
 const ssr = require('openvibe-publishing/ssr');
@@ -17,6 +19,7 @@ const SPACE_PREFIX_RE = /^([a-z0-9][a-z0-9-]{0,62}):(.+)$/;
 const SPACE_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,62}$/;
 const PAGE_SLUG_RE = /^[\p{Ll}\p{Lo}\p{N}][\p{Ll}\p{Lo}\p{N}-]{0,79}$/u;
 const MAX_LINKS = 500;
+const MEDIA_TOKEN_RE = /^\s*media:(med_[0-9A-HJKMNP-TV-Z]{26})\s*$/;
 
 class ContentError extends Error {
     constructor(code, message) { super(message); this.status = 422; this.code = code; }
@@ -49,11 +52,12 @@ function mapOutsideCode(source, fn) {
     }).join('\n');
 }
 
-/** Every distinct [[link]] in the content: [{ space, slug, title, label }]. */
+/** Every distinct [[link]] in the content: [{ space, slug, title, label }]. Pictures ([[media:…]]) are not links. */
 function extractLinks(source, currentSpace) {
     const seen = new Map();
     mapOutsideCode(source, (text) => {
         text.replace(LINK_RE, (_m, target, label) => {
+            if (MEDIA_TOKEN_RE.test(target)) return '';
             const t = parseTarget(target, currentSpace);
             if (t && seen.size < MAX_LINKS) {
                 const key = `${t.space}\u0000${t.slug}`;
@@ -66,13 +70,32 @@ function extractLinks(source, currentSpace) {
     return [...seen.values()];
 }
 
+/** Media object ids placed in the content with [[media:…]], in order of first appearance. */
+function mediaRefs(source) {
+    const ids = [];
+    mapOutsideCode(source, (text) => {
+        text.replace(LINK_RE, (_m, target) => { const m = MEDIA_TOKEN_RE.exec(target); if (m && !ids.includes(m[1])) ids.push(m[1]); return ''; });
+        return text;
+    });
+    return ids;
+}
+
 /**
  * Markdown + [[links]] → HTML. resolve({ space, slug }) → { href, exists } (exists false = red link;
- * href null = no link at all, e.g. a reader who cannot create the page).
+ * href null = no link at all, e.g. a reader who cannot create the page). media(mediaId, caption) → the figure's HTML,
+ * or null when the page has no such picture to show (then nothing is shown).
  */
-function renderContent(source, { currentSpace, resolve, rel = 'noopener' } = {}) {
+function renderContent(source, { currentSpace, resolve, rel = 'noopener', media = null } = {}) {
     const held = [];
+    const figures = new Set();
     const withTokens = mapOutsideCode(source, (text) => text.replace(LINK_RE, (m, target, label) => {
+        const pic = MEDIA_TOKEN_RE.exec(target);
+        if (pic) {
+            const figure = typeof media === 'function' ? media(pic[1], label ? label.trim() : null) : null;
+            held.push(figure || '');
+            figures.add(held.length - 1);
+            return `\u0001WL${held.length - 1}\u0001`;
+        }
         const t = parseTarget(target, currentSpace);
         if (!t) return m;
         const r = resolve(t) || { href: null, exists: false };
@@ -84,7 +107,9 @@ function renderContent(source, { currentSpace, resolve, rel = 'noopener' } = {})
         held.push(htmlLink);
         return `\u0001WL${held.length - 1}\u0001`;
     }));
-    const html = ssr.renderMarkdown(withTokens, { rel, headingShift: 0 });
+    const html = ssr.renderMarkdown(withTokens, { rel, headingShift: 0 })
+        // A picture on a line of its own is a figure, not a paragraph.
+        .replace(/<p>\s*\u0001WL(\d+)\u0001\s*<\/p>/g, (m, n) => (figures.has(Number(n)) ? held[Number(n)] : m));
     return html.replace(/\u0001WL(\d+)\u0001/g, (_m, n) => held[Number(n)] || '');
 }
 
@@ -192,7 +217,7 @@ function infoboxToText(entries) {
 }
 
 module.exports = {
-    ContentError, pageSlug, parseTarget, extractLinks, renderContent, mapOutsideCode,
+    ContentError, pageSlug, parseTarget, extractLinks, renderContent, mapOutsideCode, mediaRefs,
     normalizeInfobox, parseInfoboxText, infoboxToText, keyFromLabel,
     TYPES, SPACE_SLUG_RE, PAGE_SLUG_RE, MEDIA_RE,
 };

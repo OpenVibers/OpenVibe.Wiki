@@ -71,6 +71,15 @@ function load(env = process.env) {
         mediaPublicUrl: trim(env.OV_MEDIA_URL || 'https://openvibe.media'),
         // Media namespace (app) Wiki's attachments live in, checked with media.object.read.
         mediaApp: env.WIKI_MEDIA_APP || 'wiki',
+        // "Vibe a wiki" (server/wiki/vibe.js): OpenVibe.AI researches and writes; these bound how many and how big.
+        aiInternalUrl: trim(env.OV_AI_INTERNAL_URL || ''),
+        vibe: {
+            perPersonDay: int(env.WIKI_VIBE_PER_PERSON_DAY, 3),
+            perDay: int(env.WIKI_VIBE_PER_DAY, 30),
+            concurrency: Math.max(1, int(env.WIKI_VIBE_CONCURRENCY, 2)),
+            intervalMs: int(env.WIKI_VIBE_INTERVAL_MS, 5000),
+            pages: { quick: int(env.WIKI_VIBE_PAGES_QUICK, 6), standard: int(env.WIKI_VIBE_PAGES_STANDARD, 12), big: int(env.WIKI_VIBE_PAGES_BIG, 24) },
+        },
         mediaVerifyIntervalMs: int(env.WIKI_MEDIA_VERIFY_INTERVAL_MS, 6 * 60 * 60 * 1000),
 
         // OpenVibe.VIP: who may read a VIP space or page (server/integrations/vip.js, WS-K task 8).

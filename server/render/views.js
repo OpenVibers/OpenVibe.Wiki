@@ -6,7 +6,7 @@
 const ssr = require('openvibe-publishing/ssr');
 const showcase = require('openvibe-shared/showcase');
 const { figureHtml } = require('openvibe-publishing/media');
-const { infoboxToText } = require('../wiki/content');
+const { infoboxToText, mediaRefs } = require('../wiki/content');
 
 const { html, raw } = ssr;
 const t = (v) => raw(ssr.timeTag(v));
@@ -64,7 +64,7 @@ const FAQ = [
     { q: 'How do I follow changes?', a: 'The whole site and each public wiki have Atom and JSON feeds, and signed-in readers can watch a page. Every public page is also served as JSON: add .json to its address.' },
 ];
 
-function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], groups = null, actor }) {
+function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], groups = null, generated = [], actor }) {
     const official = spaces.filter((s) => s.kind === 'official');
     const user = spaces.filter((s) => s.kind === 'user');
     const signedIn = !!(actor && actor.subject);
@@ -112,8 +112,9 @@ ${body}<p class="wk-more"><a href="/s/${e(s.slug)}">Every page of ${s.name}, as 
         stats.links ? ['Links between pages', stats.links] : null,
     ].filter(Boolean) : [];
     const firstOfficial = shelved[0];
-    const aside = stats && stats.pages ? html`<div class="wk-h-panel"><h2 class="wk-h-panel-h">The wiki today</h2><dl class="wk-h-stats">${tiles.map(([k, v]) => html`<div><dt>${k}</dt><dd>${v.toLocaleString('en-US')}</dd></div>`)}</dl>
-<form class="wk-h-search" action="/search" method="get" role="search"><label for="wk-hq">Search every public page</label><span><input id="wk-hq" name="q" type="search" placeholder="Search pages"><button type="submit">Search</button></span></form></div>` : '';
+    const aside = html`<div class="wk-h-panel wk-vibe-panel"><h2 class="wk-h-panel-h">Vibe a wiki</h2>${vibeForm({ actor, compact: true })}
+${stats && stats.pages ? html`<dl class="wk-h-stats">${tiles.slice(0, 4).map(([k, v]) => html`<div><dt>${k}</dt><dd>${v.toLocaleString('en-US')}</dd></div>`)}</dl>` : ''}
+<form class="wk-h-search" action="/search" method="get" role="search"><label for="wk-hq">Search every public page</label><span><input id="wk-hq" name="q" type="search" placeholder="Search pages"><button type="submit">Search</button></span></form></div>`;
     const steps = showcase.steps({
         title: 'How a page comes together',
         items: [
@@ -133,11 +134,13 @@ ${body}<p class="wk-more"><a href="/s/${e(s.slug)}">Every page of ${s.name}, as 
     ].filter(Boolean);
     return html`${raw(showcase.hero({
         eyebrow: 'OpenVibe.Wiki',
-        title: 'Knowledge,', accent: 'with sources',
-        lede: 'Read the OpenVibe wiki or start one of your own. Every page keeps its full revision history, lists the sources behind it and has a discussion thread.',
-        actions: [start, firstOfficial ? { label: `Read the ${firstOfficial.name} wiki`, href: `#inside-${firstOfficial.slug}` } : { label: 'Browse the wikis', href: '#spaces' }],
-        aside: aside ? { html: String(aside) } : undefined,
+        title: 'Any topic.', accent: 'A whole wiki.',
+        lede: 'Name a show, a game, a city, a band or an idea: OpenVibe researches it across the web and writes you a wiki with pages, pictures and sources. Or write one by hand. Every page keeps its full history and cites what it rests on.',
+        actions: [{ label: 'Vibe a wiki', href: '/vibe', primary: true }, { ...start, primary: false }],
+        aside: { html: String(aside) },
     }))}
+${generated && generated.length ? html`<section class="sc-sec" aria-labelledby="wk-gen-h"><h2 id="wk-gen-h">Wikis people vibed</h2><p class="sc-lede">Each one researched and written by AI from the sources it lists, with its pictures credited. Open one, or make your own.</p>
+${raw(vibeCards(generated))}<p class="wk-more"><a href="/vibe">Vibe a wiki</a></p></section>` : ''}
 <div id="spaces"></div>
 ${inside}
 ${linked.length ? html`<section class="sc-sec" aria-labelledby="wk-linked-h"><h2 id="wk-linked-h">Most linked pages</h2><p class="sc-lede">The pages other pages point to most often: a good place to start reading.</p>
@@ -161,6 +164,86 @@ ${raw(steps)}
 <section class="sc-sec wk-h-faq" aria-labelledby="wk-faq-h"><h2 id="wk-faq-h">Questions</h2>${FAQ.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>
 <section class="sc-sec" aria-labelledby="wk-links-h"><h2 id="wk-links-h">Find your way around</h2><ul class="wk-h-links">${links.map((l) => html`<li><a href="${l.href}"><b>${l.title}</b><small>${l.text}</small></a></li>`)}</ul></section>
 ${raw(showcase.cta({ title: 'Start a wiki of your own', text: 'A team handbook, a game guide, a project\'s docs: write it with history and sources from the first page.', actions: [start] }))}`;
+}
+
+// ── "Vibe a wiki" (server/wiki/vibe.js) ─────────────────────
+const VIBE_SIZES = [['quick', 'Quick', 'about 6 pages'], ['standard', 'Standard', 'about 12 pages'], ['big', 'Big', 'about 24 pages']];
+const VIBE_IDEAS = ['Kim Possible', 'The Legend of Zelda', 'Studio Ghibli', 'Ancient Rome', 'Octopuses', 'Tokyo', 'Jazz', 'Minecraft'];
+const VIBE_STATUS = { queued: 'Waiting to start', researching: 'Researching', planning: 'Planning the pages', writing: 'Writing pages', done: 'Done', failed: 'Stopped', cancelled: 'Cancelled' };
+
+/** The form: a topic, a size and who can read it. The home's small one is a search-style box (wiki.css .wk-h-search). */
+function vibeForm({ actor, topic = '', compact = false, size = 'standard', visibility = 'public' } = {}) {
+    const signedIn = !!(actor && actor.subject);
+    const off = signedIn ? '' : ' disabled';
+    const id = compact ? 'wk-vibe-topic-c' : 'wk-vibe-topic';
+    const input = html`<input id="${id}" name="topic" type="text" required minlength="2" maxlength="120" placeholder="Kim Possible, ancient Rome, octopuses…" value="${topic}" autocomplete="off" enterkeyhint="go"${raw(off)}>`;
+    const button = html`<button type="submit">${signedIn ? 'Vibe it' : 'Sign in to vibe'}</button>`;
+    const ideas = html`<p class="wk-vibe-ideas">${compact ? 'Try ' : 'Ideas: '}${VIBE_IDEAS.slice(0, compact ? 4 : 8).map((t, i) => html`${i ? ', ' : ''}<a href="/vibe?topic=${e(t)}">${t}</a>`)}</p>`;
+    const attrs = signedIn ? { action: '/vibe', method: 'post' } : { action: '/auth/login', method: 'get' };
+    const next = signedIn ? '' : html`<input type="hidden" name="next" value="/vibe">`;
+    if (compact) return html`<form class="wk-h-search wk-vibe-form" action="${attrs.action}" method="${attrs.method}">${next}<label for="${id}">Name any topic: OpenVibe researches it and writes the wiki</label><span>${input}${button}</span>${ideas}</form>`;
+    const radio = (name, v, checked, label, hint) => html`<label><input type="radio" name="${name}" value="${v}"${checked ? ' checked' : ''}${raw(off)}><span><b>${label}</b><small>${hint}</small></span></label>`;
+    return html`<form class="wk-vibe-form" action="${attrs.action}" method="${attrs.method}">${next}
+<label for="${id}" class="wk-vibe-label">Any topic</label><span class="wk-vibe-row">${input}${button}</span>
+<fieldset class="wk-vibe-sizes"><legend>How big</legend>${VIBE_SIZES.map(([v, label, hint]) => radio('size', v, v === size, label, hint))}</fieldset>
+<fieldset class="wk-vibe-sizes"><legend>Who can read it</legend>${radio('visibility', 'public', visibility !== 'private', 'Everyone', 'a public wiki')}${radio('visibility', 'private', visibility === 'private', 'Just me', 'add people later')}</fieldset>
+${ideas}</form>`;
+}
+
+function vibeCards(list) {
+    return html`<div class="sc-grid">${list.map((v) => html`<a class="sc-card wk-h-card" href="${v.main_page || v.space.url}">${ringTile('wiki')}<span><b>${v.space.name}</b><small>${plural(v.done, 'page')}${v.research && v.research.sources ? ` · ${plural(v.research.sources, 'source')} read` : ''}</small></span></a>`)}</div>`;
+}
+
+function vibePage({ actor, topic = '', mine = [], recent = [], error = null, perPersonDay = 3 }) {
+    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: 'Vibe a wiki' }])}
+<section class="wk-vibe"><h1>Vibe a wiki</h1>
+<p class="wk-vibe-lede">Name anything. OpenVibe reads about it across Wikipedia, its fan wiki, Wikidata, the web and open picture libraries, plans the pages a reader would want, and writes each one with its pictures and the sources it rests on. It takes a few minutes; you can watch it happen.</p>
+${error ? notice('error', error) : ''}
+${vibeForm({ actor, topic })}
+<ol class="wk-vibe-how"><li><b>Research</b><span>Pages and pictures about your topic, each kept with its link, licence and when it was read.</span></li><li><b>Plan</b><span>A main page, then the people, places, works and ideas the sources cover.</span></li><li><b>Write</b><span>Every page cites its sources and credits its pictures. Then the wiki is yours to edit.</span></li></ol>
+<p class="wk-muted">The text is written by AI and says so on every page; search engines are asked to wait until a person has checked each page. You can vibe ${String(perPersonDay)} wikis a day.</p>
+</section>
+${mine.length ? html`<section class="sc-sec" aria-labelledby="wk-mine-h"><h2 id="wk-mine-h">Your wikis</h2><ul class="wk-vibe-mine">${mine.map((v) => html`<li><a href="/vibe/${v.id}">${v.space.name}</a> <span class="wk-tag">${VIBE_STATUS[v.status] || v.status}</span> <span class="wk-muted">${v.done} of ${v.total || '…'} pages</span></li>`)}</ul></section>` : ''}
+${recent.length ? html`<section class="sc-sec" aria-labelledby="wk-vrecent-h"><h2 id="wk-vrecent-h">Wikis people vibed</h2>${raw(vibeCards(recent))}</section>` : ''}`;
+}
+
+/** The progress page: the steps, what was read, every planned page as it is written. Live with JavaScript, refreshing without. */
+function vibeProgress({ vibe: v }) {
+    const steps = [['researching', 'Research'], ['planning', 'Plan'], ['writing', 'Write'], ['done', 'Done']];
+    const at = Math.max(0, steps.findIndex(([k]) => k === v.status));
+    const active = !['done', 'failed', 'cancelled'].includes(v.status);
+    const state = (i) => (v.status === 'done' || i < at ? 'done' : i === at && active ? 'now' : 'next');
+    const pageRow = (p) => html`<li class="wk-vp-${p.status}" data-title="${p.title}">${p.url ? html`<a href="${p.url}">${p.title}</a>` : html`<span>${p.title}</span>`}<small>${p.status === 'done' ? `${p.sources} sources${p.images ? ` · ${p.images} picture${p.images === 1 ? '' : 's'}` : ''}` : p.status === 'writing' ? 'writing…' : p.status === 'failed' ? 'not enough found' : 'waiting'}</small></li>`;
+    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: 'Vibe a wiki', url: '/vibe' }, { name: v.topic }])}
+<section class="wk-vibe wk-vp" id="wk-vp" data-vibe="${v.id}" data-active="${active ? '1' : '0'}">
+<h1>${v.status === 'done' ? html`Your wiki about <span>${v.topic}</span> is ready` : html`Vibing a wiki about <span>${v.topic}</span>`}</h1>
+<ol class="wk-vp-steps">${steps.map(([, label], i) => html`<li class="wk-vp-step-${state(i)}">${label}</li>`)}</ol>
+<p class="wk-vp-status" role="status" aria-live="polite">${VIBE_STATUS[v.status] || v.status}${v.total ? ` · ${v.done} of ${v.total} pages` : ''}${v.waiting_until ? ' · waiting for the AI service, it will carry on by itself' : ''}</p>
+${v.error && v.status === 'failed' ? notice('error', v.error) : ''}
+${v.research ? html`<p class="wk-vp-read">Read ${plural(v.research.sources, 'source')} and found ${plural(v.research.images, 'picture')}${v.research.from && v.research.from.length ? html` from ${v.research.from.join(', ')}` : ''}${v.research.topic_wiki ? html`, including <a href="${v.research.topic_wiki.url}" rel="nofollow noopener">${v.research.topic_wiki.name}</a>` : ''}.</p>` : ''}
+${v.status === 'done' && v.main_page ? html`<p><a class="wk-button wk-vp-open" href="${v.main_page}">Open the wiki</a> <a href="${v.space.url}">See every page</a></p>` : ''}
+${v.pages.length ? html`<ol class="wk-vp-pages">${v.pages.map(pageRow)}</ol>` : html`<div class="wk-vp-wait"><span class="wk-vp-dot"></span><span class="wk-vp-dot"></span><span class="wk-vp-dot"></span></div>`}
+<noscript>${active ? raw('<meta http-equiv="refresh" content="8">') : ''}<p class="wk-muted">This page refreshes itself every few seconds while the wiki is written.</p></noscript>
+</section>
+<script>
+(function () {
+  var root = document.getElementById('wk-vp');
+  if (!root || root.getAttribute('data-active') !== '1') return;
+  var id = root.getAttribute('data-vibe'), last = '';
+  function poll() {
+    if (!document.body.contains(root)) return;
+    window.fetch('/vibe/' + id + '.json', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+      if (!v) return setTimeout(poll, 5000);
+      var sig = v.status + ':' + v.done + ':' + v.pages.map(function (p) { return p.status; }).join(',');
+      if (sig !== last && last) { location.replace(location.pathname); return; }
+      last = sig;
+      if (['done', 'failed', 'cancelled'].indexOf(v.status) === -1) setTimeout(poll, 2500);
+      else location.replace(location.pathname);
+    }).catch(function () { setTimeout(poll, 5000); });
+  }
+  setTimeout(poll, 2500);
+})();
+</script>`;
 }
 
 /** The home's structured data: the site (with its search), the official pages it lists, and the questions it answers. */
@@ -196,8 +279,12 @@ ${space.visibility === 'public' ? html`<p class="wk-muted">Follow this wiki: <a 
 </section>`;
 }
 
-function infoboxHtml(entries, resolve, rel = 'nofollow ugc noopener') {
+function infoboxHtml(entries, resolve, rel = 'nofollow ugc noopener', { media = null } = {}) {
     if (!entries.length) return '';
+    // A picture row (type media) whose object the page has attached shows the picture across the box, with its caption.
+    const picture = (x) => (x.type === 'media' && typeof media === 'function' ? media(x.value) : null);
+    const pics = entries.map(picture);
+    const rows = entries.map((x, i) => (pics[i] ? html`<tr class="wk-ib-pic" data-key="${x.key}"><td colspan="2">${raw(pics[i])}</td></tr>` : null));
     const cell = (x) => {
         switch (x.type) {
         case 'url': return html`<a href="${x.value}" rel="${rel}">${x.value.replace(/^https?:\/\//, '')}</a>`;
@@ -209,7 +296,7 @@ function infoboxHtml(entries, resolve, rel = 'nofollow ugc noopener') {
         default: return x.value;
         }
     };
-    return html`<aside class="wk-infobox" aria-label="Infobox"><table><tbody>${entries.map((x) => html`<tr data-key="${x.key}" data-type="${x.type}"><th scope="row">${x.label}</th><td>${cell(x)}</td></tr>`)}</tbody></table></aside>`;
+    return html`<aside class="wk-infobox" aria-label="Infobox"><table><tbody>${entries.map((x, i) => rows[i] || html`<tr data-key="${x.key}" data-type="${x.type}"><th scope="row">${x.label}</th><td>${cell(x)}</td></tr>`)}</tbody></table></aside>`;
 }
 
 function citationsHtml(cites, inspectHref, rel = 'nofollow ugc noopener') {
@@ -250,7 +337,8 @@ const UNAVAILABLE = {
     not_found: 'This media is no longer available.',
 };
 
-function mediaHtml(attachments, urlFor) {
+function mediaHtml(attachments, urlFor, shown = new Set()) {
+    attachments = attachments.filter((a) => !shown.has(a.mediaId));
     if (!attachments.length) return '';
     return html`<section class="wk-media"><h2>Media</h2>${attachments.map((a) => raw(figureHtml(a, { urlFor, unavailableText: UNAVAILABLE[a.brokenReason] || UNAVAILABLE.not_found })))}</section>`;
 }
@@ -288,9 +376,9 @@ function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolv
 <article class="wk-article" data-page-id="${page.id}" data-revision="${String(rev.number)}">
 <header><h1>${rev.fields.title || page.title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav></header>
 ${banners}
-${raw(infoboxHtml(v.infobox, resolve, outRel(space)))}
+${raw(infoboxHtml(v.infobox, resolve, outRel(space), { media: (id) => { const a = v.attachments.find((x) => x.mediaId === id); return a && mediaUrl ? figureHtml(a, { urlFor: mediaUrl, unavailableText: UNAVAILABLE[a.brokenReason] || UNAVAILABLE.not_found }) : null; } }))}
 <div class="wk-content">${raw(contentHtml)}</div>
-${raw(mediaHtml(v.attachments, mediaUrl))}
+${raw(mediaHtml(v.attachments, mediaUrl, new Set([...mediaRefs(v.revision.content), ...v.infobox.filter((x) => x.type === 'media').map((x) => x.value)])))}
 ${raw(citationsHtml(v.citations, `${base}/sources${v.isPublishedRevision ? '' : `?rev=${rev.number}`}`, outRel(space)))}
 ${v.children.length ? html`<section><h2>Subpages</h2><ul>${v.children.map((c) => html`<li><a href="${wpath(space, c)}">${c.title}</a></li>`)}</ul></section>` : ''}
 ${v.backlinks.length ? html`<section><h2>What links here</h2><ul>${v.backlinks.map((b) => html`<li><a href="${wpath(b.space, b.page)}">${b.page.title}</a>${b.space.id !== space.id ? html` <span class="wk-muted">(${b.space.name})</span>` : ''}</li>`)}</ul></section>` : ''}
@@ -519,6 +607,7 @@ function signInPage({ next, message }) {
 }
 
 module.exports = {
+    vibePage, vibeProgress, vibeForm,
     vipGateBody,
     home, homeJsonLd, spacePage, articlePage, historyPage, sourcesPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
     spaceSettingsPage, importPage, pageSettingsPage, revertPage, confirmPublishPage, proposalsPage, searchPage, recentPage,

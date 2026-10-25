@@ -62,8 +62,9 @@ const INTERNAL = [
                 'server/auth/keys.js': 'Network JWKS (configured)',
                 'server/auth/session.js': 'Network OAuth token and revoke (configured)',
                 'server/http/frame-groups.js': 'Network /api/chrome, the Frame\'s site groups (configured: WIKI_FRAME_URL or the internal Network)',
-                'server/integrations/platform.js': 'Community, Sources, Media, VIP (configured)',
+                'server/integrations/platform.js': 'Community, Sources, Media, VIP, AI (configured)',
                 'server/integrations/projects-module.js': 'Network user modules (configured)',
+                'server/integrations/image-fetch.js': 'pictures a generated wiki uses (research results): https only, openvibe-shared/egress safeLookup on every hop, a byte cap, magic bytes checked',
             };
             const root = path.join(__dirname, '..');
             const found = [];

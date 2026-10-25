@@ -56,6 +56,8 @@ function serviceItself(req) {
 const BUDGETS = {
     // A space is a new tree with its own roles: people start a few.
     'wiki.space.create': { minute: 10, hour: 60 },
+    // A generated wiki is a new space and minutes of research and writing (the daily caps are in server/wiki/vibe.js).
+    'wiki.vibe.create': { minute: 3, hour: 10 },
     // Space settings, roles, and moves, visibility, media and deletes of a page: a person saves a form
     // now and then.
     'wiki.space.update': { minute: 30, hour: 300 },

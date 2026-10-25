@@ -145,3 +145,19 @@ main .wk-h-group h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap
   .wk-h-group .wk-h-host { margin-top: 2px; font-size: 12px; }
   .wk-h-stats dd { font-size: 1.3rem; }
 }
+
+/* Infobox labels never break inside a word ("Reposi|tory"); a picture row spans the box. Pictures in the text sit
+   beside the words, full width on phones. */
+.wk-infobox th { width: 36%; overflow-wrap: normal; word-break: normal; }
+.wk-infobox td { overflow-wrap: anywhere; }
+.wk-ib-pic td { padding: 0 !important; }
+.wk-ib-pic .ov-media { margin: 0; }
+.wk-ib-pic img { max-height: 420px; object-fit: contain; background: var(--wk-bg); }
+.ov-media img { display: block; width: 100%; height: auto; border-radius: 8px; }
+.ov-media figcaption { padding: 6px 4px; font-size: 13px; line-height: 1.45; color: var(--wk-muted); }
+.wk-content .ov-media { float: right; clear: right; width: min(300px, 46%); margin: 4px 0 12px 18px; }
+.wk-content h2 { clear: both; }
+.wk-media .ov-media { display: inline-block; vertical-align: top; width: min(240px, 100%); margin: 0 12px 12px 0; }
+@media (max-width: 640px) { .wk-content .ov-media { float: none; width: 100%; margin: 8px 0 12px; } }
+.wk-vibe-panel .wk-h-stats { margin-top: 14px; }
+.wk-vibe-ideas { margin: 6px 0 0; font-size: 13.5px; color: var(--wk-muted); }

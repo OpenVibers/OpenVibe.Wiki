@@ -1,7 +1,8 @@
 'use strict';
 /**
  * Clients for the services Wiki composes (roadmap §29): Events (outbox relay), Community
- * (discussion threads), Sources (citation items) and Media (attachment checks). Each call uses a
+ * (discussion threads), Sources (citation items), Media (attachment checks, and pictures a generated wiki
+ * uploads) and AI (research and writing for "vibe a wiki"). Each call uses a
  * Network client-credentials token for svc:wiki, minted per audience by the SDK token client.
  * Hiding the thread of a page that stopped being public needs community.comment.moderate.
  *
@@ -12,6 +13,7 @@ const { createClient } = require('openvibe-sdk/core');
 const { createServiceTokenClient } = require('openvibe-sdk/auth');
 const { createEventsClient, createPgOutbox } = require('openvibe-sdk/events');
 const { createDiscussionClient } = require('openvibe-publishing/discussion');
+const crypto = require('crypto');
 
 class IntegrationError extends Error {
     constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -180,11 +182,83 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
         },
     };
 
+    /**
+     * A picture into Media for a page (media.object.upload, namespace WIKI_MEDIA_APP): init, bytes, complete (v2 objects),
+     * owned by the person it is uploaded for (X-OV-Subject), public, with where it came from in its metadata.
+     * → the object id (med_…). Throws IntegrationError on any refusal.
+     */
+    media.upload = async function upload({ bytes, mime, filename, owner = null, metadata = {}, timeoutMs = 30000 }) {
+        if (!media.configured) throw new IntegrationError(503, 'media.unavailable', 'OpenVibe.Media is not configured (OV_MEDIA_INTERNAL_URL)');
+        const base = `${config.mediaInternalUrl}/api/v2/${encodeURIComponent(config.mediaApp)}/objects`;
+        const auth = await forAudience('openvibe.media').authHeaders();
+        const subject = owner && SUBJECT_RE.test(owner) ? { 'X-OV-Subject': owner } : {};
+        const call = async (url, init) => {
+            let res;
+            try { res = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(timeoutMs) }); } catch (err) {
+                throw new IntegrationError(503, 'media.unavailable', `Media did not answer: ${err && err.name === 'TimeoutError' ? 'timeout' : err && err.message}`);
+            }
+            const body = await res.json().catch(() => null);
+            if (res.status === 401) forAudience('openvibe.media').invalidate();
+            if (res.status < 200 || res.status > 299) throw new IntegrationError(res.status === 413 || res.status === 415 || res.status === 422 ? 422 : 503, 'media.upload_refused', `Media answered ${res.status}${body && (body.code || body.title) ? ` (${body.code || body.title})` : ''}`);
+            return body || {};
+        };
+        const init = await call(base, {
+            method: 'POST', headers: { ...auth, ...subject, 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ kind: 'asset', visibility: 'public', mime_type: mime, size_bytes: bytes.length, filename: String(filename || 'picture').slice(0, 120), content_hash: crypto.createHash('sha256').update(bytes).digest('hex'), metadata }),
+        });
+        const id = init.id || (init.object && init.object.id);
+        const up = init.upload || {};
+        if (!id || !up.url) throw new IntegrationError(503, 'media.upload_refused', 'Media did not give an upload address');
+        // The upload and complete addresses may name Media's public origin; Wiki reaches it on the internal one.
+        const internal = (u) => { const x = new URL(u, config.mediaInternalUrl); return `${config.mediaInternalUrl}${x.pathname}${x.search}`; };
+        await call(internal(up.url), { method: 'PUT', headers: { ...auth, ...subject, 'Content-Type': mime, ...(up.token ? { 'X-Upload-Token': up.token } : {}) }, body: bytes });
+        await call(internal(up.complete_url || `${base}/${encodeURIComponent(id)}/complete`), { method: 'POST', headers: { ...auth, ...subject, 'Content-Type': 'application/json', Accept: 'application/json', ...(up.token ? { 'X-Upload-Token': up.token } : {}) }, body: '{}' });
+        return id;
+    };
+
+    // ── AI: research and writing for generated wikis (ai.run.create / ai.run.read, namespaces research.* and wiki.*) ──
+    const ai = {
+        configured: !!(tokenClient && config.aiInternalUrl),
+        /**
+         * Run a workflow and wait for it: → the run's output. Long runs are polled. Throws IntegrationError with the run's
+         * own code when it failed, 429 with retryAfter (seconds) when AI's quota or queue is full.
+         */
+        async run(workflow, input, { subject = null, idempotencyKey = null, waitMs = 55000, totalMs = 300000, signal = null } = {}) {
+            if (!ai.configured) throw new IntegrationError(503, 'ai.unavailable', 'OpenVibe.AI is not configured (OV_AI_INTERNAL_URL)');
+            const headers = async () => ({ ...(await forAudience('openvibe.ai').authHeaders()), 'Content-Type': 'application/json', Accept: 'application/json', ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) });
+            const call = async (url, init) => {
+                let res;
+                try { res = await fetchImpl(url, { ...init, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(waitMs + 15000)]) : AbortSignal.timeout(waitMs + 15000) }); } catch (err) {
+                    throw new IntegrationError(503, 'ai.unavailable', `OpenVibe.AI did not answer: ${err && err.name === 'TimeoutError' ? 'timeout' : err && err.message}`);
+                }
+                const body = await res.json().catch(() => null);
+                if (res.status === 401) forAudience('openvibe.ai').invalidate();
+                if (res.status === 429) throw Object.assign(new IntegrationError(429, (body && body.code) || 'ai.busy', (body && (body.detail || body.title)) || 'OpenVibe.AI is busy'), { retryAfter: Number(res.headers.get('retry-after')) || 60 });
+                if (res.status >= 400) throw new IntegrationError(res.status >= 500 ? 503 : res.status, (body && body.code) || 'ai.refused', (body && (body.detail || body.title)) || `OpenVibe.AI answered ${res.status}`);
+                return body && body.run;
+            };
+            const body = { workflow, input, ...(subject ? { on_behalf_of: { type: 'user', id: subject }, attribution: { service: 'wiki', type: 'user', id: subject } } : {}) };
+            let run = await call(`${config.aiInternalUrl}/api/v1/runs?wait=${waitMs}`, { method: 'POST', headers: await headers(), body: JSON.stringify(body) });
+            const until = Date.now() + totalMs;
+            while (run && !['succeeded', 'cached', 'failed', 'cancelled'].includes(run.status)) {
+                if (Date.now() > until) throw new IntegrationError(504, 'ai.timeout', `${workflow} did not finish in ${Math.round(totalMs / 1000)} s`);
+                await new Promise((r) => setTimeout(r, 3000));
+                run = await call(`${config.aiInternalUrl}/api/v1/runs/${encodeURIComponent(run.id)}`, { method: 'GET', headers: await headers() });
+            }
+            if (!run) throw new IntegrationError(503, 'ai.unavailable', 'OpenVibe.AI answered without a run');
+            if (run.status === 'failed' || run.status === 'cancelled') {
+                const e = run.error || {};
+                throw new IntegrationError(e.code === 'quota.exceeded' || e.code === 'govern.exceeded' ? 429 : 502, e.code || 'ai.run_failed', e.detail || e.message || `${workflow} ${run.status}`);
+            }
+            return { output: run.output, runId: run.id, synthetic: Boolean(run.synthetic), provenance: run.provenance || null };
+        },
+    };
+
     // ── VIP: VIP spaces and pages (WS-K task 8) ──
     const vip = require('./vip').createVip({ config, tokenClient, fetchImpl, now, log });
 
     return {
-        tokenClient, sdk, events, outbox, community, sources, media, vip,
+        tokenClient, sdk, events, outbox, community, sources, media, ai, vip,
         eventsConfigured: !!(tokenClient && config.eventsUrl),
     };
 }

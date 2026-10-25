@@ -15,6 +15,7 @@ const { load } = require('./config');
 const { openDb, migrate, createStores } = require('./db');
 const { createPlatform } = require('./integrations/platform');
 const { createWikiService } = require('./wiki/service');
+const { createVibes } = require('./wiki/vibe');
 const { createKeyStore } = require('./auth/keys');
 const { createViewerResolver } = require('./auth/viewer');
 const { createApp } = require('./app');
@@ -44,7 +45,7 @@ function createLifecycle({ server, db, valkey = null, platform, timers = [], tel
     });
 }
 
-async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, publicKey = null, log = console, telemetrySink = null, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null, signals = false, exit = () => {}, accountSend: givenSend = null } = {}) {
+async function start({ config, db: givenDb = null, now = () => Date.now(), fetchImpl = globalThis.fetch, tokens = null, imageFetch = null, publicKey = null, log = console, telemetrySink = null, listen = true, workers = listen, rateLimits = true, limitsNow = null, indexnow: givenIndexNow = null, signals = false, exit = () => {}, accountSend: givenSend = null } = {}) {
     config = config || load();
     // PostgreSQL (ADR-035): migrate on the owner's direct connection, then serve on the pooled runtime role.
     // Tests hand in a migrated database of their own (test/db-helper.js).
@@ -70,6 +71,8 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     const valkey = config.valkey.url ? require('openvibe-sdk/valkey').createValkey({ url: config.valkey.url, prefix: config.valkey.prefix, log }) : null;
     const platform = createPlatform({ config, db, fetchImpl, tokens, now, log });
     const svc = createWikiService({ db, stores, outbox: platform.outbox, config, community: platform.community, vip: platform.vip, now, log, indexnow });
+    // "Vibe a wiki" (server/wiki/vibe.js): generated wikis, researched and written through OpenVibe.AI.
+    const vibes = createVibes({ db, svc, platform, config, now, log, ...(imageFetch ? { fetchImg: imageFetch } : {}) });
     const reconciled = await svc.reconcileIndex();
     if (reconciled.sent) log.log(`[Wiki] re-sent ${reconciled.sent} Search document(s) whose indexability changed`);
     const keys = createKeyStore({ config, fetchImpl, log, publicKey });
@@ -86,7 +89,7 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     // on, a one-minute tick writes each interval (the collector has no timer of its own) and the table keeps 14 days.
     const telemetry = createHttpTelemetry({ service: 'wiki', sink: telemetrySink || createPgTelemetrySink({ db, log }), skipPrefixes: ['/shared'], intervalMs: 60_000 });
     let retention = null;
-    const app = createApp({ config, telemetry, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend });
+    const app = createApp({ config, telemetry, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend, vibes });
 
     const timers = [];
     if (workers) {
@@ -105,6 +108,7 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
             timers.push(setInterval(() => svc.verifyAllMedia(platform.media.resolve).catch((err) => log.warn(`[Wiki] media check: ${err.message}`)), config.mediaVerifyIntervalMs));
         }
         if (platform.eventsConfigured) platform.outbox.start();
+        if (platform.ai.configured && platform.media.configured) vibes.startWorker();
         timers.push(setInterval(() => platform.outbox.refreshCounts().catch(() => {}), 30 * 1000));
         // wiki.projects on Network (Contracts 0.41.0): people whose spaces or roles changed, every minute.
         const projects = require('./integrations/projects-module').createProjectsModule({ db, config, tokens: platform.tokenClient, fetchImpl, now, log });
@@ -126,12 +130,12 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
         });
     }
 
-    const lifecycle = createLifecycle({ server, db, telemetry, retention, valkey, platform, timers, closeDb: !givenDb, signals, exit, log, extra: [() => { if (subscriptions) subscriptions.stop(); }] });
+    const lifecycle = createLifecycle({ server, db, telemetry, retention, valkey, platform, timers, closeDb: !givenDb, signals, exit, log, extra: [() => { if (subscriptions) subscriptions.stop(); }, () => vibes.stopWorker()] });
 
     async function stop() {
         return lifecycle.stop('stop');
     }
-    return { app, db, telemetry, svc, stores, platform, keys, viewers, server, config, indexnow, timers, lifecycle, stop };
+    return { app, db, telemetry, svc, stores, platform, keys, viewers, server, config, indexnow, timers, lifecycle, stop, vibes };
 }
 
 module.exports = { start, createLifecycle };

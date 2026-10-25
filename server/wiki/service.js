@@ -32,7 +32,7 @@ function firstSentence(text) {
     if (m) return m[1];
     return t.length <= 160 ? t : `${t.slice(0, 160).replace(/\s+\S*$/, '')}…`;
 }
-const { isMediaId } = require('openvibe-publishing/media');
+const { isMediaId, figureHtml } = require('openvibe-publishing/media');
 const { ulid } = require('openvibe-contracts').ids;
 const content = require('./content');
 const importer = require('./import');
@@ -1108,11 +1108,21 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
          * are edited by staff, who vouch for their links. Every [[link]] is resolved first (the
          * renderer itself is synchronous).
          */
-        async renderRevision(space, rev, actor) {
+        /**
+         * A revision's HTML. With attachments and mediaUrl, [[media:…]] shows the page's own pictures where they stand
+         * (an attachment Media no longer shares shows its placeholder; an id the page does not have shows nothing).
+         */
+        async renderRevision(space, rev, actor, { attachments = null, mediaUrl = null } = {}) {
             const targets = content.extractLinks(rev.content, space.slug);
             const resolved = new Map();
             for (const t of targets) resolved.set(`${t.space}\u0000${t.slug}`, await svc.resolveLink(t, actor));
-            return content.renderContent(rev.content, { currentSpace: space.slug, resolve: (t) => resolved.get(`${t.space}\u0000${t.slug}`) || { href: null, exists: false }, rel: svc.linkRel(space) });
+            const byMedia = new Map((attachments || []).map((a) => [a.mediaId, a]));
+            const media = mediaUrl ? (id, caption) => {
+                const a = byMedia.get(id);
+                if (!a) return null;
+                return figureHtml({ ...a, caption: caption || a.caption }, { urlFor: mediaUrl, unavailableText: 'This picture is no longer available.' });
+            } : null;
+            return content.renderContent(rev.content, { currentSpace: space.slug, resolve: (t) => resolved.get(`${t.space}\u0000${t.slug}`) || { href: null, exists: false }, rel: svc.linkRel(space), media });
         },
 
         linkRel(space) { return space && space.kind === 'official' ? 'noopener' : 'nofollow ugc noopener'; },

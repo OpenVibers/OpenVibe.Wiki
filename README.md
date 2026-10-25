@@ -66,7 +66,8 @@ and, with the workers on (production), flushes it every minute and runs the rete
 - **Source items** — OpenVibe.Sources owns them; a citation stores the item id plus the URL, title,
   retrieval time and license read from the item's provenance.
 - **The network index** — OpenVibe.Search owns it; Wiki sends `wiki.index_document.*` events.
-- **Publication truth by AI** — never. There are no AI provider calls in Wiki.
+- **Publication truth by AI** — never. There are no AI provider calls in Wiki: generated wikis run OpenVibe.AI's
+  registered workflows, and their pages carry the AI disclosure and stay noindex until a person reviews them.
 - **Identity** — OpenVibe.Network (subjects `usr_…`, SSO, service principals).
 
 ## What works
@@ -161,6 +162,26 @@ and, with the workers on (production), flushes it every minute and runs the rete
   the accountable person and where the text comes from; `ai_assisted: true` keeps every page noindex
   until a person reviews it. Existing slugs stop the import (409) unless `on_existing: "skip"`.
   Twenty imports per hour per address. Format: [server/wiki/import.js](server/wiki/import.js).
+- **Vibe a wiki** (`/vibe`, `POST /api/v1/vibes`; [server/wiki/vibe.js](server/wiki/vibe.js)): a signed-in person names
+  any topic ("Kim Possible", "ancient Rome") and gets a whole wiki about it, in a new user space they own:
+  1. *Research*: OpenVibe.AI `research.gather` (MegaSource: Wikipedia, the topic's Fandom wiki, Wikidata, DeepSeek web
+     search, Commons, Openverse) for the topic.
+  2. *Plan*: `wiki.generate_space` names the wiki and plans its pages (the main page first; quick 6, standard 12, big 24).
+  3. *Write*: per page, its own research (the page's subject inside the topic) and `wiki.generate_page`. The pictures it
+     picks are fetched under openvibe-shared/egress ([server/integrations/image-fetch.js](server/integrations/image-fetch.js):
+     https, public addresses, 8 MB, real JPEG/PNG/GIF/WebP bytes), stored in OpenVibe.Media for the person (public,
+     with source, licence and author in the object's metadata), placed in the text (`[[media:med_…|caption]]`) or the
+     infobox (a `media` row), attached, and cited with their licence. The page is imported like any AI-assisted page:
+     published with the disclosure, noindex until a person reviews it; the main page lists every planned page
+     ("In this wiki"), and the rest hang under it.
+
+  The job is a `wiki_vibes` row (migration `0004_vibes.sql`) a worker takes under a lease; progress is saved after every
+  step, so a restart resumes and pages already made are skipped. AI's quota or queue (429) waits for its Retry-After; a
+  page the sources cannot support is left as a red link. `/vibe/:id` shows it live (and refreshes itself without
+  JavaScript); `/vibe/:id.json` and `GET /api/v1/vibes/:id` give the same progress. Limits: `WIKI_VIBE_PER_PERSON_DAY`
+  (3) and `WIKI_VIBE_PER_DAY` (30); `WIKI_VIBE_PAGES_QUICK|STANDARD|BIG`, `WIKI_VIBE_CONCURRENCY` (2 pages at a time).
+  Needs `OV_AI_INTERNAL_URL` and Media; Network grants `wiki` `ai.run.create`/`ai.run.read` (`wiki.*`, `research.*`)
+  and `media.object.upload` (namespace `wiki`). Tests: `test/vibe.test.js`.
 - **Seed**: `npm run seed` imports the official "OpenVibe" space (`seeds/openvibe.json`): 42 pages
   about the network's repositories, summarised from their README/STATUS files at pinned commits,
   each cited with a GitHub permalink and retrieval time, authorship recorded as `imported` with
@@ -185,7 +206,7 @@ match; network search is OpenVibe.Search).
 
 ## Routes
 
-Pages (SSR, useful without JavaScript): `/`, `/recent`, `/search?q=`, `/new-space`, `/s/:space`,
+Pages (SSR, useful without JavaScript): `/`, `/vibe`, `/vibe/:id` (`.json`), `/recent`, `/search?q=`, `/new-space`, `/s/:space`,
 `/s/:space/new`, `/s/:space/settings`, `/s/:space/import`, `/s/:space/proposals`, `/w/:space/:slug` (`?rev=N`),
 `/w/:space/:slug.json`, `/w/:space/:slug/history`, `/w/:space/:slug/sources` (`?rev=N`), `/w/:space/:slug/diff/:a/:b` (`?mode=line`),
 `/w/:space/:slug/edit`, `/w/:space/:slug/revert?to=N`, `/w/:space/:slug/settings`,
@@ -302,7 +323,8 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.VIP (VIP spaces and pages), OpenVibe.Search (consumer of
   the index events). All but the Network key are optional at runtime and degrade to explicit failure
   states.
-- OpenVibe.AI for proposals (not wired to Wiki yet: the proposal API is the seam).
+- OpenVibe.AI: generated wikis (`OV_AI_INTERNAL_URL`; research.gather, wiki.generate_space, wiki.generate_page). AI
+  proposals still arrive through the proposal API.
 - Account export and deletion (ADR-033): Network grants `events.subscription.manage` (openvibe.events) for the two
   subscriptions created at boot, then, last and once the release is live, `network.account.export.contribute` and
   `network.account.deletion.confirm` (openvibe.network).

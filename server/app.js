@@ -23,7 +23,7 @@ const { createActorLimits } = require('./http/actor-limits');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const VERSION = require('../package.json').version;
 
-function createApp({ config, telemetry = null, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null, accountData = null, accountSend = null }) {
+function createApp({ config, telemetry = null, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null, accountData = null, accountSend = null, vibes = null }) {
     const app = express();
     // Every resolved actor carries its wiki roles (read once per request), so the synchronous access checks work.
     const viewers = { ...baseViewers, resolve: async (req, opts) => svc.loadRoles(await baseViewers.resolve(req, opts)) };
@@ -111,7 +111,7 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
     // Per-actor limits (http/actor-limits.js) on /api/v1 and the editing forms, counted once each router
     // resolved req.actor; the per-address limits here stay. limitsNow: the limiter's clock (tests).
     const limits = createActorLimits({ config, now: limitsNow || (() => Date.now()), registry: metrics.registry, log, enabled: rateLimits, valkey });
-    app.use('/api/v1', createApi({ svc, viewers, platform, config, log, limits }));
+    app.use('/api/v1', createApi({ svc, viewers, platform, config, log, limits, vibes }));
     app.use('/api', (req, res) => require('openvibe-contracts').http.sendProblem(res, 404, 'route.not_found', { detail: 'Not found' }));
 
     // This site's own pinned copy of the OpenVibe Frame's browser files (openvibe-shared/serve).
@@ -133,7 +133,7 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
     app.post(['/new-space', '/s/*', '/w/*', '/proposals/*'], limiter(10 * 60000, 120));
     // Search scans the text of every published page (LIKE): a person's pace, not a crawler's.
     app.get('/search', limiter(60000, 60));
-    const pages = createPages({ svc, viewers, platform, config, log, limits });
+    const pages = createPages({ svc, viewers, platform, config, log, limits, vibes });
     app.use(pages.router);
 
     app.use((req, res) => pages.errorPage(req, res, 404, 'Page not found', 'Nothing lives at that address.'));

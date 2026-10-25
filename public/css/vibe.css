@@ -1,0 +1,48 @@
+/* Vibe a wiki (/vibe, /vibe/:id): the big form, sizes, the steps, the progress of each page. The home's small form
+   reuses its search box (wiki.css); the cards of generated wikis are showcase cards. */
+.wk-vibe-form { display: grid; gap: 10px; margin-top: 8px; }
+.wk-vibe-label { font-size: 14px; font-weight: 600; }
+.wk-vibe-row { display: flex; gap: 8px; }
+.wk-vibe-row input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1.05rem; border-radius: 10px; }
+.wk-vibe-row button { padding: 10px 18px; border-radius: 10px; white-space: nowrap; }
+.wk-vibe-row input:disabled { opacity: .6; }
+@media (max-width: 560px) { .wk-vibe-row { flex-direction: column; } .wk-vibe-row button { width: 100%; } }
+.wk-vibe-sizes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }
+.wk-vibe-sizes legend { width: 100%; margin-bottom: 6px; font-size: 14px; font-weight: 600; }
+.wk-vibe-sizes label { position: relative; flex: 1 1 140px; cursor: pointer; }
+.wk-vibe-sizes input { position: absolute; opacity: 0; inset: 0; }
+.wk-vibe-sizes span { display: block; height: 100%; padding: 10px 12px; border: 1px solid var(--wk-line); border-radius: 12px; background: var(--wk-panel); transition: border-color .15s, background .15s; }
+.wk-vibe-sizes small { display: block; color: var(--wk-muted); font-size: 13px; }
+.wk-vibe-sizes input:checked + span { border-color: var(--wk-accent); background: color-mix(in srgb, var(--wk-accent) 10%, var(--wk-panel)); }
+.wk-vibe-sizes input:focus-visible + span { outline: 2px solid var(--wk-accent); outline-offset: 2px; }
+.wk-vibe h1 span { background: linear-gradient(90deg, var(--wk-accent), color-mix(in srgb, var(--wk-accent) 40%, #f472b6)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.wk-vibe-lede { max-width: 720px; font-size: 1.08rem; color: var(--wk-muted); }
+.wk-vibe-how { list-style: none; counter-reset: wk-how; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin: 22px 0 10px; padding: 0; }
+.wk-vibe-how li { counter-increment: wk-how; padding: 12px 14px; border: 1px solid var(--wk-line); border-radius: 12px; background: var(--wk-panel); }
+.wk-vibe-how li::before { content: counter(wk-how); display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: var(--wk-accent); color: var(--on-accent-strong, #0a0f1c); font-size: 13px; font-weight: 800; }
+.wk-vibe-how b { font-size: 1rem; }
+.wk-vibe-how span { display: block; margin-top: 4px; font-size: 14px; color: var(--wk-muted); }
+.wk-vibe-mine { list-style: none; margin: 0; padding: 0; }
+.wk-vibe-mine li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--wk-line); }
+.wk-vp-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; padding: 0; }
+.wk-vp-steps li { padding: 5px 12px; border: 1px solid var(--wk-line); border-radius: 999px; font-size: 14px; color: var(--wk-muted); }
+.wk-vp-steps .wk-vp-step-done { border-color: color-mix(in srgb, var(--wk-ok, #34d399) 60%, transparent); color: var(--wk-text); }
+.wk-vp-steps .wk-vp-step-done::before { content: "✓ "; color: var(--wk-ok, #34d399); }
+.wk-vp-steps .wk-vp-step-now { border-color: var(--wk-accent); color: var(--wk-text); background: color-mix(in srgb, var(--wk-accent) 12%, transparent); animation: wk-pulse 1.6s ease-in-out infinite; }
+.wk-vp-status { font-weight: 600; }
+.wk-vp-read { color: var(--wk-muted); }
+.wk-vp-open { padding: 10px 20px; border-radius: 10px; font-size: 1.05rem; }
+.wk-vp-pages { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+.wk-vp-pages li { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--wk-line); border-radius: 12px; background: var(--wk-panel); transition: border-color .2s; }
+.wk-vp-pages li > span { color: var(--wk-muted); }
+.wk-vp-pages small { font-size: 12.5px; color: var(--wk-muted); }
+.wk-vp-pages .wk-vp-done { border-color: color-mix(in srgb, var(--wk-ok, #34d399) 45%, var(--wk-line)); }
+.wk-vp-pages .wk-vp-done a { font-weight: 700; }
+.wk-vp-pages .wk-vp-writing { border-color: var(--wk-accent); }
+.wk-vp-pages .wk-vp-writing small::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--wk-accent); animation: wk-pulse 1s ease-in-out infinite; }
+.wk-vp-pages .wk-vp-failed { opacity: .65; }
+.wk-vp-wait { display: flex; gap: 6px; padding: 18px 0; }
+.wk-vp-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--wk-accent); animation: wk-pulse 1.2s ease-in-out infinite; }
+.wk-vp-dot:nth-child(2) { animation-delay: .2s; }
+.wk-vp-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes wk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }

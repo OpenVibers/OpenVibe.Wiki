@@ -29,6 +29,7 @@ const TABLES = [
     { table: 'wiki_attachment_origins', subject: 'media_owner', file: null, erase: anonymize },
     { table: 'wiki_page_revision_purges', subject: 'purged_by', file: null, erase: anonymize },
     { table: 'wiki_citation_purges', subject: 'purged_by', file: null, erase: anonymize },
+    { table: 'wiki_vibes', subject: 'requested_by', file: 'generated-wikis.json', columns: ['id', 'space_id', 'topic', 'size', 'status', 'created_at', 'finished_at'], order: 'created_at' },
     { table: 'wiki_page_reviews', subject: 'reviewer', file: 'reviews.json', columns: ['entity_id', 'revision', 'decision', 'note', 'reviewed_at'], order: 'reviewed_at', erase: { keep: 'a person\'s approval is what lets reviewed text stay published' } },
 ];
 
