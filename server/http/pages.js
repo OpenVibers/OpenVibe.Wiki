@@ -4,6 +4,8 @@
  * form posts; the shared navbar is progressive enhancement.
  *
  *   GET  /                              spaces + recently published
+ *   GET|POST /vibe                      "vibe a wiki": any topic → a generated wiki (server/wiki/vibe.js)
+ *   GET  /vibe/:id, /vibe/:id.json      its progress (live with JavaScript; refreshes itself without)
  *   GET  /recent, /search?q=
  *   GET|POST /new-space
  *   GET  /s/:space                      the page tree
@@ -31,7 +33,7 @@ const ovServe = require('openvibe-shared/serve');
 const cache = require('openvibe-shared/cache-policy');
 const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
-const { renderPage, AI_SUMMARY } = require('../render/layout');
+const { renderPage, AI_SUMMARY, asset } = require('../render/layout');
 const views = require('../render/views');
 const frame = require('openvibe-shared/frame');
 const showcase = require('openvibe-shared/showcase');
@@ -43,7 +45,7 @@ const { createFrameGroups } = require('./frame-groups');
 // What the home says in search results and share cards (≤ 160 characters).
 const HOME_DESCRIPTION = 'Read the OpenVibe wiki or start your own: every page keeps its full revision history, lists the sources behind it and has a discussion thread.';
 
-function createPages({ svc, viewers, platform, config, log = console, limits, frameGroups = createFrameGroups({ url: config.frameUrl }) }) {
+function createPages({ svc, viewers, platform, config, log = console, limits, vibes = null, frameGroups = createFrameGroups({ url: config.frameUrl }) }) {
     const router = express.Router();
     const form = express.urlencoded({ extended: false, limit: '600kb' });
     router.use(actorMiddleware(viewers, { services: false }));
@@ -126,19 +128,56 @@ function createPages({ svc, viewers, platform, config, log = console, limits, fr
     // ── Home, recent, search ─────────────────────────────────
     router.get('/', wrap(async (req, res) => {
         if (req.actor.subject) await svc.access.prepareVip(req.actor, (await svc.vipSpaces()).map((space) => ({ space })));   // VIP spaces the viewer may see
-        const [spaces, recent, stats, linked, groups] = await Promise.all([svc.listSpaces(req.actor), svc.recentChanges(8), svc.homeStats(), svc.mostLinked(6), frameGroups.get()]);
+        const [spaces, recent, stats, linked, groups, generated] = await Promise.all([svc.listSpaces(req.actor), svc.recentChanges(8), svc.homeStats(), svc.mostLinked(6), frameGroups.get(), vibes ? vibes.recent(6).catch(() => []) : []]);
         // The official wikis' shelves: what is inside them, on the front page (only public spaces: the home is cached).
         const shelves = new Map(await Promise.all(spaces.filter((s) => s.kind === 'official' && s.visibility === 'public').slice(0, 3)
             .map(async (s) => [s.id, await svc.shelf(s, req.actor, 60)])));
         // The site's one-line AI summary: the shell turns it into the ai-summary meta and the home's
         // WebPage JSON-LD (openvibe-publishing/layout v1.3.0 forwards `summary`).
-        send(req, res, 200, views.home({ spaces, recent, shelves, stats, linked, groups, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
+        send(req, res, 200, views.home({ spaces, recent, shelves, stats, linked, groups, generated, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
             robots: 'index, follow', cache: 'public', active: 'home', path: '/', styles: [showcase.STYLESHEET],
             summary: AI_SUMMARY, description: HOME_DESCRIPTION,
             jsonLd: views.homeJsonLd({ shelves, spaces: spaces.filter((s) => s.kind === 'official' && s.visibility === 'public'), baseUrl: config.baseUrl }),
         });
     }));
     // What shipped on OpenVibe.Wiki: the shared update log every OpenVibe site has.
+    // ── Vibe a wiki ──────────────────────────────────────────
+    const VIBE_STYLES = [showcase.STYLESHEET];
+    const VIBE_HEAD = `<link rel="stylesheet" href="${asset('css/vibe.css')}">`;
+    const VIBE_DESCRIPTION = 'Name any topic and OpenVibe researches it across the web, then writes you a whole wiki: pages, pictures and the sources behind every claim.';
+    const vibeCtx = async (req) => ({
+        mine: vibes && req.actor.subject ? await vibes.mine(req.actor, 10).catch(() => []) : [],
+        recent: vibes ? await vibes.recent(12).catch(() => []) : [],
+        perPersonDay: (config.vibe && config.vibe.perPersonDay) || 3,
+    });
+    router.get('/vibe', wrap(async (req, res) => {
+        const topic = typeof req.query.topic === 'string' ? req.query.topic.slice(0, 120) : '';
+        send(req, res, 200, views.vibePage({ actor: req.actor, topic, ...await vibeCtx(req) }), {
+            title: 'Vibe a wiki: any topic, a whole wiki with sources', description: VIBE_DESCRIPTION, robots: topic ? 'noindex, follow' : 'index, follow',
+            cache: topic ? null : 'public', path: '/vibe', active: 'vibe', styles: VIBE_STYLES, head: VIBE_HEAD,
+        });
+    }));
+    router.post('/vibe', B('wiki.vibe.create'), form, wrap(async (req, res) => {
+        if (!req.actor.subject) return needSignIn(req, res, 'Sign in with your OpenVibe account to vibe a wiki.');
+        const b = req.body || {};
+        try {
+            if (!vibes) throw Object.assign(new Error('Generated wikis are not available here'), { status: 503 });
+            const { vibe } = await vibes.start({ topic: b.topic, size: b.size || 'standard', visibility: b.visibility || 'public' }, req.actor);
+            res.redirect(303, `/vibe/${vibe.id}`);
+        } catch (err) {
+            if (!err || !err.status || err.status >= 500 && err.status !== 503) throw err;
+            send(req, res, err.status, views.vibePage({ actor: req.actor, topic: String(b.topic || '').slice(0, 120), error: err.message, ...await vibeCtx(req) }), { title: 'Vibe a wiki', robots: 'noindex, nofollow', path: '/vibe', active: 'vibe', styles: VIBE_STYLES, head: VIBE_HEAD });
+        }
+    }));
+    router.get('/vibe/:vibe', wrap(async (req, res) => {
+        const json = /\.json$/.test(req.params.vibe);
+        const id = json ? req.params.vibe.slice(0, -5) : req.params.vibe;
+        const v = vibes ? await vibes.get(id, req.actor) : null;
+        if (json) return res.status(v ? 200 : 404).set('Cache-Control', cache.htmlHeaders({ private: true })).json(v || { error: 'not_found' });
+        if (!v) return notFound(req, res);
+        send(req, res, 200, views.vibeProgress({ vibe: v }), { title: v.status === 'done' ? `A wiki about ${v.topic}` : `Vibing a wiki about ${v.topic}`, robots: 'noindex, nofollow', path: `/vibe/${v.id}`, active: 'vibe', styles: VIBE_STYLES, head: VIBE_HEAD });
+    }));
+
     router.get('/updates', (req, res) => send(req, res, 200, frame.updatesBody({ service: 'wiki', siteName: 'OpenVibe.Wiki' }) + `<script src="${ovServe.url('shipped.js')}" defer></script>`, { title: 'What shipped on OpenVibe.Wiki', robots: 'index, follow', cache: 'public', path: '/updates' }));
     router.get('/recent', wrap(async (req, res) => send(req, res, 200, views.recentPage({ items: await svc.recentChanges(100) }), { title: 'Recent changes', robots: 'noindex, follow', cache: 'public', active: 'recent' })));
     router.get('/search', wrap(async (req, res) => {

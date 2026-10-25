@@ -50,6 +50,7 @@ function navConfig(o, config) {
         apiBase: NETWORK_URL,
         links: [
             { label: 'Wikis', href: '/', active: o.active === 'home' },
+            { label: 'Vibe a wiki', href: '/vibe', active: o.active === 'vibe' },
             { label: 'Recent changes', href: '/recent', active: o.active === 'recent' },
             { label: 'Search', href: '/search', active: o.active === 'search' },
         ],
