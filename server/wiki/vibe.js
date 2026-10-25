@@ -26,7 +26,9 @@ const { fetchImage } = require('../integrations/image-fetch');
 
 const SIZES = ['quick', 'standard', 'big'];
 const ACTIVE = ['queued', 'researching', 'planning', 'writing'];
-const LEASE_MS = 10 * 60 * 1000;
+// A job's lease is renewed every minute while it runs, so a restart frees it within LEASE_MS.
+const LEASE_MS = 3 * 60 * 1000;
+const HEARTBEAT_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_IMAGES_PER_PAGE = 3;
 // How the main page groups the rest, by what the plan says each page is about.
@@ -102,18 +104,25 @@ function creditOf(img) {
     let site = null;
     try { site = img.source_url ? new URL(img.source_url).hostname.replace(/^www\./, '') : null; } catch { /* no site */ }
     const who = oneLine(img.author, 80) || site || oneLine(img.provider, 40);
-    return [who ? `Picture: ${who}` : 'Picture', img.license ? oneLine(img.license, 80) : null].filter(Boolean).join(', ');
+    // A picture that is not freely licensed is shown to identify the subject; its owners keep the copyright.
+    const terms = img.free ? oneLine(img.license, 60) : '© its owners';
+    return [who ? `Picture: ${who}` : 'Picture', terms || null].filter(Boolean).join(', ');
+}
+
+/** Source numbers a writer left in the text ("…stories.[0][2]"): the page lists its sources, so they go. Links stay. */
+function stripMarkers(text) {
+    return String(text || '').replace(/(?:\s?\[\d{1,2}(?:\s*[,–-]\s*\d{1,2})*\])+(?![(:])/g, '').replace(/[ \t]+([.,;:!?])/g, '$1');
 }
 
 /** The Markdown of one page from the writer's output: lead, sections with their pictures, and the main page's contents. */
 function composeBody(out, { placed = new Map(), contents = null }) {
     const parts = [];
-    const lead = String(out.lead || '').trim();
+    const lead = stripMarkers(out.lead).trim();
     if (lead) parts.push(lead);
     const used = new Set();
     for (const sec of Array.isArray(out.sections) ? out.sections : []) {
         const heading = oneLine(sec.heading, 120).replace(/^#+\s*/, '');
-        const body = String(sec.body || '').trim().replace(/^#{1,2}\s/gm, '### ');
+        const body = stripMarkers(sec.body).trim().replace(/^#{1,2}\s/gm, '### ');
         if (!heading || !body) continue;
         const key = heading.toLowerCase();
         const pic = placed.get(key);
@@ -260,7 +269,9 @@ function createVibes({ db, svc, platform, config, now = () => Date.now(), log = 
         try {
             const v = await q.claim.get({ owner, until: now() + LEASE_MS, now: now() });
             if (!v) return false;
-            await runJob(v);
+            const beat = setInterval(() => { q.renew.run(now() + LEASE_MS, v.id, owner).catch(() => {}); }, HEARTBEAT_MS);
+            if (beat.unref) beat.unref();
+            try { await runJob(v); } finally { clearInterval(beat); }
             return true;
         } finally { running = false; }
     }
@@ -449,4 +460,4 @@ function createVibes({ db, svc, platform, config, now = () => Date.now(), log = 
     return { start, get, mine, recent, tick, startWorker, stopWorker, SIZES, ACTIVE, pagesFor };
 }
 
-module.exports = { createVibes, VibeError, normalizePlan, composeBody, contentsOf, citedIndices, creditOf, spaceSlugFor, SIZES };
+module.exports = { createVibes, VibeError, normalizePlan, composeBody, contentsOf, citedIndices, creditOf, spaceSlugFor, stripMarkers, SIZES };
