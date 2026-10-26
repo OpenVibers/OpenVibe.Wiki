@@ -163,6 +163,7 @@ ${raw(showcase.features({
 ${raw(steps)}
 <section class="sc-sec wk-h-faq" aria-labelledby="wk-faq-h"><h2 id="wk-faq-h">Questions</h2>${FAQ.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>
 <section class="sc-sec" aria-labelledby="wk-links-h"><h2 id="wk-links-h">Find your way around</h2><ul class="wk-h-links">${links.map((l) => html`<li><a href="${l.href}"><b>${l.title}</b><small>${l.text}</small></a></li>`)}</ul></section>
+${raw(showcase.network({ service: 'wiki' }))}
 ${raw(showcase.cta({ title: 'Start a wiki of your own', text: 'A team handbook, a game guide, a project\'s docs: write it with history and sources from the first page.', actions: [start] }))}`;
 }
 
