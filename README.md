@@ -317,7 +317,7 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
   `openvibe-sdk/db`; Valkey holds the per-actor limit counters (optional: without `VALKEY_URL` they count per process).
 - `openvibe-publishing` v1.3.0 (async PostgreSQL stores, ingest and publication chassis), `openvibe-contracts`
   v0.107.0, `openvibe-shared` v4.15.2
-  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.65.0 (db, auth, PostgreSQL
+  (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.67.0 (db, auth, PostgreSQL
   events outbox, per-actor limits, account export and deletion, testing) — pinned release tarballs.
 - OpenVibe.Network (SSO, JWKS, service principal `wiki`), OpenVibe.Events, OpenVibe.Community,
   OpenVibe.Sources, OpenVibe.Media, OpenVibe.VIP (VIP spaces and pages), OpenVibe.Search (consumer of
@@ -445,7 +445,7 @@ Part of the [OpenVibe network](https://openvibe.network). Built in the open by [
 
 <!-- versions:start -->
 - openvibe-contracts: v0.221.0
-- openvibe-sdk: v0.65.0
+- openvibe-sdk: v0.67.0
 - openvibe-shared: v4.15.2
 - openvibe-publishing: v1.3.0
 <!-- versions:end -->
