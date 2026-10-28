@@ -49,11 +49,14 @@ function navConfig(o, config) {
         service: 'wiki',
         apiBase: NETWORK_URL,
         links: [
-            { label: 'Wikis', href: '/', active: o.active === 'home' },
-            { label: 'Vibe a wiki', href: '/vibe', active: o.active === 'vibe' },
-            { label: 'Recent changes', href: '/recent', active: o.active === 'recent' },
-            { label: 'Search', href: '/search', active: o.active === 'search' },
+            // The product's own places: the main ones carry an icon (phones get them as the bottom tab bar), the rest fold
+            // into the navbar's More (Shared 4.22). Search is the navbar's magnifier; What shipped is the footer's.
+            { label: 'Wikis', href: '/', icon: 'fa-book', active: o.active === 'home' },
+            { label: 'Vibe a wiki', href: '/vibe', icon: 'fa-wand-magic-sparkles', active: o.active === 'vibe' },
+            { label: 'Recent changes', href: '/recent', icon: 'fa-clock-rotate-left', active: o.active === 'recent' },
         ],
+        appBar: true,   // phones: the places as the bottom tab bar (Shared 4.20)
+        search: { page: '/search', label: 'OpenVibe.Wiki' },   // the magnifier offers this site's own search first
         history: { type: 'page', title: o.title || SITE_NAME },
         silentLogin: `${config.baseUrl}/auth/login?silent=1&next={url}`,
         sessionUrl: '/auth/me',
