@@ -26,7 +26,8 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'seeds', 'ope
         assert.ok(!/\bfree\b|\$0|no cost|pricing/i.test(text), `${p.title}: no pricing copy`);
         assert.ok(p.citations && p.citations.length, `${p.title}: cited`);
         for (const c of p.citations) {
-            assert.ok(/^https:\/\/github\.com\/OpenVibers\/[A-Za-z.]+\/blob\/[0-9a-f]{40}\/(README\.md|STATUS\.json)$/.test(c.url), `${p.title}: permalink ${c.url}`);
+            // README and STATUS for a product; a repository's docs/ for what lives in its guides (the design language, 2026-10-28).
+            assert.ok(/^https:\/\/github\.com\/OpenVibers\/[A-Za-z.]+\/blob\/[0-9a-f]{40}\/(README\.md|STATUS\.json|docs\/[a-z0-9-]+\.md)$/.test(c.url), `${p.title}: permalink ${c.url}`);
             assert.ok(!Number.isNaN(Date.parse(c.retrievedAt)), `${p.title}: retrieval time`);
         }
         for (const l of content.extractLinks(p.body, 'openvibe')) assert.ok([...titles].some((t) => content.pageSlug(t) === l.slug), `${p.title}: [[${l.title}]] has a page`);
