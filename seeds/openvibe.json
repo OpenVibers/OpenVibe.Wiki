@@ -10,7 +10,7 @@
     {
       "title": "OpenVibe",
       "parent": null,
-      "body": "The **OpenVibe network** is a set of services built in the open by OpenVibers, whose repositories are published in the [OpenVibers](https://github.com/OpenVibers) GitHub organisation. [[OpenVibe.Network]] is the network's identity and account service. This space describes the network's products as their README and STATUS files state them at the cited commits.\n\n## Streaming and media\n\n- [[OpenVibe.Live]] — the streaming front: ingest, viewer playback, channels, streamer tools and moderation.\n- [[OpenVibe.Media]] — the multi-tenant media service for VODs, clips, files, thumbnails and storage tiering.\n- [[OpenVibe.Zone]] — private S3-compatible storage zones for every project.\n- [[OpenVibe.MediaHub]] — openvibe.download (a private drive), openvibe.video (uploads and AI edits) and openvibe.pics (pictures).\n- [[OpenRestream]] — the ingest and restream control plane extracted from OpenVibe.Live.\n\n## Community and content\n\n- [[OpenVibe.Community]] — pastes, the forum, the comment threads other products embed, Pulse and submissions.\n- [[OpenVibe.Blog]] — the official blog and a blog for every member.\n- [[OpenVibe.News]] — editor-written, source-backed stories assembled from collected news items.\n- [[OpenVibe.Reviews]] — members' reviews, every review site in one search, the ratings other sites show, and official records, each with its source.\n- [[OpenVibe.Chat]] — the communication authority for rooms, messages, DMs, calls, TTS and moderation.\n- [[OpenVibe.Space]] — spaces (apps people make on their OpenVibe account, built by AI or from templates) and static hosting.\n- [[OpenVibe.Help]] — the help and support centre generated from the product manifests.\n- [[OpenVibe.Quest]] — one quest log across every OpenVibe site, awarding badges and OpenCoins.\n\n## Tools and games\n\n- [[OpenVibe.Tools]] — the tools suite: a tool registry, a run API, jobs and a shared guard.\n- [[OpenVibe.Games]] — Scraplandia, a persistent multiplayer physics sandbox in the browser, and worlds players build and publish.\n- [[OpenVibe.Play]] — achievements and leaderboards for every OpenVibe game.\n- [[OpenVibe.Food]] — food near a place, a meal planner, a pantry, AI recipes, and delivery apps and meal kits compared.\n\n## Developer platform\n\n- [[OpenVibe.Network]] — identity, OAuth2 SSO, notifications and the OpenCoins wallet.\n- [[OpenVibe.Events]] — the durable event backbone: delivery, retry, dead letters and replay.\n- [[OpenVibe.Search]] — permission-aware discovery with an ACL-filtered query API.\n- [[OpenVibe.Sources]] — the source registry and ingestion workers with recorded provenance.\n- [[OpenVibe.Publishing]] — the shared publishing packages the publication products build on.\n- [[OpenVibe.Wiki]] — this wiki: official and community wikis, page trees, revisions, citations and discussion.\n- [[OpenVibe.Codes]] — the open coding-agent harness.\n- [[OpenVibe.Services]] — the developer console for projects, apps, credentials and grants.\n- [[OpenVibe.Host]] — the deployment and control plane (the ovhost CLI) and tenant static hosting.\n- [[OpenVibe.Run]] — the job service that places jobs on nodes and follows them to an end.\n\n## Agents and automation\n\n- [[OpenVibe.Actor]] — OpenVibe's own general agent and agent router.\n- [[OpenVibe.Bot]] — the open control panel for robots.\n- [[OpenVibe.Node]] — one service on your own computers and robots, used by Bot and Actor.\n- [[OpenVibe.AI]] — the AI authority for providers, workflows, runs and quotas.\n- [[OpenVibe.Watch]] — persistent, user-defined observations and conditions over pages, feeds and events.\n\n## Commerce\n\n- [[OpenVibe.Deals]] — community-submitted deals with observed prices and freshness.\n- [[OpenVibe.Coupons]] — coupon codes with merchant matching and validity reports.\n- [[OpenVibe.Trade]] — informational watchlists and sourced market context, with no order execution.\n- [[OpenVibe.Rent]] — every rental site in one search, a board for listings from anywhere, and OpenVibe.Homes for buying.\n- [[OpenVibe.Inventory]] — the network-wide inventory of items a person owns.\n- [[OpenVibe.Billing]] — the money ledger: payments, Vibes, subscriptions, entitlements, refunds and payouts.\n- [[OpenVibe.Tips]] — creator support at openvibe.tips: tips, goals, paid messages, paid sounds and overlays.\n- [[OpenVibe.VIP]] — memberships at openvibe.vip: creator plans and perks recognised across every site.\n- [[OpenVibe.Work]] — job listings gathered from open job boards.\n",
+      "body": "The **OpenVibe network** is a set of services built in the open by OpenVibers, whose repositories are published in the [OpenVibers](https://github.com/OpenVibers) GitHub organisation. [[OpenVibe.Network]] is the network's identity and account service. This space describes the network's products as their README and STATUS files state them at the cited commits. How every site looks and behaves is the [[OpenVibe design language]].\n\n## Streaming and media\n\n- [[OpenVibe.Live]] — the streaming front: ingest, viewer playback, channels, streamer tools and moderation.\n- [[OpenVibe.Media]] — the multi-tenant media service for VODs, clips, files, thumbnails and storage tiering.\n- [[OpenVibe.Zone]] — private S3-compatible storage zones for every project.\n- [[OpenVibe.MediaHub]] — openvibe.download (a private drive), openvibe.video (uploads and AI edits) and openvibe.pics (pictures).\n- [[OpenRestream]] — the ingest and restream control plane extracted from OpenVibe.Live.\n\n## Community and content\n\n- [[OpenVibe.Community]] — pastes, the forum, the comment threads other products embed, Pulse and submissions.\n- [[OpenVibe.Blog]] — the official blog and a blog for every member.\n- [[OpenVibe.News]] — editor-written, source-backed stories assembled from collected news items.\n- [[OpenVibe.Reviews]] — members' reviews, every review site in one search, the ratings other sites show, and official records, each with its source.\n- [[OpenVibe.Chat]] — the communication authority for rooms, messages, DMs, calls, TTS and moderation.\n- [[OpenVibe.Space]] — spaces (apps people make on their OpenVibe account, built by AI or from templates) and static hosting.\n- [[OpenVibe.Help]] — the help and support centre generated from the product manifests.\n- [[OpenVibe.Quest]] — one quest log across every OpenVibe site, awarding badges and OpenCoins.\n\n## Tools and games\n\n- [[OpenVibe.Tools]] — the tools suite: a tool registry, a run API, jobs and a shared guard.\n- [[OpenVibe.Games]] — Scraplandia, a persistent multiplayer physics sandbox in the browser, and worlds players build and publish.\n- [[OpenVibe.Play]] — achievements and leaderboards for every OpenVibe game.\n- [[OpenVibe.Food]] — food near a place, a meal planner, a pantry, AI recipes, and delivery apps and meal kits compared.\n\n## Developer platform\n\n- [[OpenVibe.Network]] — identity, OAuth2 SSO, notifications and the OpenCoins wallet.\n- [[OpenVibe.Events]] — the durable event backbone: delivery, retry, dead letters and replay.\n- [[OpenVibe.Search]] — permission-aware discovery with an ACL-filtered query API.\n- [[OpenVibe.Sources]] — the source registry and ingestion workers with recorded provenance.\n- [[OpenVibe.Publishing]] — the shared publishing packages the publication products build on.\n- [[OpenVibe.Wiki]] — this wiki: official and community wikis, page trees, revisions, citations and discussion.\n- [[OpenVibe.Codes]] — the open coding-agent harness.\n- [[OpenVibe.Services]] — the developer console for projects, apps, credentials and grants.\n- [[OpenVibe.Host]] — the deployment and control plane (the ovhost CLI) and tenant static hosting.\n- [[OpenVibe.Run]] — the job service that places jobs on nodes and follows them to an end.\n\n## Agents and automation\n\n- [[OpenVibe.Actor]] — OpenVibe's own general agent and agent router.\n- [[OpenVibe.Bot]] — the open control panel for robots.\n- [[OpenVibe.Node]] — one service on your own computers and robots, used by Bot and Actor.\n- [[OpenVibe.AI]] — the AI authority for providers, workflows, runs and quotas.\n- [[OpenVibe.Watch]] — persistent, user-defined observations and conditions over pages, feeds and events.\n\n## Commerce\n\n- [[OpenVibe.Deals]] — community-submitted deals with observed prices and freshness.\n- [[OpenVibe.Coupons]] — coupon codes with merchant matching and validity reports.\n- [[OpenVibe.Trade]] — informational watchlists and sourced market context, with no order execution.\n- [[OpenVibe.Rent]] — every rental site in one search, a board for listings from anywhere, and OpenVibe.Homes for buying.\n- [[OpenVibe.Inventory]] — the network-wide inventory of items a person owns.\n- [[OpenVibe.Billing]] — the money ledger: payments, Vibes, subscriptions, entitlements, refunds and payouts.\n- [[OpenVibe.Tips]] — creator support at openvibe.tips: tips, goals, paid messages, paid sounds and overlays.\n- [[OpenVibe.VIP]] — memberships at openvibe.vip: creator plans and perks recognised across every site.\n- [[OpenVibe.Work]] — job listings gathered from open job boards.\n",
       "summary": "Overview of the OpenVibe network and the products described in this space, grouped by area, with their stated status at the cited commits.",
       "infobox": [
         {
@@ -56,6 +56,100 @@
           "title": "OpenVibe.Space README (commit 6bee637)",
           "retrievedAt": "2026-10-18T02:00:00.000Z",
           "quote": "spaces (apps people make on their OpenVibe account) and static hosting for the OpenVibe network"
+        }
+      ]
+    },
+    {
+      "title": "OpenVibe design language",
+      "parent": "OpenVibe",
+      "body": "The **OpenVibe design language** is how every OpenVibe site looks and behaves, and the open toolkit that carries it: `openvibe-shared`, whose README says it owns the \"design tokens and theme rendering, the navbar, footer and panels of the OpenVibe Frame\". Its guide, `docs/kit.md`, calls the kit \"One set of app pieces for every OpenVibe site, and for anyone else's\", and states: \"The package is MIT.\"\n\n## Colours and themes\n\nNothing on a site picks a colour of its own. The page's theme (`theme-loader.js`, with light and dark halves of every theme and the season's own) sets tokens such as `--bg-primary`, `--text-primary`, `--accent` and `--accent-strong`, and every piece reads them: \"The kit uses the site's theme (`theme-loader.js`), so it wears every theme in light and dark\". Filled controls use `--accent-strong` with `--on-accent-strong`, which stay readable in every theme. \"Every class starts with `ovk-`, and nothing in `kit.css` styles a bare element\", so the kit sits beside a site's own CSS.\n\n## The pieces\n\nA sticky head with its tabs, lists of rows, cards that fold, settings rows, a search row, \"a composer pinned at the bottom, and a bottom tab bar on phones\". The same builders run on the server and in the page. Pages are short: tabs and folds instead of long scrolls, the most useful things first, and on a phone a site acts like an app, with [[OpenVibe.Live]], [[OpenVibe.Food]] and the other sites showing their main places in a bottom tab bar.\n\n## The bar on every site\n\n- **Places:** four or five main places with icons; the rest fold into More. Other sites live in the menu, not on the bar.\n- **The OpenVibe menu:** \"One control on every site: the navbar's magnifier (or `/`, or Ctrl+K) opens the OpenVibe menu\". It holds search, every site and every tool in three tabs (For you, Sites, Tools). Typing gives one ranked list that puts the person's own history and the sites they use first, and the box completes what they type. Suggestions come from [[OpenVibe.Search]] through [[OpenVibe.Network]].\n- **The account menu:** \"Pressing your picture opens a compact menu\": the name with + (add an account), settings and sign out beside it; the person's places as a grid of icons in the order they use them; one row for light, dark, text size, motion and themes.\n- **Balances:** OpenCoins and Vibes share one calm pill on phones, and the site's name always reads whole.\n\n## Home pages\n\nA product's home starts with a short hero: what it is in one line, a short lede, two buttons side by side and a strip of real numbers, three across on a phone. The guide says: \"Don't pass the site's own name as the eyebrow\", because the bar above already shows it.\n\n## Loading and agent sessions\n\nOne loading look covers every site: an overlay over the thing's own picture, with a progress line, and skeleton rows. For coding agents, `agent-session.js` shows \"A coding agent's session, as people read it.\":\n- **Steps:** grouped and folded, each with its command, change and output, live while it runs.\n- **Helpers** nest under the step that started them.\n- **Hand-offs** read \"Claude Code → Codex\".\n- **The plan** sits in the head.\n\nIt reads the sessions of every agent [[OpenVibe.Codes]] runs, and [[OpenVibe.Actor]]'s.\n",
+      "summary": "How every OpenVibe site looks and behaves: theme tokens in light and dark, the open kit of app pieces, the bar with one menu for search and every site, compact account menu, short home pages, one loading look and agent sessions.",
+      "infobox": [
+        {
+          "key": "repository",
+          "label": "Repository",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.Shared"
+        },
+        {
+          "key": "package",
+          "label": "Package",
+          "type": "text",
+          "value": "openvibe-shared"
+        },
+        {
+          "key": "guide",
+          "label": "Guide",
+          "type": "url",
+          "value": "https://github.com/OpenVibers/OpenVibe.Shared/blob/main/docs/kit.md"
+        },
+        {
+          "key": "license",
+          "label": "License",
+          "type": "text",
+          "value": "MIT (the kit), AGPL-3.0 (the services)"
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/README.md",
+          "title": "openvibe-shared README.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "design tokens and theme rendering, the navbar, footer and panels of the OpenVibe Frame"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "One set of app pieces for every OpenVibe site, and for anyone else's"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "The package is MIT."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "The kit uses the site's theme (`theme-loader.js`), so it wears every theme in light and dark"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "Every class starts with `ovk-`, and nothing in `kit.css` styles a bare element"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "a composer pinned at the bottom, and a bottom tab bar on phones"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "One control on every site: the navbar's magnifier (or `/`, or Ctrl+K) opens the OpenVibe menu."
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "Pressing your picture opens a compact menu"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/kit.md",
+          "title": "openvibe-shared docs/kit.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "Don't pass the site's own name as the eyebrow"
+        },
+        {
+          "url": "https://github.com/OpenVibers/OpenVibe.Shared/blob/8f0ce1117b866b61ab41a6b31165405af43b9fa6/docs/agent-session.md",
+          "title": "openvibe-shared docs/agent-session.md (commit 8f0ce11)",
+          "retrievedAt": "2026-10-28T05:40:00.000Z",
+          "quote": "A coding agent's session, as people read it."
         }
       ]
     },
