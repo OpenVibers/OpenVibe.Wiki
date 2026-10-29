@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const layout = require('openvibe-publishing/layout');
 const { escapeHtml: esc } = require('openvibe-publishing/ssr');
+const seo = require('openvibe-shared/seo');
 
 const SITE_NAME = 'OpenVibe.Wiki';
 const NETWORK_URL = 'https://openvibe.network';
@@ -72,9 +73,15 @@ function navConfig(o, config) {
  * decision for an article, an explicit string for every other page), head (extra head HTML, added
  * after the shared tags), jsonLd, ogType, body, active, actor, config, feeds, styles, query
  */
+const { TWIN_PATH_RE } = require('../agent-pages');
+
 function renderPage(o) {
     const { config } = o;
     if (!o.robots && !o.decision) throw new TypeError('renderPage needs explicit robots (or the gate decision)');
+    const path = o.path || '/';
+    const canonical = `${config.baseUrl}${path}`;
+    // A page with a twin names it; an editing surface, a private wiki and an error page have no twin.
+    const hasTwin = TWIN_PATH_RE.test(path) && !(o.robots && /noindex/i.test(o.robots));
     const feeds = o.feeds === false ? [] : [
         { type: 'atom', title: `${SITE_NAME}: recent changes (Atom)`, href: '/feed.atom' },
         { type: 'json', title: `${SITE_NAME}: recent changes (JSON Feed)`, href: '/feed.json' },
@@ -91,7 +98,7 @@ function renderPage(o) {
         title: o.title ? `${o.title} · ${SITE_NAME}` : o.path === '/' ? `${SITE_NAME}: wikis with full history and cited sources` : SITE_NAME,
         description: o.description || DEFAULT_DESCRIPTION,
         summary: o.summary,
-        canonical: `${config.baseUrl}${o.path || '/'}`,
+        canonical,
         decision: o.decision,
         robots: o.robots,
         type: o.ogType || 'website',
@@ -108,7 +115,8 @@ function renderPage(o) {
         mainClass: 'wk-main',
         header: `<header class="wk-bar"><a class="wk-brand" href="/">${SITE_NAME}</a><form class="wk-search" action="/search" method="get" role="search"><label for="wk-q" class="wk-sr">Search the wiki</label><input id="wk-q" name="q" type="search" placeholder="Search the wiki" value="${esc(o.query || '')}"><button type="submit">Search</button></form><noscript><span class="wk-account">${who}</span></noscript></header>`,
         body: o.body,
-        head: o.head,
+        // The page names its Markdown twin (openvibe-shared/agent-layer) and the site's llms.txt.
+        head: [hasTwin ? seo.linkHeaderTags(canonical, `${config.baseUrl}/llms.txt`).head : '', o.head].filter(Boolean).join('\n'),
     });
 }
 

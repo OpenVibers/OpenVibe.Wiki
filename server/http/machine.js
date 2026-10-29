@@ -34,7 +34,7 @@ function createMachine({ svc, config }) {
         setCache(res, 3600).type('text/plain').send(seo.robotsTxt({
             sitemaps: [`${origin}/sitemap.xml`],
             disallow: ['/auth/', '/api/', '/new-space', '/search', '/proposals/'],
-        }));
+        }) + `# Agent manifest: ${origin}/.well-known/agent.json\n`);
     });
 
     // RFC 9116 (SEO-30). Contact, Expires and Canonical are required; Canonical is this site's own, from the

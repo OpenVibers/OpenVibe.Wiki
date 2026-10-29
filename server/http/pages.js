@@ -77,8 +77,13 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
 
     const send = (req, res, status, body, o = {}) => {
         const cacheable = o.cache === 'public' && req.actor.kind === 'anonymous' && status === 200;
-        res.status(status).set('Cache-Control', cacheable ? cache.htmlHeaders({ maxAge: 60 }) : cache.htmlHeaders({ private: true })).set('Vary', 'Cookie, Authorization').type('html')
-            .send(renderPage({ config, actor: req.actor, path: o.path || req.path, ...o, body }));
+        const path = o.path || req.path;
+        const canonical = `${config.baseUrl}${path}`;
+        const hasTwin = status === 200 && require('../agent-pages').TWIN_PATH_RE.test(path) && !(o.robots && /noindex/i.test(o.robots));
+        res.status(status).set('Cache-Control', cacheable ? cache.htmlHeaders({ maxAge: 60 }) : cache.htmlHeaders({ private: true })).set('Vary', 'Cookie, Authorization, Accept');
+        // The page's Markdown twin and the site's llms.txt (openvibe-shared/agent-layer).
+        if (hasTwin) res.set('Link', require('openvibe-shared/agent-layer').linkHeaderTags(canonical, `${config.baseUrl}/llms.txt`).header);
+        res.type('html').send(renderPage({ config, actor: req.actor, path, ...o, body }));
     };
     const errorPage = (req, res, status, title, message) => send(req, res, status, views.errorBody({ status, title, message }), { title, robots: 'noindex, nofollow' });
     const notFound = (req, res) => errorPage(req, res, 404, 'Page not found', 'Nothing lives at that address, or it is not visible to you.');
