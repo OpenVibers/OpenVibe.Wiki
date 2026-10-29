@@ -101,6 +101,8 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
         details: async () => ({ outbox: await platform.outbox.refreshCounts() }),
     });
     app.get('/api/ready', ready.handler);
+    // GET /openapi.json: the API document, generated from the table the /api/v1 router mounts (http/openapi.js).
+    require('./http/openapi').mount(app);
 
     // Imports are the heaviest writes (up to 200 pages in one transaction): a few per hour.
     app.post(['/api/v1/spaces/:space/import', '/s/:space/import'], limiter(60 * 60000, 20));

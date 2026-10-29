@@ -146,6 +146,7 @@ function createMachine({ svc, config }) {
                     { title: 'Recent changes (Atom)', url: `${origin}/feed.atom` },
                     { title: 'Recent changes (JSON Feed)', url: `${origin}/feed.json` },
                 ] },
+                { title: 'API', links: [{ title: 'OpenAPI 3.1 document', url: `${origin}/openapi.json`, note: 'every /api/v1 route, with its fields' }] },
             ],
         }));
     }));
