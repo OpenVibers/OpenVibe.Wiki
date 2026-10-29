@@ -64,6 +64,10 @@ async function lastIndexEvent(h, pageId) {
         assert.ok(r.text.includes('http://wiki.test/w/notes/open-page') && r.text.includes('http://wiki.test/w/notes/second-page'));
         assert.ok(!r.text.includes('unsourced-page'), 'only indexable pages, not merely listable ones');
         assert.ok(Buffer.byteLength(r.text) <= 512 * 1024, 'the page stays within maxBytes');
+        // The wikis /llms.txt names are listed too, so a wiki whose pages are all still unreviewed
+        // answers with what it is and where it is, never with a bare header.
+        assert.match(r.text, /\n## Wikis\n/);
+        assert.ok(r.text.includes('http://wiki.test/s/notes'), 'each public wiki has its own address');
         assert.ok((await H.req(h, 'GET', '/feed.json')).json.items.some((i) => i.url === 'http://wiki.test/w/notes/open-page'));
         let ev = (await lastIndexEvent(h, page.id));
         assert.strictEqual(ev.event_type, 'wiki.index_document.upserted');
