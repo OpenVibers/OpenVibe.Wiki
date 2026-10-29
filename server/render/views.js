@@ -124,14 +124,6 @@ ${stats && stats.pages ? html`<dl class="wk-h-stats">${tiles.slice(0, 4).map(([k
             { title: 'Publish and keep going', text: 'Publish now or schedule it. Every revision stays in the history, ready to compare or restore.' },
         ],
     });
-    const links = [
-        { href: '/recent', title: 'Recent changes', text: 'Every public page, newest revision first.' },
-        { href: '/search', title: 'Search', text: 'Titles and text across the wikis you can read.' },
-        firstOfficial ? { href: `/s/${e(firstOfficial.slug)}`, title: `The ${firstOfficial.name} page tree`, text: 'Every page of the official wiki, nested.' } : null,
-        { href: start.href, title: 'Start a wiki', text: 'Public, members-only, VIP or private.' },
-        { href: '/feed.atom', title: 'Atom and JSON feeds', text: 'Follow new revisions in any reader.' },
-        { href: '/updates', title: 'What shipped', text: 'Every change to OpenVibe.Wiki itself.' },
-    ].filter(Boolean);
     return html`${raw(showcase.hero({
         eyebrow: 'OpenVibe.Wiki',
         title: 'Any topic.', accent: 'A whole wiki.',
@@ -149,7 +141,7 @@ ${recent.length ? html`<section class="sc-sec" aria-labelledby="wk-recent-h"><h2
 <p class="wk-more"><a href="/recent">All recent changes</a> · <a href="/feed.atom">Atom</a> · <a href="/feed.json">JSON Feed</a></p></section>` : ''}
 ${unshelved.length ? html`<section class="sc-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official wikis</h2><ul class="wk-spaces">${unshelved.map(card)}</ul></section>` : ''}
 ${user.length ? html`<section class="sc-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community wikis</h2><ul class="wk-spaces">${user.map(card)}</ul></section>` : ''}
-${raw(showcase.features({
+<div class="sc-sec"><details class="wk-h-fold"><summary>Start a wiki of your own<span>what it gets, how a page comes together</span></summary>${raw(showcase.features({
         title: 'What a wiki gets',
         items: [
             { icon: 'ov:wiki', title: 'Page trees', text: 'Pages nest under pages, so a wiki reads like a book.' },
@@ -160,11 +152,9 @@ ${raw(showcase.features({
             { icon: 'ov:search', title: 'Search and feeds', text: 'Full-text search across the wikis you can see, and Atom and JSON feeds.' },
         ],
     }))}
-${raw(steps)}
+${raw(steps)}</details></div>
 <section class="sc-sec wk-h-faq" aria-labelledby="wk-faq-h"><h2 id="wk-faq-h">Questions</h2>${FAQ.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>
-<section class="sc-sec" aria-labelledby="wk-links-h"><h2 id="wk-links-h">Find your way around</h2><ul class="wk-h-links">${links.map((l) => html`<li><a href="${l.href}"><b>${l.title}</b><small>${l.text}</small></a></li>`)}</ul></section>
-${raw(showcase.network({ service: 'wiki' }))}
-${raw(showcase.cta({ title: 'Start a wiki of your own', text: 'A team handbook, a game guide, a project\'s docs: write it with history and sources from the first page.', actions: [start] }))}`;
+${raw(showcase.network({ service: 'wiki' }))}`;
 }
 
 // ── "Vibe a wiki" (server/wiki/vibe.js) ─────────────────────

@@ -161,3 +161,19 @@ main .wk-h-group h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap
 @media (max-width: 640px) { .wk-content .ov-media { float: none; width: 100%; margin: 8px 0 12px; } }
 .wk-vibe-panel .wk-h-stats { margin-top: 14px; }
 .wk-vibe-ideas { margin: 6px 0 0; font-size: 13.5px; color: var(--wk-muted); }
+
+/* Phones (2026-10-29): a taste and a door. Each group of the official wiki is one row that scrolls sideways (every page
+   is still there), three most-linked pages and five recent revisions show (each list is a link away). */
+.wk-h-fold { border: 1px solid var(--border, #1f2d47); border-radius: 14px; background: var(--bg-card, #131c2e); }
+.wk-h-fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 0 16px; cursor: pointer; font-weight: 700; list-style: none; }
+.wk-h-fold > summary::-webkit-details-marker { display: none; }
+.wk-h-fold > summary span { color: var(--text-muted, #7386a3); font-weight: 600; font-size: .86rem; text-align: right; }
+.wk-h-fold > summary:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: -2px; border-radius: 14px; }
+.wk-h-fold .sc-sec { margin: 0; max-width: none; padding: 0 16px 16px; }
+@media (max-width: 599px) {
+  .wk-h-group .sc-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; gap: 10px; margin-left: -16px; margin-right: -16px; padding: 0 16px 4px; }
+  .wk-h-group .sc-grid::-webkit-scrollbar { display: none; }
+  .wk-h-group .sc-grid > * { flex: 0 0 46%; min-width: 0; scroll-snap-align: start; }
+  .wk-h-rank > li:nth-child(n+4), .wk-recent > li:nth-child(n+6) { display: none; }
+  .wk-h-fold > summary span { display: none; }
+}
