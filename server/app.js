@@ -136,6 +136,26 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
     // Search scans the text of every published page (LIKE): a person's pace, not a crawler's.
     app.get('/search', limiter(60000, 60));
     const pages = createPages({ svc, viewers, platform, config, log, limits, vibes });
+    // The agent layer (openvibe-shared/agent-layer): /.well-known/agent.json, and the Markdown twins of the
+    // public pages (the home, a wiki's page tree and its articles). Only the manifest and a twin request
+    // reach it — the layer renders every page signed out, and a wiki page is not one page (a signed-in
+    // editor's tools, a members-only wiki). Anything else is the app's own page, which names its twin in
+    // the head and the Link header (server/render/layout.js).
+    {
+        const agentRouter = express.Router();
+        require('openvibe-shared/agent-layer').mount(agentRouter, {
+            descriptor: require('./agent-descriptor'),
+            render: require('./agent-pages').createAgentPages({ router: pages.router, host: new URL(config.baseUrl).hostname }).renderPublicPage,
+        });
+        app.use((req, res, next) => {
+            // The manifest exactly: the rest of /.well-known/ (security.txt) belongs to the app.
+            if (req.path === '/.well-known/agent.json') return agentRouter(req, res, next);
+            const p = String(req.path || '');
+            if (p.endsWith('.md') || (req.query && req.query.format === 'markdown')
+                || req.accepts(['html', 'text/markdown']) === 'text/markdown') return agentRouter(req, res, next);
+            return next();
+        });
+    }
     app.use(pages.router);
 
     app.use((req, res) => pages.errorPage(req, res, 404, 'Page not found', 'Nothing lives at that address.'));
