@@ -151,20 +151,34 @@ function createMachine({ svc, config }) {
     }));
 
     /**
-     * /llms-full.txt: the llms.txt header, then one section of every indexable page. The same gate
-     * as the sitemap decides who is here (a public, published page still unreviewed stays out), and
-     * each entry is an excerpt — the page's summary, or its opening text — never the article. The
-     * byte cap keeps a large wiki bounded: llmsFull truncates whole entries and says so.
+     * /llms-full.txt: the llms.txt header, then the wikis /llms.txt names and one entry per indexable
+     * page. The same gate as the sitemap decides who is here (a public, published page still
+     * unreviewed stays out), and each page entry is an excerpt — the page's summary, or its opening
+     * text — never the article. The wikis are the site's own navigation pages, so a wiki whose pages
+     * are all still unreviewed still answers with what it is and where it is, never with a bare
+     * header. The byte cap keeps a large wiki bounded: llmsFull truncates whole entries and says so.
      */
     router.get('/llms-full.txt', wrap(async (_req, res) => {
-        const pages = (await svc.publishedPublic()).filter(({ decision }) => decision.indexable).map(({ space, page, rev }) => ({
+        const [published, allSpaces] = await Promise.all([svc.publishedPublic(), svc.listSpaces({ kind: 'anonymous' })]);
+        const listed = published.filter(({ decision }) => decision.indexable);
+        const perSpace = new Map();
+        for (const { space } of published) perSpace.set(space.id, (perSpace.get(space.id) || 0) + 1);
+        const spaces = allSpaces.filter((s) => s.visibility === 'public').map((s) => ({
+            title: s.name,
+            url: `${origin}${svc.spacePath(s)}`,
+            text: [
+                s.description ? s.description.replace(/\.?\s*$/, '.') : `The ${s.name} wiki on OpenVibe.Wiki.`,
+                `${perSpace.get(s.id) || 0} published page${(perSpace.get(s.id) || 0) === 1 ? '' : 's'}${s.updated_at ? `, updated ${new Date(Number(s.updated_at)).toISOString().slice(0, 10)}` : ''}.`,
+            ].join(' '),
+        }));
+        const pages = listed.map(({ space, page, rev }) => ({
             title: rev.fields.title,
             url: svc.pageUrl(space, page),
             text: rev.fields.summary || ssr.markdownToText(rev.content, LLMS_EXCERPT),
         }));
         setCache(res, 3600).type('text/plain').send(sharedSeo.llmsFull({
             site: 'OpenVibe.Wiki', summary: AI_SUMMARY, base: origin,
-            sections: [{ title: 'Pages', pages }], maxBytes: LLMS_MAX_BYTES,
+            sections: [{ title: 'Wikis', pages: spaces }, { title: 'Pages', pages }], maxBytes: LLMS_MAX_BYTES,
         }));
     }));
 
