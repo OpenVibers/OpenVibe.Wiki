@@ -170,6 +170,25 @@ async function lastIndexEvent(h, pageId) {
         assert.ok(r.text.includes('Sitemap: http://wiki.test/sitemap.xml'));
         assert.ok(r.text.includes('Disallow: /api/'));
 
+        // /.well-known/security.txt (RFC 9116, SEO-30): the required fields, a future Expires, and a Canonical
+        // on this site's own host — from the config (BASE_URL is http://wiki.test here), never a constant.
+        r = await H.req(h, 'GET', '/.well-known/security.txt');
+        assert.strictEqual(r.status, 200);
+        assert.strictEqual(r.headers.get('content-type'), 'text/plain; charset=utf-8');
+        assert.strictEqual(r.headers.get('cache-control'), 'public, max-age=86400');
+        const secFields = new Map();
+        for (const line of r.text.split('\n')) if (line.trim()) {
+            const m = line.match(/^([A-Za-z-]+): (.+)$/);
+            assert.ok(m, `every security.txt line is "Name: value" (got "${line}")`);
+            secFields.set(m[1], m[2]);
+        }
+        for (const key of ['Contact', 'Expires', 'Preferred-Languages', 'Canonical', 'Policy']) assert.ok(secFields.has(key), `security.txt names ${key}`);
+        assert.strictEqual(secFields.get('Contact'), 'mailto:security@openvibe.network');
+        assert.ok(Date.parse(secFields.get('Expires')) > Date.now(), 'Expires is in the future');
+        const canonical = new URL(secFields.get('Canonical'));
+        assert.strictEqual(canonical.host, new URL(h.config.baseUrl).host, 'Canonical is this site\'s own host');
+        assert.strictEqual(canonical.pathname, '/.well-known/security.txt');
+
         // The home carries the site's one-line AI summary: the ai-summary meta and a WebPage JSON-LD.
         r = await H.req(h, 'GET', '/');
         assert.strictEqual(r.status, 200);
