@@ -35,6 +35,7 @@ const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const { renderPage, AI_SUMMARY, asset } = require('../render/layout');
 const views = require('../render/views');
+const { foldBlock } = require('../render/short');
 const frame = require('openvibe-shared/frame');
 const showcase = require('openvibe-shared/showcase');
 const content = require('../wiki/content');
@@ -139,9 +140,15 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
             .map(async (s) => [s.id, await svc.shelf(s, req.actor, 60)])));
         // The site's one-line AI summary: the shell turns it into the ai-summary meta and the home's
         // WebPage JSON-LD (openvibe-publishing/layout v1.3.0 forwards `summary`).
-        send(req, res, 200, views.home({ spaces, recent, shelves, stats, linked, groups, generated, actor: req.actor }) + frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }), {
+        // The rules that show the picked block of each pick block: one per block, written for this page.
+        const rules = [];
+        const body = views.home({ spaces, recent, shelves, stats, linked, groups, generated, actor: req.actor, rules })
+            // The shipped list is a part a reader rarely needs: a fold on a phone, the section it was where there is room.
+            + foldBlock({ id: 'shipped', head: '<h2 id="wk-shipped-h">Recently shipped on OpenVibe.Wiki</h2>', html: frame.shipped({ service: 'wiki', title: 'Recently shipped on OpenVibe.Wiki' }) });
+        send(req, res, 200, body, {
             robots: 'index, follow', cache: 'public', active: 'home', path: '/', styles: [showcase.STYLESHEET],
             summary: AI_SUMMARY, description: HOME_DESCRIPTION,
+            head: rules.length ? `<style>@supports selector(:has(*)){@media (max-width:640px){${rules.join('')}}</style>` : '',
             jsonLd: views.homeJsonLd({ shelves, spaces: spaces.filter((s) => s.kind === 'official' && s.visibility === 'public'), baseUrl: config.baseUrl }),
         });
     }));

@@ -81,8 +81,11 @@ const ld = (text) => [...text.matchAll(/<script type="application\/ld\+json">([\
         const groups = { groups: [{ id: 'watch', name: 'Watch & stream' }, { id: 'you', name: 'Your OpenVibe' }, { id: 'talk', name: 'Talk & learn' }],
             hosts: new Map([['openvibe.live', 'watch'], ['openvibe.network', 'you']]) };
         const grouped = String(views.home({ spaces, recent: [], shelves: new Map([[spaces[0].id, shelf]]), groups, actor: { kind: 'anonymous' } }));
-        const order = ['Watch &amp; stream', 'OpenVibe.<wbr>Live', 'Your OpenVibe', 'OpenVibe.<wbr>Network', 'Platform and libraries', 'OpenVibe.<wbr>Publishing'].map((s) => grouped.indexOf(s));
-        assert.ok(order.every((i, n) => i > 0 && (n === 0 || i > order[n - 1])), `grouped in order: ${order}`);
+        // The groups are one pick block: the chips name them in order, and each group's pages follow in its pane.
+        const chips = ['Watch &amp; stream', 'Your OpenVibe', 'Platform and libraries'].map((s) => grouped.indexOf(s));
+        assert.ok(chips.every((i, n) => i > 0 && (n === 0 || i > chips[n - 1])), `the groups are in order: ${chips}`);
+        const inOrder = (list, what) => assert.ok(list.every((i, n) => i > 0 && (n === 0 || i > list[n - 1])), `${what} in order: ${list}`);
+        inOrder(['OpenVibe.<wbr>Live', 'OpenVibe.<wbr>Network', 'OpenVibe.<wbr>Publishing'].map((s) => grouped.indexOf(s)), 'the pages');
         assert.ok(!grouped.includes('Talk &amp; learn'), 'a group with no pages is left out');
 
         // The Frame reader: groups and hosts from /api/chrome, cached; unreachable → null (one flat shelf).

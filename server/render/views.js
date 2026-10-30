@@ -7,10 +7,13 @@ const ssr = require('openvibe-publishing/ssr');
 const showcase = require('openvibe-shared/showcase');
 const { figureHtml } = require('openvibe-publishing/media');
 const { infoboxToText, mediaRefs } = require('../wiki/content');
+const { pickBlock, pickRules, foldBlock } = require('./short');
 
 const { html, raw } = ssr;
 const t = (v) => raw(ssr.timeTag(v));
 const e = encodeURIComponent;
+/** A chip's id: the name, safe to put in an id. */
+const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const VIS_LABEL = { public: 'Public', members: 'Members (any signed-in OpenVibe account)', vip: 'VIP (the wiki owner\'s OpenVibe.VIP members)', private: 'Private (people with a role in this wiki)' };
 
 function wpath(space, page) { return `/w/${e(space.slug)}/${e(page.slug)}`; }
@@ -64,7 +67,7 @@ const FAQ = [
     { q: 'How do I follow changes?', a: 'The whole site and each public wiki have Atom and JSON feeds, and signed-in readers can watch a page. Every public page is also served as JSON: add .json to its address.' },
 ];
 
-function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], groups = null, generated = [], actor }) {
+function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], groups = null, generated = [], actor, rules = [] }) {
     const official = spaces.filter((s) => s.kind === 'official');
     const user = spaces.filter((s) => s.kind === 'user');
     const signedIn = !!(actor && actor.subject);
@@ -81,7 +84,7 @@ function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], 
     const inside = shelved.map((s) => {
         const shelf = shelves.get(s.id);
         const day = shelf.updated ? new Date(Number(shelf.updated)).toISOString().slice(0, 10) : null;
-        let body;
+        let blocks;
         if (groups) {
             const byGroup = new Map(groups.groups.map((g) => [g.id, []]));
             const rest = [];
@@ -91,12 +94,22 @@ function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], 
                 const g = host && groups.hosts.get(host);
                 (g && byGroup.has(g) ? byGroup.get(g) : rest).push(item);
             }
-            const blocks = groups.groups.filter((g) => byGroup.get(g.id).length).map((g) => ({ name: g.name, items: byGroup.get(g.id) }));
+            blocks = groups.groups.filter((g) => byGroup.get(g.id).length).map((g) => ({ name: g.name, items: byGroup.get(g.id) }));
             if (rest.length) blocks.push({ name: 'Platform and libraries', items: rest });
-            body = blocks.map((b) => html`<div class="wk-h-group"><h3>${b.name} <span>${plural(b.items.length, 'page')}</span></h3><div class="sc-grid">${b.items.map((item) => pageCard(s, item))}</div></div>`);
         } else {
-            body = html`<div class="sc-grid">${shelf.pages.map((item) => pageCard(s, item))}</div>`;
+            blocks = [{ name: 'Pages', items: shelf.pages }];
         }
+        // The groups are blocks of the same kind: on a phone a row of chips picks one of them and the chip names it.
+        const groupHtml = (b) => html`<div class="wk-h-group"><h3>${b.name} <span>${plural(b.items.length, 'page')}</span></h3><div class="sc-grid">${b.items.map((item) => pageCard(s, item))}</div></div>`;
+        const body = blocks.length > 1
+            ? raw(pickBlock({
+                key: `shelf-${s.slug}`,
+                label: `Pages of ${s.name}`,
+                head: `Pages of ${s.name}`,
+                panes: blocks.map((b) => ({ id: slug(b.name), label: b.name, html: String(groupHtml(b)) })),
+            }))
+            : html`${blocks.map(groupHtml)}`;
+        if (blocks.length > 1) rules.push(pickRules(`shelf-${s.slug}`, blocks.map((b) => slug(b.name))));
         const lede = `${s.description ? `${s.description.replace(/\.?\s*$/, '.')} ` : ''}${plural(shelf.total, 'page')}${day ? `, updated ${day}` : ''}.`;
         return html`<section class="sc-sec wk-h-shelf" id="inside-${s.slug}" aria-labelledby="wk-in-${s.slug}"><h2 id="wk-in-${s.slug}">The ${s.name} wiki</h2><p class="sc-lede">${lede}</p>
 ${shelf.root ? html`<p class="wk-h-root"><a href="${wpath(s, shelf.root.page)}"><b>Start with ${shelf.root.page.title}</b>${shelf.root.summary ? html`<span>${shelf.root.summary}</span>` : ''}</a></p>` : ''}
@@ -124,6 +137,21 @@ ${stats && stats.pages ? html`<dl class="wk-h-stats">${tiles.slice(0, 4).map(([k
             { title: 'Publish and keep going', text: 'Publish now or schedule it. Every revision stays in the history, ready to compare or restore.' },
         ],
     });
+    // The lists of the same kind are one pick block each: on a phone a row of chips picks one of them and the chip
+    // names it, so the list's own heading gives way to it. Every list stays in the page.
+    const pick = (key, label, head, panes) => {
+        const list = panes.filter(Boolean);
+        if (!list.length) return '';
+        if (list.length === 1) return raw(list[0].html);
+        rules.push(pickRules(key, list.map((p) => p.id)));
+        return raw(pickBlock({ key, label, head, panes: list }));
+    };
+    const linkedPane = linked.length ? { id: 'linked', label: 'Most linked pages', html: String(html`<section class="sc-sec" aria-labelledby="wk-linked-h"><h2 id="wk-linked-h">Most linked pages</h2><p class="sc-lede">The pages other pages point to most often: a good place to start reading.</p>
+<ol class="wk-h-rank">${linked.map((x) => html`<li><a href="${wpath(x.space, x.page)}">${x.page.title}</a><span class="wk-h-count">Linked from ${plural(x.links, 'page')}</span>${x.rev && x.rev.fields && x.rev.fields.summary ? html`<p>${x.rev.fields.summary}</p>` : ''}</li>`)}</ol></section>`) } : null;
+    const recentPane = recent.length ? { id: 'recent', label: 'Recently revised', html: String(html`<section class="sc-sec" aria-labelledby="wk-recent-h"><h2 id="wk-recent-h">Recently revised</h2><ul class="wk-recent">${recent.map((r) => html`<li><span><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name} · revision ${String(r.page.published_revision)}</span></span> <span class="wk-muted">${t(r.page.revision_published_at)}</span></li>`)}</ul>
+<p class="wk-more"><a href="/recent">All recent changes</a> · <a href="/feed.atom">Atom</a> · <a href="/feed.json">JSON Feed</a></p></section>`) } : null;
+    const officialPane = unshelved.length ? { id: 'official', label: 'Official wikis', html: String(html`<section class="sc-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official wikis</h2><ul class="wk-spaces">${unshelved.map(card)}</ul></section>`) } : null;
+    const communityPane = user.length ? { id: 'community', label: 'Community wikis', html: String(html`<section class="sc-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community wikis</h2><ul class="wk-spaces">${user.map(card)}</ul></section>`) } : null;
     return html`${raw(showcase.hero({
         eyebrow: 'OpenVibe.Wiki',
         title: 'Any topic.', accent: 'A whole wiki.',
@@ -131,16 +159,20 @@ ${stats && stats.pages ? html`<dl class="wk-h-stats">${tiles.slice(0, 4).map(([k
         actions: [{ label: 'Vibe a wiki', href: '/vibe', primary: true }, { ...start, primary: false }],
         aside: { html: String(aside) },
     }))}
-${generated && generated.length ? html`<section class="sc-sec" aria-labelledby="wk-gen-h"><h2 id="wk-gen-h">Wikis people vibed</h2><p class="sc-lede">Each one researched and written by AI from the sources it lists, with its pictures credited. Open one, or make your own.</p>
-${raw(vibeCards(generated))}<p class="wk-more"><a href="/vibe">Vibe a wiki</a></p></section>` : ''}
+${generated && generated.length ? raw(foldBlock({
+    id: 'vibed',
+    head: '<h2 id="wk-gen-h">Wikis people vibed</h2>',
+    html: String(html`<section class="sc-sec" aria-labelledby="wk-gen-h"><h2>Wikis people vibed</h2><p class="sc-lede">Each one researched and written by AI from the sources it lists, with its pictures credited. Open one, or make your own.</p>
+${raw(vibeCards(generated))}<p class="wk-more"><a href="/vibe">Vibe a wiki</a></p></section>`),
+})) : ''}
 <div id="spaces"></div>
 ${inside}
-${linked.length ? html`<section class="sc-sec" aria-labelledby="wk-linked-h"><h2 id="wk-linked-h">Most linked pages</h2><p class="sc-lede">The pages other pages point to most often: a good place to start reading.</p>
-<ol class="wk-h-rank">${linked.map((x) => html`<li><a href="${wpath(x.space, x.page)}">${x.page.title}</a><span class="wk-h-count">Linked from ${plural(x.links, 'page')}</span>${x.rev && x.rev.fields && x.rev.fields.summary ? html`<p>${x.rev.fields.summary}</p>` : ''}</li>`)}</ol></section>` : ''}
-${recent.length ? html`<section class="sc-sec" aria-labelledby="wk-recent-h"><h2 id="wk-recent-h">Recently revised</h2><ul class="wk-recent">${recent.map((r) => html`<li><span><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">in ${r.space.name} · revision ${String(r.page.published_revision)}</span></span> <span class="wk-muted">${t(r.page.revision_published_at)}</span></li>`)}</ul>
-<p class="wk-more"><a href="/recent">All recent changes</a> · <a href="/feed.atom">Atom</a> · <a href="/feed.json">JSON Feed</a></p></section>` : ''}
-${unshelved.length ? html`<section class="sc-sec" aria-labelledby="wk-official"><h2 id="wk-official">Official wikis</h2><ul class="wk-spaces">${unshelved.map(card)}</ul></section>` : ''}
-${user.length ? html`<section class="sc-sec" aria-labelledby="wk-community"><h2 id="wk-community">Community wikis</h2><ul class="wk-spaces">${user.map(card)}</ul></section>` : ''}
+${pick('read', 'Pages to start with', 'Pages to start with', [linkedPane, recentPane])}
+${(officialPane || communityPane) ? raw(foldBlock({
+    id: 'wikis',
+    head: '<h2 id="wk-wikis-h">Wikis to explore</h2>',
+    html: String(html`${officialPane ? raw(officialPane.html) : ''}${communityPane ? raw(communityPane.html) : ''}`),
+})) : ''}
 <div class="sc-sec"><details class="wk-h-fold"><summary>Start a wiki of your own<span>what it gets, how a page comes together</span></summary>${raw(showcase.features({
         title: 'What a wiki gets',
         items: [
@@ -153,8 +185,16 @@ ${user.length ? html`<section class="sc-sec" aria-labelledby="wk-community"><h2 
         ],
     }))}
 ${raw(steps)}</details></div>
-<section class="sc-sec wk-h-faq" aria-labelledby="wk-faq-h"><h2 id="wk-faq-h">Questions</h2>${FAQ.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>
-${raw(showcase.network({ service: 'wiki' }))}`;
+${raw(foldBlock({
+    id: 'faq',
+    head: '<h2 id="wk-faq-h">Questions</h2>',
+    html: String(html`<section class="sc-sec wk-h-faq" aria-labelledby="wk-faq-h"><h2>Questions</h2>${FAQ.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>`),
+}))}
+${raw(foldBlock({
+    id: 'network',
+    head: '<h2 id="wk-part-h">Part of OpenVibe</h2>',
+    html: String(showcase.network({ service: 'wiki' })),
+}))}`;
 }
 
 // ── "Vibe a wiki" (server/wiki/vibe.js) ─────────────────────
