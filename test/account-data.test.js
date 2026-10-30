@@ -9,9 +9,10 @@
  */
 const assert = require('assert');
 const http = require('http');
-const { createNetworkSender } = require('openvibe-sdk/account-data');
+const { createNetworkSender, uncovered } = require('openvibe-sdk/account-data');
 const { signDeliveryHeaders } = require('openvibe-sdk/events');
 const H = require('./helpers');
+const { TABLES } = require('../server/wiki/account-data');
 
 const SECRET = `whsec_${'fixture'.repeat(6)}`;
 
@@ -42,6 +43,18 @@ async function check(name, fn) {
     const alice = { kind: 'user', subject: H.subject() };
     const bob = { kind: 'user', subject: H.subject() };
     const db = h.db;
+    {
+        const missing = await uncovered(db, {
+            tables: TABLES,
+            taskKeyed: ['wiki_spaces', 'wiki_pages', 'wiki_module_dirty', 'wiki_module_pushes'],
+            exempt: {
+                account_data_events: 'the ledger of requests itself: which export and deletion Wiki applied',
+                wiki_index_revisions: "owner is the search-index document's owner (type/id), not a person; the row holds a revision and hash",
+            },
+        });
+        if (missing.length) { failures++; console.log(`  ✗ every table that names a person is covered or exempted with a reason\n      ${missing.join(', ')}`); }
+        else console.log('  ✓ every table that names a person is covered or exempted with a reason');
+    }
     const count = async (sql, args) => Number(await db.value(sql, args));
     const deliver = async (event, { secret = SECRET, headers = {} } = {}) => {
         const body = JSON.stringify({ event, seq: 1 });
