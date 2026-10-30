@@ -177,3 +177,16 @@ main .wk-h-group h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap
   .wk-h-rank > li:nth-child(n+4), .wk-recent > li:nth-child(n+6) { display: none; }
   .wk-h-fold > summary span { display: none; }
 }
+
+/* Touch targets on phones (fleet audit, 2026-10-29): touch pointers only. */
+@media (pointer: coarse) {
+  .wk-h-faq summary { min-height: 44px; }
+  .wk-search input, .wk-search button, .wk-h-search input, .wk-h-search button { min-height: 44px; }
+  .wk-brand { position: relative; display: inline-block; }
+  .wk-brand::after { content: ''; position: absolute; left: 0; right: 0; top: -9px; bottom: -9px; }
+  .wk-more a:only-child { position: relative; display: inline-block; }
+  .wk-more a:only-child::after { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
+  .wk-recent a { display: inline-block; min-height: 44px; }
+  .wk-h-rank > li > a { position: relative; display: inline-block; }
+  .wk-h-rank > li > a::after { content: ''; position: absolute; left: 0; right: 0; top: -9px; bottom: -9px; }
+}
