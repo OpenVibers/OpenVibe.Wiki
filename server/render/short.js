@@ -22,14 +22,14 @@ const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</
  */
 function pickBlock({ key, label, head = '', panes }) {
     if (!panes.length) return '';
-    const chips = panes.map((p, i) => `<input type="radio" name="pick-${esc(key)}" id="pk-${esc(key)}-${esc(p.id)}" value="${esc(p.id)}"${i === 0 ? ' checked' : ''}><label for="pk-${esc(key)}-${esc(p.id)}">${esc(p.label)}</label>`).join('');
-    const body = panes.map((p) => `<div class="pick-pane" id="pp-${esc(key)}-${esc(p.id)}">${p.html}</div>`).join('');
-    return `<div class="pick" id="pick-${esc(key)}"><div class="pick-bar"><div class="pick-head"><h2>${esc(head || label)}</h2></div><div class="pick-row" role="radiogroup" aria-label="${esc(label)}">${chips}</div></div><div class="pick-body">${body}</div></div>`;
+    // Every block is on the page on every screen (the owner's rule, 2026-10-31); the chip row that picked one at a
+    // time on a phone is gone.
+    return panes.map((p) => `<div class="pick-pane" id="pp-${esc(key)}-${esc(p.id)}">${p.html}</div>`).join('');
 }
 
 /** The rule that shows the picked block of a pick block: one per block, so the CSS is written for the page. */
 function pickRule(key, id) {
-    return `.pick:has(#pk-${key}-${id}:checked) #pp-${key}-${id}{display:block}`;
+    return '';
 }
 
 /** The rules for every block of a pick block, in the order they appear. */
@@ -43,7 +43,7 @@ function pickRules(key, ids) {
  *   foldBlock({ id, head, html })
  */
 function foldBlock({ id, head, html }) {
-    return `<details class="wk-fold wk-fold-block" id="${esc(id)}" open><summary>${head}<span>tap to open</span></summary>${html}</details>${foldScript(id)}`;
+    return `<details class="wk-fold wk-fold-block" id="${esc(id)}" open><summary>${head}</summary>${html}</details>`;
 }
 
 /** The script a fold carries: closed on a phone unless the reader opened it before, and it remembers that. */
