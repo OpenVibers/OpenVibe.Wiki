@@ -174,8 +174,6 @@ main .wk-h-group h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap
   .wk-h-group .sc-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; gap: 10px; margin-left: -16px; margin-right: -16px; padding: 0 16px 4px; }
   .wk-h-group .sc-grid::-webkit-scrollbar { display: none; }
   .wk-h-group .sc-grid > * { flex: 0 0 46%; min-width: 0; scroll-snap-align: start; }
-  .wk-h-rank > li:nth-child(n+4), .wk-recent > li:nth-child(n+6) { display: none; }
-  .wk-h-fold > summary span { display: none; }
 }
 
 /* Touch targets on phones (fleet audit, 2026-10-29): touch pointers only. */
