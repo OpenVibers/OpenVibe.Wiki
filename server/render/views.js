@@ -642,10 +642,20 @@ ${p.note ? html`<br><span class="wk-muted">${p.note}</span>` : ''}
 </section>`;
 }
 
+// One search box: the site bar above (layout.js) carries the query; the page names it and lists what matched. The page had
+// its own second form under the bar (2026-11-01).
 function searchPage({ query, results }) {
-    return html`<section><h1>Search</h1>
-<form action="/search" method="get" class="wk-form" role="search"><label>Words <input type="search" name="q" value="${query || ''}"></label><button type="submit">Search</button></form>
-${query ? (results.length ? html`<ol class="wk-results">${results.map((r) => html`<li><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">${r.space.name}</span><br>${r.summary}</li>`)}</ol>` : html`<p>No published page matches.</p>`) : ''}
+    if (!query) {
+        return html`<section><h1>Search the wiki</h1>
+<p>Type in the search bar above: it looks through the title and text of every public page.</p>
+<p class="wk-search-next"><a href="/recent">Recent changes</a> · <a href="/">All wikis</a></p>
+</section>`;
+    }
+    const n = results.length;
+    return html`<section><h1>Results for “${query}”</h1>
+${n ? html`<p class="wk-muted">${String(n)} ${n === 1 ? 'page matches' : 'pages match'}</p>
+<ol class="wk-results">${results.map((r) => html`<li><a href="${wpath(r.space, r.page)}">${r.page.title}</a> <span class="wk-muted">${r.space.name}</span><br>${r.summary}</li>`)}</ol>`
+        : html`<p>No published page matches. Try fewer or different words, or look through <a href="/recent">recent changes</a> and <a href="/">all wikis</a>.</p>`}
 </section>`;
 }
 
