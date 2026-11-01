@@ -46,3 +46,5 @@
 .wk-vp-dot:nth-child(2) { animation-delay: .2s; }
 .wk-vp-dot:nth-child(3) { animation-delay: .4s; }
 @keyframes wk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+@media (prefers-reduced-motion: reduce) { .wk-vp-steps .wk-vp-step-now, .wk-vp-pages .wk-vp-writing small::before { animation: none; } .wk-vp-dot { animation: none; } }
