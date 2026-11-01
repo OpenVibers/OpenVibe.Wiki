@@ -1117,8 +1117,10 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
          */
         async renderRevision(space, rev, actor, { attachments = null, mediaUrl = null } = {}) {
             const targets = content.extractLinks(rev.content, space.slug);
-            const resolved = new Map();
-            for (const t of targets) resolved.set(`${t.space}\u0000${t.slug}`, await svc.resolveLink(t, actor));
+            // One lookup per distinct target, all at once: a well-linked article names dozens, and one round trip each
+            // in series made /w/:space/:slug wait on every link before it rendered.
+            const unique = new Map(targets.map((t) => [`${t.space}\u0000${t.slug}`, t]));
+            const resolved = new Map(await Promise.all([...unique].map(async ([key, t]) => [key, await svc.resolveLink(t, actor)])));
             const byMedia = new Map((attachments || []).map((a) => [a.mediaId, a]));
             const media = mediaUrl ? (id, caption) => {
                 const a = byMedia.get(id);
