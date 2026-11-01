@@ -87,6 +87,15 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'seeds', 'ope
         assert.ok(r.text.includes('<meta name="robots" content="index, follow">'));
         assert.ok(r.text.includes('Reviewed by a person.'));
         assert.ok(!r.text.includes('Not yet reviewed by a person.'));
+        // The head says what a reader may check (market outcomes 2, 3 and 5): sources, revisions, when this text was
+        // accepted, and the review, with its date.
+        const facts = (/<p class="wk-facts">[\s\S]*?<\/p>/.exec(r.text) || [''])[0];
+        assert.match(facts, /<a href="\/w\/openvibe\/openvibe-search\/sources">\d+ sources? cited<\/a>/);
+        assert.match(facts, /<a href="\/w\/openvibe\/openvibe-search\/history">\d+ revisions?<\/a>/);
+        assert.match(facts, /this text accepted <time/);
+        assert.match(facts, /<span class="wk-review wk-review--ok">Reviewed by a person <time/);
+        const waiting = await H.req(h, 'GET', `/w/openvibe/${legacy.page.slug}`);
+        assert.match(waiting.text, /<span class="wk-review wk-review--no">Not yet reviewed by a person<\/span>/, 'an AI-assisted page nobody reviewed says so in its head');
         assert.ok((await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.includes('http://wiki.test/w/openvibe/openvibe-search'));
         assert.ok((await H.req(h, 'GET', '/feed.atom')).text.includes('http://wiki.test/w/openvibe/openvibe-search'));
         assert.ok((await H.req(h, 'GET', '/feed.json')).json.items.some((i) => i.url === 'http://wiki.test/w/openvibe/openvibe-search'));

@@ -387,6 +387,29 @@ ${comments.length ? html`<ul class="wk-comments">${comments.map((c) => html`<li>
 ${form}</section>`;
 }
 
+/**
+ * What a reader may want to check before trusting a page, in its head (market outcomes 2, 3 and 5): how many sources it
+ * cites and how many revisions it has had, when the text they read was accepted, whether a newer edit is waiting, and
+ * whether a person reviewed it. No other wiki shows these together.
+ */
+function pageFacts(v, base) {
+    const { revision: rev, page } = v;
+    const n = (x, one, many = `${one}s`) => `${x} ${x === 1 ? one : many}`;
+    const facts = [
+        html`<a href="${base}/sources${v.isPublishedRevision ? '' : `?rev=${rev.number}`}">${n(v.citations.length, 'source')} cited</a>`,
+        html`<a href="${base}/history">${n(Number(v.headNumber || rev.number), 'revision')}</a>`,
+        v.isPublishedRevision ? html`this text accepted ${t(rev.createdAt)}` : html`revision ${String(rev.number)}, saved ${t(rev.createdAt)}`,
+    ];
+    if (v.offeredAt && v.isPublishedRevision) facts.push(html`<span class="wk-fact-wait">a newer edit, offered ${t(v.offeredAt)}, is waiting</span>`);
+    const r = v.review;
+    const reviewed = !!(r && /approv|accept/i.test(String(r.decision || '')));
+    const ai = !!(v.authorship && v.authorship.mode && v.authorship.mode !== 'human');
+    const badge = reviewed
+        ? html`<span class="wk-review wk-review--ok">Reviewed by a person${r.reviewed_at || r.reviewedAt ? html` ${t(r.reviewed_at || r.reviewedAt)}` : ''}</span>`
+        : ai ? html`<span class="wk-review wk-review--no">Not yet reviewed by a person</span>` : '';
+    return html`<p class="wk-facts">${facts.map((f, i) => html`${i ? html`<span aria-hidden="true"> · </span>` : ''}<span>${f}</span>`)}${badge ? html` ${badge}` : ''}</p>`;
+}
+
 function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolve, flash }) {
     const { space, page, revision: rev } = v;
     const base = wpath(space, page);
@@ -405,7 +428,7 @@ function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolv
     if (v.canEdit) actions.unshift(html`<a href="${base}/edit">Edit</a>`), actions.push(html`<a href="${base}/settings">Page settings</a>`);
     return html`${crumbs(trail)}
 <article class="wk-article" data-page-id="${page.id}" data-revision="${String(rev.number)}">
-<header><h1>${rev.fields.title || page.title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav></header>
+<header><h1>${rev.fields.title || page.title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav>${pageFacts(v, base)}</header>
 ${banners}
 ${raw(infoboxHtml(v.infobox, resolve, outRel(space), { media: (id) => { const a = v.attachments.find((x) => x.mediaId === id); return a && mediaUrl ? figureHtml(a, { urlFor: mediaUrl, unavailableText: UNAVAILABLE[a.brokenReason] || UNAVAILABLE.not_found }) : null; } }))}
 <div class="wk-content">${raw(contentHtml)}</div>

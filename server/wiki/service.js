@@ -1048,8 +1048,10 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 actor && actor.subject ? await q.isWatching.get(page.id, actor.subject) : null,
                 canEdit ? await q.proposalsOfPage.all(page.id) : [],
                 canEdit ? scheduler.jobs(page.id) : [],
-                canEdit ? revisions.headNumber(page.id) : null,
+                // Everyone sees how many revisions a page has had and whether a newer edit waits (market outcomes 2-3).
+                revisions.headNumber(page.id),
             ]);
+            const offered = headNumber && headNumber > n ? await revisions.get(page.id, headNumber) : null;
             const rec = rev.meta.authorship || null;
             const facts = gateFactsWith(space, page, rev, cites.length, review);
             const decision = page.state === 'published' && n === page.published_revision
@@ -1073,6 +1075,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 pendingProposals: proposals.filter((p) => p.status === 'pending'),
                 jobs: jobs.filter((j) => j.status === 'pending' || j.status === 'running'),
                 headNumber,
+                offeredAt: offered ? offered.createdAt : null,
             };
         },
 

@@ -231,3 +231,13 @@ main .wk-h-group h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap
   .wk-fold-block .sc-sec { padding: 0; }
 }
 @media (max-width: 640px) { .wk-fold-block { margin-top: 24px; } .wk-fold-block > summary span { display: none; } }
+/* What a reader may check before trusting a page, in its head (market outcomes 2, 3 and 5) */
+.wk-facts { flex-basis: 100%; margin: 6px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; font-size: .86rem; color: var(--text-secondary, #96a7c2); }
+.wk-facts a { color: var(--text-secondary, #96a7c2); text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+.wk-facts a:hover { color: var(--accent, #3b82f6); }
+.wk-facts > span[aria-hidden] { padding: 0 6px; color: var(--text-muted, #7386a3); }
+.wk-fact-wait { color: var(--warning-text, var(--warning, #f59e0b)); }
+.wk-review { margin-left: 10px; padding: 2px 10px; border-radius: 999px; font-size: .76rem; font-weight: 700; white-space: nowrap; }
+.wk-review--ok { color: var(--success-text, var(--success, #22c55e)); background: color-mix(in srgb, var(--success, #22c55e) 12%, transparent); }
+.wk-review--no { color: var(--warning-text, var(--warning, #f59e0b)); background: color-mix(in srgb, var(--warning, #f59e0b) 12%, transparent); }
+@media (max-width: 600px) { .wk-review { margin-left: 0; margin-top: 4px; } }
