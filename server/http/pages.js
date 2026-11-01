@@ -392,10 +392,12 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         }
         // Infobox values of type page link to that page: resolved before the (synchronous) view renders.
         const infoboxLinks = new Map();
+        const infoboxTargets = new Map();
         for (const x of v.infobox) {
-            if (x.type !== 'page' || infoboxLinks.has(x.value)) continue;
-            infoboxLinks.set(x.value, await svc.resolveLink(content.parseTarget(x.value, space.slug) || { space: space.slug, slug: '-', title: x.value }, req.actor));
+            if (x.type !== 'page' || infoboxTargets.has(x.value)) continue;
+            infoboxTargets.set(x.value, content.parseTarget(x.value, space.slug) || { space: space.slug, slug: '-', title: x.value });
         }
+        await Promise.all([...infoboxTargets].map(async ([value, target]) => infoboxLinks.set(value, await svc.resolveLink(target, req.actor))));
         const [bodyHtml, discussion] = await Promise.all([
             svc.renderRevision(space, v.revision, req.actor),
             v.isPublishedRevision ? await discussionFor(space, page, req.actor) : { state: 'not_public' },
