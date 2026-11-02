@@ -7,7 +7,7 @@ const ssr = require('openvibe-publishing/ssr');
 const showcase = require('openvibe-shared/showcase');
 const { figureHtml } = require('openvibe-publishing/media');
 const { infoboxToText, mediaRefs } = require('../wiki/content');
-const { pickBlock, pickRules, foldBlock } = require('./short');
+const { pickBlock, foldBlock } = require('./short');
 
 const { html, raw } = ssr;
 const t = (v) => raw(ssr.timeTag(v));
@@ -109,7 +109,6 @@ function home({ spaces, recent, shelves = new Map(), stats = null, linked = [], 
                 panes: blocks.map((b) => ({ id: slug(b.name), label: b.name, html: String(groupHtml(b)) })),
             }))
             : html`${blocks.map(groupHtml)}`;
-        if (blocks.length > 1) rules.push(pickRules(`shelf-${s.slug}`, blocks.map((b) => slug(b.name))));
         const lede = `${s.description ? `${s.description.replace(/\.?\s*$/, '.')} ` : ''}${plural(shelf.total, 'page')}${day ? `, updated ${day}` : ''}.`;
         return html`<section class="sc-sec wk-h-shelf" id="inside-${s.slug}" aria-labelledby="wk-in-${s.slug}"><h2 id="wk-in-${s.slug}">The ${s.name} wiki</h2><p class="sc-lede">${lede}</p>
 ${shelf.root ? html`<p class="wk-h-root"><a href="${wpath(s, shelf.root.page)}"><b>Start with ${shelf.root.page.title}</b>${shelf.root.summary ? html`<span>${shelf.root.summary}</span>` : ''}</a></p>` : ''}
@@ -143,7 +142,6 @@ ${stats && stats.pages ? html`<dl class="wk-h-stats">${tiles.slice(0, 4).map(([k
         const list = panes.filter(Boolean);
         if (!list.length) return '';
         if (list.length === 1) return raw(list[0].html);
-        rules.push(pickRules(key, list.map((p) => p.id)));
         return raw(pickBlock({ key, label, head, panes: list }));
     };
     const linkedPane = linked.length ? { id: 'linked', label: 'Most linked pages', html: String(html`<section class="sc-sec" aria-labelledby="wk-linked-h"><h2 id="wk-linked-h">Most linked pages</h2><p class="sc-lede">The pages other pages point to most often: a good place to start reading.</p>

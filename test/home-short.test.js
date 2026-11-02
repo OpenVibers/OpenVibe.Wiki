@@ -40,10 +40,10 @@ const data = {
         const text = r.text;
 
         assert.ok(text.includes('<div class="pick" id="pick-read">'), 'the pages to start with are one pick block');
-        assert.match(text, /<div class="pick-row" role="radiogroup" aria-label="Pages to start with">/);
-        const chips = [...text.matchAll(/<input type="radio" name="pick-read" id="pk-read-([a-z]+)" value="\1"( checked)?><label for="pk-read-\1">([^<]+)<\/label>/g)];
+        assert.match(text, /<nav class="pick-row" aria-label="Pages to start with">/);
+        const chips = [...text.matchAll(/<a class="pick-chip" href="#(?:pp-read-)?([a-z]+)">()([^<]+)<\/a>/g)];
         assert.deepStrictEqual(chips.map((m) => m[1]), ['linked', 'recent'], 'a chip per list');
-        assert.deepStrictEqual(chips.filter((m) => m[2]).map((m) => m[1]), ['linked'], 'the first list is picked');
+        assert.ok(!/type="radio"/.test(text), 'no chip is a radio: nothing is picked, every pane shows');
         assert.strictEqual((text.match(/class="pick-pane"/g) || []).length, chips.length, 'one pane per chip');
         // Every list stays in the page for the crawlers.
         assert.ok(text.includes('Most linked pages') && text.includes('Recently revised'), 'both lists are in the page');
@@ -66,20 +66,14 @@ const data = {
         const rules = [];
         const grouped = String(views.home({ spaces, recent: [], shelves: new Map([[spaces[0].id, shelf]]), groups, actor: { kind: 'anonymous' }, rules }));
         assert.ok(grouped.includes('<div class="pick" id="pick-shelf-openvibe">'), 'the groups are one pick block');
-        const groupChips = [...grouped.matchAll(/<input type="radio" name="pick-shelf-openvibe" id="pk-shelf-openvibe-([a-z-]+)" value="\1"( checked)?><label for="pk-shelf-openvibe-\1">([^<]+)<\/label>/g)];
+        const groupChips = [...grouped.matchAll(/<a class="pick-chip" href="#(?:pp-shelf-openvibe-)?([a-z-]+)">()([^<]+)<\/a>/g)];
         assert.deepStrictEqual(groupChips.map((m) => m[1]), ['watch-stream', 'your-openvibe', 'platform-and-libraries'], 'a chip per group');
-        assert.deepStrictEqual(groupChips.filter((m) => m[2]).map((m) => m[1]), ['watch-stream'], 'the first group is picked');
+        assert.ok(!/type="radio"/.test(grouped), 'no chip is a radio: nothing is picked, every pane shows');
         // Every page stays in the page.
         assert.strictEqual((grouped.match(/class="sc-card wk-h-card"/g) || []).length, 3, 'every page card is in the page');
-        // The rule that shows the picked group is written for the page.
-        assert.ok(rules.join('').includes('.pick:has(#pk-shelf-openvibe-watch-stream:checked) #pp-shelf-openvibe-watch-stream{display:block}'), 'the picked group shows');
 
-        // The CSS guard: the chips are hidden and the blocks all show until 640 px and where :has() is understood.
         const css = require('fs').readFileSync(require('path').join(__dirname, '..', 'public', 'css', 'wiki.css'), 'utf8');
         assert.match(css, /\.pick-row \{ display: none; \}/, 'the chips are hidden by default');
-        assert.match(css, /@supports selector\(:has\(\*\)\) \{ @media \(max-width: 640px\) \{/, 'the phone rules are under :has() and 640 px');
-        assert.match(css, /\.pick-row label \{[^}]*min-height: 44px/, 'a chip is a 44 px target');
-        assert.match(css, /\.pick-pane \{ display: none; \}/, 'the blocks are hidden on a phone');
 
         console.log('home-short ok');
     } finally {
