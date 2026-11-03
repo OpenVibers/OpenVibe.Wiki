@@ -155,15 +155,19 @@ function createMachine({ svc, config }) {
         setCache(res, 3600).type('text/plain').send(sharedSeo.llmsTxt({
             name: 'OpenVibe.Wiki',
             summary: AI_SUMMARY,
+            // AGT-5: own pages link their Markdown twins (openvibe-shared 4.108.0); ## Optional is what an agent may skip.
+            markdown: true,
+            base: origin,
             details: 'Every public page has a JSON representation at the same address plus ".json" (same content, same visibility rules). Revision history and diffs are public for public pages. AI-generated revisions are labelled and are published only after a person approves them.',
             sections: [
                 { title: 'Spaces', links: spaces.map((s) => ({ title: s.name, url: `${origin}${svc.spacePath(s)}`, note: s.description || '' })) },
-                { title: 'Machine-readable', links: [
-                    { title: 'Sitemap', url: `${origin}/sitemap.xml` },
-                    { title: 'Recent changes (Atom)', url: `${origin}/feed.atom` },
-                    { title: 'Recent changes (JSON Feed)', url: `${origin}/feed.json` },
-                ] },
                 { title: 'API', links: [{ title: 'OpenAPI 3.1 document', url: `${origin}/openapi.json`, note: 'every /api/v1 route, with its fields' }] },
+            ],
+            optional: [
+                { title: 'Sitemap', url: `${origin}/sitemap.xml` },
+                { title: 'Recent changes (Atom)', url: `${origin}/feed.atom` },
+                { title: 'Recent changes (JSON Feed)', url: `${origin}/feed.json` },
+                { title: 'Full text for language models', url: `${origin}/llms-full.txt` },
             ],
         }));
     }));

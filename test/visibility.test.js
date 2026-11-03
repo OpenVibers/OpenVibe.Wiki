@@ -90,7 +90,12 @@ async function lastIndexEvent(h, pageId) {
         assert.ok(!(await H.req(h, 'GET', '/sitemaps/pages-1.xml')).text.includes('open-page'));
         assert.ok(!(await H.req(h, 'GET', '/feed.atom')).text.includes('open-page'));
         assert.ok(!(await H.req(h, 'GET', '/feed.json')).text.includes('open-page'));
-        assert.ok(!(await H.req(h, 'GET', '/llms.txt')).text.includes('open-page'));
+        const llms = (await H.req(h, 'GET', '/llms.txt')).text;
+        assert.ok(!llms.includes('open-page'));
+        // AGT-5: a wiki is linked at its Markdown twin, the feeds keep their URL, ## Optional is last.
+        assert.ok(/\]\(https?:\/\/[^)]*\/s\/notes\.md\)/.test(llms), llms.slice(0, 900));
+        assert.ok(/\(https?:\/\/[^)]*\/feed\.atom\)/.test(llms));
+        assert.ok(llms.includes('\n## Optional\n') && llms.lastIndexOf('\n## ') === llms.indexOf('\n## Optional\n'), 'Optional is last');
         assert.ok(!(await H.req(h, 'GET', '/llms-full.txt')).text.includes('open-page'), 'a private page leaves the AI map too');
         r = await H.req(h, 'GET', '/w/notes/open-page');
         assert.strictEqual(r.status, 404);
