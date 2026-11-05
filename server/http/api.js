@@ -22,6 +22,7 @@
  *   GET    /pages/:id/diff?from=&to=&mode= wiki.page.read
  *   GET    /pages/:id/revisions/:n/citations  wiki.page.read
  *   POST   /pages/:id/revisions/:n/citations  wiki.citation.attach  { citations: [...] }  (unpublished head only)
+ *   GET    /review-queue                            staff: published AI-assisted pages waiting for a person
  *   POST   /pages/:id/revisions/:n/review     wiki.revision.publish { decision: approved|rejected, note? }  a person (owner/editor)
  *   POST   /pages/:id/publish              wiki.revision.publish { revision? }
  *   POST   /pages/:id/schedule             wiki.revision.publish { revision?, run_at }
@@ -107,6 +108,15 @@ function createApi({ svc, viewers, platform, config, log = console, limits, vibe
     router.use(limits.reads('wiki.read'));
     const B = (name) => limits.budget(name);
     const R = (fn, status) => run(fn, status, log);
+
+    // The reviewer queue: everything published and public whose AI-assisted text waits for a person.
+    // Staff only here; the service also drops pages this actor may not edit.
+    router.get('/review-queue', R(async (req) => {
+        if (!req.actor || req.actor.kind !== 'user' || !req.actor.staff) {
+            throw new svc.WikiError(403, 'review.forbidden', 'Only OpenVibe staff review the publication queue');
+        }
+        return { items: await svc.pendingReviews(req.actor) };
+    }));
     // VIP (WS-K task 8): ask VIP about the space or page a route names before its synchronous access check.
     const prepare = (req, pairs) => (req.actor && req.actor.subject ? svc.access.prepareVip(req.actor, pairs) : null);
     router.param('space', (req, res, next, ref) => {
