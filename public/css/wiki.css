@@ -47,7 +47,6 @@ fieldset { border: 1px solid var(--wk-line); border-radius: 6px; margin: 12px 0;
 .ov-breadcrumbs li + li::before { content: "›"; margin-right: 4px; color: var(--wk-muted); }
 .wk-article header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
 .wk-actions { font-size: 14px; }
-.wk-actions .wk-share { background: none; border: 0; padding: 0; font: inherit; font-weight: inherit; color: var(--wk-accent); text-decoration: underline; cursor: pointer; }
 .wk-infobox { float: right; clear: right; width: min(320px, 100%); margin: 0 0 16px 16px; background: var(--wk-panel); border: 1px solid var(--wk-line); border-radius: 6px; }
 .wk-infobox table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .wk-infobox th, .wk-infobox td { text-align: left; vertical-align: top; padding: 6px 8px; border-top: 1px solid var(--wk-line); }

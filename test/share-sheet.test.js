@@ -22,6 +22,7 @@ const H = require('./helpers');
         assert.ok(r.text.includes('data-url="http://wiki.test/w/share-demo/a-shareable-page"'), 'the article address');
         assert.ok(r.text.includes('data-title="A shareable page"'), 'its title');
         assert.ok(r.text.includes('data-text="One line about the page."'), 'its summary');
+        assert.ok(r.text.includes('class="ovk-btn ovk-btn--quiet"') && r.text.includes('<span>Share</span>'), 'the shared kit button');
         console.log('share sheet ok');
     } finally {
         await h.stop();
