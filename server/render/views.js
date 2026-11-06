@@ -408,8 +408,9 @@ function pageFacts(v, base) {
     return html`<p class="wk-facts">${facts.map((f, i) => html`${i ? html`<span aria-hidden="true"> · </span>` : ''}<span>${f}</span>`)}${badge ? html` ${badge}` : ''}</p>`;
 }
 
-function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolve, flash }) {
+function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolve, flash, shareUrl = '', shareText = '', shareImage = null }) {
     const { space, page, revision: rev } = v;
+    const title = rev.fields.title || page.title;
     const base = wpath(space, page);
     const trail = [{ name: 'Wiki', url: '/' }, { name: space.name, url: `/s/${e(space.slug)}` }];
     if (v.parent) trail.push({ name: v.parent.title, url: wpath(space, v.parent) });
@@ -424,9 +425,10 @@ function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolv
     if (v.canEdit && v.decision && !v.decision.indexable && page.state === 'published') banners.push(html`<p class="wk-notice wk-info">Search engines are told not to index this page: ${v.decision.reasons.map((r) => r.code + (r.detail ? ` (${r.detail})` : '')).join(', ')}.</p>`);
     const actions = [html`<a href="${base}/history">History</a>`];
     if (v.canEdit) actions.unshift(html`<a href="${base}/edit">Edit</a>`), actions.push(html`<a href="${base}/settings">Page settings</a>`);
+    if (shareUrl) actions.unshift(html`<button type="button" class="wk-share" data-ov-share-sheet data-url="${shareUrl}" data-title="${title}"${shareText ? html` data-text="${shareText}"` : ''}${shareImage ? html` data-image="${shareImage}"` : ''}>Share</button>`);
     return html`${crumbs(trail)}
 <article class="wk-article" data-page-id="${page.id}" data-revision="${String(rev.number)}">
-<header><h1>${rev.fields.title || page.title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav>${pageFacts(v, base)}</header>
+<header><h1>${title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav>${pageFacts(v, base)}</header>
 ${banners}
 ${raw(infoboxHtml(v.infobox, resolve, outRel(space), { media: (id) => { const a = v.attachments.find((x) => x.mediaId === id); return a && mediaUrl ? figureHtml(a, { urlFor: mediaUrl, unavailableText: UNAVAILABLE[a.brokenReason] || UNAVAILABLE.not_found }) : null; } }))}
 <div class="wk-content">${raw(contentHtml)}</div>

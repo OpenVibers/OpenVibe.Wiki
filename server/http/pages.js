@@ -415,7 +415,8 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
             }),
             seo.structuredData.breadcrumbs(crumbsLd),
         ].filter(Boolean) : null;
-        send(req, res, 200, views.articlePage(v, { html: bodyHtml, discussion, actor: req.actor, mediaUrl: (id) => platform.media.publicUrl(id), resolve: (title) => infoboxLinks.get(title) || { href: null, exists: false }, flash: req.query.saved ? 'Saved.' : null }), {
+        const shareMedia = v.attachments.find((a) => a.mediaId && !a.brokenReason);
+        send(req, res, 200, views.articlePage(v, { html: bodyHtml, discussion, actor: req.actor, mediaUrl: (id) => platform.media.publicUrl(id), resolve: (title) => infoboxLinks.get(title) || { href: null, exists: false }, flash: req.query.saved ? 'Saved.' : null, shareUrl: url, shareText: description, shareImage: shareMedia ? platform.media.publicUrl(shareMedia.mediaId) : null }), {
             decision, title: v.revision.fields.title, description, ogType: 'article', jsonLd, path: svc.pagePath(space, page), cache: publicCache,
         });
     }));
