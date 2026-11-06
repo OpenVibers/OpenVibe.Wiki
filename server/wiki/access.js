@@ -47,6 +47,22 @@ function createAccess(db, { vip = null } = {}) {
     const rolesOfSubject = db.prepare('SELECT space_id, role FROM wiki_permissions WHERE subject = ?');
     const rolesOfSpace = db.prepare('SELECT subject, role FROM wiki_permissions WHERE space_id = ?');
 
+    /**
+     * The pages this actor may read because somebody shared that one page with them (openvibe-sdk/share):
+     * its owner, a member of its people list, or anybody when the row says public/link. Loaded with the
+     * roles, so canReadPage stays synchronous and a tree filter never races an ACL write.
+     */
+    async function loadShares(actor) {
+        if (!actor || !actor.subject || actor.wikiShares) return actor;
+        const subject = JSON.stringify({ type: /^gst_/.test(String(actor.subject)) ? 'guest' : 'user', id: actor.subject });
+        const rows = await db.many(`SELECT resource_id FROM shares
+                WHERE service = 'wiki' AND kind = 'page' AND (audience IN ('public','link') OR owner_subject = $1::jsonb)
+            UNION SELECT resource_id FROM share_members
+                WHERE service = 'wiki' AND kind = 'page' AND subject = $1::jsonb AND (expires_at IS NULL OR expires_at > now())`, [subject]);
+        Object.defineProperty(actor, 'wikiShares', { value: new Set(rows.map((r) => r.resource_id)), writable: true, configurable: true, enumerable: false });
+        return actor;
+    }
+
     /** Read (or re-read with fresh: true) every role the actor holds; idempotent and cheap to call again. */
     async function loadRoles(actor, { fresh = false } = {}) {
         if (!actor || actor.kind === 'system' || !actor.subject) return actor;
@@ -93,6 +109,7 @@ function createAccess(db, { vip = null } = {}) {
         VISIBILITIES,
         role,
         loadRoles,
+        loadShares,
         subjectActors,
         isPerson,
         effectiveVisibility,
@@ -103,6 +120,9 @@ function createAccess(db, { vip = null } = {}) {
         /** Published content of a page (drafts and history of unpublished pages need canEdit). */
         canReadPage(space, page, actor) {
             if (!space || space.deleted_at || !page || page.state === 'deleted') return false;
+            // A share row for this one page opens it before the space's own visibility: that is what
+            // "share this page with @x" means, and for a draft it is the only way in.
+            if (actor && actor.wikiShares && actor.wikiShares.has(page.id)) return true;
             if (!canReadVisibility(space, effectiveVisibility(space, page), actor, page)) return false;
             if (page.state === 'published') return true;
             return api.canEdit(space, actor);

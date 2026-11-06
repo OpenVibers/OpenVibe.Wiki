@@ -15,6 +15,7 @@ const { load } = require('./config');
 const { openDb, migrate, createStores } = require('./db');
 const { createPlatform } = require('./integrations/platform');
 const { createWikiService } = require('./wiki/service');
+const { createSharing, describeRef } = require('./sharing');
 const { createVibes } = require('./wiki/vibe');
 const { createKeyStore } = require('./auth/keys');
 const { createViewerResolver } = require('./auth/viewer');
@@ -70,7 +71,9 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     // Valkey (ADR-035): shared, never-authoritative state (per-actor limit counters). Optional.
     const valkey = config.valkey.url ? require('openvibe-sdk/valkey').createValkey({ url: config.valkey.url, prefix: config.valkey.prefix, log }) : null;
     const platform = createPlatform({ config, db, fetchImpl, tokens, now, log });
-    const svc = createWikiService({ db, stores, outbox: platform.outbox, config, community: platform.community, vip: platform.vip, now, log, indexnow });
+    // Sharing (openvibe-sdk/share): the shares row next to each page, members, transfers and the one access check.
+    const sharing = createSharing({ db, config, outbox: platform.outbox, now, fetchImpl, log });
+    const svc = createWikiService({ db, stores, outbox: platform.outbox, config, community: platform.community, vip: platform.vip, now, log, indexnow, sharing });
     // "Vibe a wiki" (server/wiki/vibe.js): generated wikis, researched and written through OpenVibe.AI.
     const vibes = createVibes({ db, svc, platform, config, now, log, ...(imageFetch ? { fetchImg: imageFetch } : {}) });
     const reconciled = await svc.reconcileIndex();
@@ -89,7 +92,7 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     // on, a one-minute tick writes each interval (the collector has no timer of its own) and the table keeps 14 days.
     const telemetry = createHttpTelemetry({ service: 'wiki', sink: telemetrySink || createPgTelemetrySink({ db, log }), skipPrefixes: ['/shared'], intervalMs: 60_000 });
     let retention = null;
-    const app = createApp({ config, telemetry, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend, vibes });
+    const app = createApp({ config, telemetry, svc, viewers, platform, keys, db, valkey, log, rateLimits, fetchImpl, limitsNow, indexnow, accountData, accountSend, vibes, sharing });
 
     const timers = [];
     if (workers) {
@@ -138,7 +141,7 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
     async function stop() {
         return lifecycle.stop('stop');
     }
-    return { app, db, telemetry, svc, stores, platform, keys, viewers, server, config, indexnow, timers, lifecycle, stop, vibes };
+    return { app, db, telemetry, svc, stores, platform, keys, viewers, server, config, indexnow, timers, lifecycle, stop, vibes, sharing };
 }
 
 module.exports = { start, createLifecycle };

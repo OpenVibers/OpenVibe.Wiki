@@ -19,11 +19,13 @@ const { createApi } = require('./http/api');
 const { createPages } = require('./http/pages');
 const { createMachine } = require('./http/machine');
 const { createActorLimits } = require('./http/actor-limits');
+const { actorMiddleware } = require('./http/common');
+const { describeRef } = require('./sharing');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const VERSION = require('../package.json').version;
 
-function createApp({ config, telemetry = null, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null, accountData = null, accountSend = null, vibes = null }) {
+function createApp({ config, telemetry = null, svc, viewers: baseViewers, platform, keys, db, valkey = null, log = console, rateLimits = true, fetchImpl = globalThis.fetch, limitsNow = null, indexnow = null, accountData = null, accountSend = null, vibes = null, sharing = null }) {
     const app = express();
     // Every resolved actor carries its wiki roles (read once per request), so the synchronous access checks work.
     const viewers = { ...baseViewers, resolve: async (req, opts) => svc.loadRoles(await baseViewers.resolve(req, opts)) };
@@ -113,6 +115,21 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
     // Per-actor limits (http/actor-limits.js) on /api/v1 and the editing forms, counted once each router
     // resolved req.actor; the per-address limits here stay. limitsNow: the limiter's clock (tests).
     const limits = createActorLimits({ config, now: limitsNow || (() => Date.now()), registry: metrics.registry, log, enabled: rateLimits, valkey });
+    // ── /api/v1/<kind>/<id>/share — the uniform share API (openvibe-sdk/share) ────
+    // GET/PUT /api/v1/page/:id/share, .../share/requests, .../share/transfer[/accept|decline|cancel],
+    // GET /api/v1/share/people?name=, GET /api/v1/shared-with-me. Authentication is Wiki's own actor;
+    // the router answers only its own paths.
+    if (sharing) {
+        const shareApi = express.Router();
+        shareApi.use(actorMiddleware(viewers, { services: false }));
+        shareApi.use(sharing.shares.router({
+            service: 'wiki',
+            authenticate: (req) => sharing.shareViewer(req.actor),
+            describe: describeRef(db, config),
+        }));
+        const SHARE_PATH = /^\/api\/v1\/(?:shared-with-me$|share\/people$|[^/]+\/[^/]+\/share(?:\/|$))/;
+        app.use((req, res, next) => (SHARE_PATH.test(req.path) ? shareApi(req, res, next) : next()));
+    }
     app.use('/api/v1', createApi({ svc, viewers, platform, config, log, limits, vibes }));
     app.use('/api', (req, res) => require('openvibe-contracts').http.sendProblem(res, 404, 'route.not_found', { detail: 'Not found' }));
 
@@ -135,7 +152,7 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
     app.post(['/new-space', '/s/*', '/w/*', '/proposals/*'], limiter(10 * 60000, 120));
     // Search scans the text of every published page (LIKE): a person's pace, not a crawler's.
     app.get('/search', limiter(60000, 60));
-    const pages = createPages({ svc, viewers, platform, config, log, limits, vibes });
+    const pages = createPages({ svc, viewers, platform, config, log, limits, vibes, sharing });
     // The agent layer (openvibe-shared/agent-layer): /.well-known/agent.json, and the Markdown twins of the
     // public pages (the home, a wiki's page tree and its articles). Only the manifest and a twin request
     // reach it — the layer renders every page signed out, and a wiki page is not one page (a signed-in
