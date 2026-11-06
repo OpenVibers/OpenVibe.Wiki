@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Share: every article carries the network's one Share button (`data-ov-share-sheet`) in its page actions, with the article's canonical address, title and summary; `openvibe-shared`'s navbar loads the sheet on the first press. `test/share-sheet.test.js`.
 - Account export and deletion (ADR-033): `POST /internal/events` (loopback, `WIKI_EVENTS_SECRET`) answers network.account.export_requested and network.account.deleted through `server/wiki/account-data.js` over `openvibe-sdk/account-data` (SDK v0.37.0, was v0.35.0).
   - **Deleted:** the person's own user spaces (through `deleteSpace`), roles, watches and drafts.
   - **Authorless:** their contributions elsewhere stay without their id.
