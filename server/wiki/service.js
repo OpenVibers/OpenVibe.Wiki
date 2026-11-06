@@ -551,7 +551,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         pages.forEach((page, i) => {
             const space = spaces.get(page.space_id);
             if (!space || !revs[i]) return;
-            out.push({ space, page, rev: revs[i], decision: decideWith(space, page, revs[i], cites[i] || [], revws[i]) });
+            out.push({ space, page, rev: revs[i], review: revws[i] || null, decision: decideWith(space, page, revs[i], cites[i] || [], revws[i]) });
         });
         return out;
     }
@@ -1184,6 +1184,34 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
 
         // Discovery (public, indexable only) -----------------------------------------------
         async publishedPublic() { return await expandPublished(await q.allPublishedPublic.all()); },
+
+        /**
+         * Published, public pages whose text nobody has approved yet: AI-assisted imports and
+         * AI-generated revisions held noindex by the gate. Only pages this actor may review.
+         * Oldest first, with the gate's own reason codes and words for each.
+         */
+        async pendingReviews(actor) {
+            await roles(actor);
+            const items = [];
+            for (const x of await expandPublished(await q.allPublishedPublic.all())) {
+                if (!access.canEdit(x.space, actor)) continue;
+                const rec = x.rev.meta && x.rev.meta.authorship;
+                if (!rec || !(aiAssistedImport(rec) || authorship.needsReview(rec))) continue;
+                if (x.review) continue;   // a decision, approved or rejected, has been made for this revision
+                items.push({
+                    site: 'wiki',
+                    kind: 'wiki_page',
+                    id: x.page.id,
+                    title: x.rev.fields.title || x.page.title,
+                    revision: x.page.published_revision,
+                    url: pageUrl(x.space, x.page),
+                    createdAt: new Date(x.page.revision_published_at || x.page.published_at || x.rev.createdAt).toISOString(),
+                    reasons: x.decision.reasons.map((r) => ({ ...r, text: (seo.REASON_BY_CODE[r.code] || {}).description || r.code })),
+                    review: { method: 'POST', path: `/api/v1/pages/${encodeURIComponent(x.page.id)}/revisions/${x.page.published_revision}/review` },
+                });
+            }
+            return items.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+        },
 
         /** The home's numbers (public wikis and pages only): wikis, pages, revisions, citations, distinct sources, links between pages. */
         async homeStats() {

@@ -177,6 +177,11 @@ route('post', '/pages/{id}/revisions/{n}/citations', {
     requestBody: body({ type: 'object', required: ['citations'], properties: { citations: arrayOf(citation) } }),
     responses: { 201: json('The revision\'s citations', { type: 'object', properties: { citations: arrayOf(ref('Citation')) } }), ...errors() },
 });
+route('get', '/review-queue', {
+    operationId: 'getReviewQueue', summary: 'The reviewer queue: published AI-assisted pages waiting for a person', tags: ['revisions'], security: PERSON,
+    description: 'Staff only. Oldest first, with the gate\'s reason codes and words and the review path for each page.',
+    responses: { 200: json('The waiting pages', { type: 'object', properties: { items: arrayOf({ type: 'object' }) } }), ...errors([401, 403, 429]) },
+});
 route('post', '/pages/{id}/revisions/{n}/review', {
     operationId: 'reviewRevision', summary: 'Approve or reject a revision', tags: ['revisions'], security: PERSON, parameters: [PAGE, REVISION],
     description: 'wiki.revision.publish. A person (owner or editor); an approved AI-assisted revision becomes indexable when it publishes.',
