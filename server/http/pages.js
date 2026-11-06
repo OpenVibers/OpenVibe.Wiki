@@ -115,8 +115,15 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
             return null;
         }
         if (!svc.access.canReadPage(space, page, req.actor)) {
-            // A share row can open this one page: its owner, a member of its people list, or the link.
-            const allowed = sharing ? await sharing.canView(req.actor, page.id).catch(() => false) : false;
+            // A share row can open this one page for a signed-in person: a member of its people list, or the
+            // link when the space itself is public. A public row never widens a private space.
+            const row = sharing ? await sharing.shareOf(page.id).catch(() => null) : null;
+            // An Everyone draft opens by its address in a public space; a link or people draft needs a signed-in
+            // person; a public row never widens a private space.
+            const publicDraft = Boolean(row && (row.audience === 'public' || row.audience === 'link') && page.state !== 'published' && svc.access.canReadSpace(space, req.actor));
+            const narrowed = Boolean(row && req.actor && req.actor.subject && (row.audience === 'people'
+                || (row.audience === 'link' && svc.access.canReadSpace(space, req.actor))));
+            const allowed = Boolean((publicDraft || narrowed) && await sharing.canView(req.actor, page.id).catch(() => false));
             if (allowed) {
                 try {
                     if (!req.actor.wikiShares) Object.defineProperty(req.actor, 'wikiShares', { value: new Set(), writable: true, configurable: true });

@@ -33,6 +33,23 @@ const TABLES = [
     { table: 'wiki_page_reviews', subject: 'reviewer', file: 'reviews.json', columns: ['entity_id', 'revision', 'decision', 'note', 'reviewed_at'], order: 'reviewed_at', erase: { keep: 'a person\'s approval is what lets reviewed text stay published' } },
 ];
 
+
+/** The sharing system's rows (openvibe-sdk/share): jsonb subjects, so the SDK's table map cannot name them. */
+async function shareExport(db, subject) {
+    const owned = await db.many("SELECT * FROM shares WHERE service = $1 AND owner_subject->>'id' = $2", ['wiki', subject]);
+    const member = await db.many("SELECT * FROM share_members WHERE service = $1 AND subject->>'id' = $2", ['wiki', subject]);
+    const asked = await db.many("SELECT * FROM share_access_requests WHERE service = $1 AND subject->>'id' = $2", ['wiki', subject]);
+    return owned.length || member.length || asked.length ? [{ name: 'shares.json', content: { owned, member_of: member, requests: asked } }] : [];
+}
+async function shareErase(t, subjects) {
+    for (const subject of subjects) {
+        await t.exec("DELETE FROM share_members WHERE service = $1 AND subject->>'id' = $2", ['wiki', subject]);
+        await t.exec("DELETE FROM share_access_requests WHERE service = $1 AND subject->>'id' = $2", ['wiki', subject]);
+        await t.exec("DELETE FROM share_transfers WHERE service = $1 AND (from_subject->>'id' = $2 OR to_subject->>'id' = $2)", ['wiki', subject]);
+        await t.exec("DELETE FROM shares WHERE service = $1 AND owner_subject->>'id' = $2", ['wiki', subject]);
+    }
+}
+
 async function extraExport(db, subject) {
     const files = [];
     const spaces = await db.many(`SELECT id, slug, name, description, kind, visibility, created_at, updated_at, deleted_at FROM wiki_spaces
@@ -47,12 +64,14 @@ async function extraExport(db, subject) {
     const proposals = await db.many(`SELECT id, page_id, space_id, revision, status, note, created_at FROM wiki_ai_proposals
         WHERE proposed_by = $1 ORDER BY created_at DESC LIMIT 5000`, [subject]);
     if (proposals.length) files.push({ name: 'ai-proposals.json', content: proposals });
+    files.push(...await shareExport(db, subject));
     return files;
 }
 
 /** The account-data handle over Wiki's database and service (service.deleteSpace for the person's own spaces). */
 function create({ db, svc, log = console } = {}) {
     async function extraErase(t, subjects, counts) {
+        await shareErase(t, subjects);
         // Their own user spaces go the way their owner would delete them (a savepoint inside this transaction).
         const spaces = await t.many("SELECT id FROM wiki_spaces WHERE kind = 'user' AND owner = ANY($1::text[]) AND deleted_at IS NULL", [subjects]);
         for (const s of spaces) await svc.deleteSpace(s.id, SYSTEM);

@@ -55,10 +55,15 @@ function createAccess(db, { vip = null } = {}) {
     async function loadShares(actor) {
         if (!actor || !actor.subject || actor.wikiShares) return actor;
         const subject = JSON.stringify({ type: /^gst_/.test(String(actor.subject)) ? 'guest' : 'user', id: actor.subject });
+        // A public/link row only counts inside a public space: a page can narrow its space's audience, never widen it.
         const rows = await db.many(`SELECT resource_id FROM shares
-                WHERE service = 'wiki' AND kind = 'page' AND (audience IN ('public','link') OR owner_subject = $1::jsonb)
+                WHERE service = 'wiki' AND kind = 'page' AND owner_subject = $1::jsonb
             UNION SELECT resource_id FROM share_members
-                WHERE service = 'wiki' AND kind = 'page' AND subject = $1::jsonb AND (expires_at IS NULL OR expires_at > now())`, [subject]);
+                WHERE service = 'wiki' AND kind = 'page' AND subject = $1::jsonb AND (expires_at IS NULL OR expires_at > now())
+            UNION SELECT sh.resource_id FROM shares sh
+                JOIN wiki_pages p ON p.id = sh.resource_id
+                JOIN wiki_spaces s ON s.id = p.space_id
+                WHERE sh.service = 'wiki' AND sh.kind = 'page' AND sh.audience IN ('public','link') AND s.visibility = 'public'`, [subject]);
         Object.defineProperty(actor, 'wikiShares', { value: new Set(rows.map((r) => r.resource_id)), writable: true, configurable: true, enumerable: false });
         return actor;
     }

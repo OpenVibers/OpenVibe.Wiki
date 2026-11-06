@@ -540,8 +540,9 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
      */
     async function revisionVisible(space, page, n, actor, proposal) {
         if (access.canEdit(space, actor)) return true;
-        // A page shared with this person (or by its link) opens at its head revision, published or not.
-        if (actor && actor.wikiShares && actor.wikiShares.has(page.id)) return true;
+        // A shared *draft* opens at its head revision. A published page still shows only its published revision
+        // to a reader who is not an editor, however it was shared.
+        if (page.state !== 'published' && actor && actor.wikiShares && actor.wikiShares.has(page.id)) return true;
         if (sharing && page.state !== 'published') {
             const row = await sharing.shareOf(page.id).catch(() => null);
             if (row && (row.audience === 'public' || row.audience === 'link')) return true;

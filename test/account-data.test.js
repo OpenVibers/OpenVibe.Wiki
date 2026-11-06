@@ -50,6 +50,8 @@ async function check(name, fn) {
             exempt: {
                 account_data_events: 'the ledger of requests itself: which export and deletion Wiki applied',
                 wiki_index_revisions: "owner is the search-index document's owner (type/id), not a person; the row holds a revision and hash",
+                share_members: 'jsonb subject: the SDK table map cannot name it; extraExport/extraErase cover the share rows',
+                share_access_requests: 'jsonb subject: the SDK table map cannot name it; extraExport/extraErase cover the share rows',
             },
         });
         if (missing.length) { failures++; console.log(`  ✗ every table that names a person is covered or exempted with a reason\n      ${missing.join(', ')}`); }
@@ -87,7 +89,7 @@ async function check(name, fn) {
             const part = stub.calls.find((c) => c.url === '/internal/account-exports/exp_01JZ0000000000000000000EX1/parts');
             assert.strictEqual(part.auth, 'Bearer tok_wiki');
             const names = part.body.files.map((f) => f.name).sort();
-            assert.deepStrictEqual(names, ['pages.json', 'revisions.json', 'roles.json', 'spaces.json', 'watching.json']);
+            assert.deepStrictEqual(names, ['pages.json', 'revisions.json', 'roles.json', 'shares.json', 'spaces.json', 'watching.json']);
             assert.ok(!JSON.stringify(part.body).includes(bob.subject));
         });
 
