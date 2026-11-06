@@ -32,8 +32,11 @@ const { sanitizeNext } = require('../server/auth/session');
         assert.strictEqual(loc.searchParams.get('client_id'), 'wiki');
         assert.strictEqual(loc.searchParams.get('redirect_uri'), 'http://wiki.test/auth/callback');
         const state = loc.searchParams.get('state');
+        assert.strictEqual(loc.searchParams.get('code_challenge_method'), 'S256');
+        assert.match(loc.searchParams.get('code_challenge'), /^[A-Za-z0-9_-]{43}$/, 'PKCE S256 from openvibe-sdk/sso');
         const cookies = r.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
         assert.ok(cookies.includes(`ov_oauth_state=${state}`));
+        assert.match(cookies, /ov_oauth_verifier=[^;]+/, 'the verifier stays in its own flow cookie');
 
         // A callback without the matching state cookie is refused.
         r = await H.req(h, 'GET', `/auth/callback?code=abc&state=${state}`);
@@ -69,6 +72,10 @@ const { sanitizeNext } = require('../server/auth/session');
         // Silent login goes out with prompt=none.
         r = await H.req(h, 'GET', '/auth/login?silent=1');
         assert.strictEqual(new URL(r.headers.get('location')).searchParams.get('prompt'), 'none');
+        // /auth/health: the token endpoint answers, so the client is not refused.
+        r = await H.req(h, 'GET', '/auth/health');
+        assert.strictEqual(r.status, 200);
+        assert.deepStrictEqual(r.json, { ok: true, client: 'ok' });
         // Health and readiness.
         assert.strictEqual((await H.req(h, 'GET', '/api/health')).json.service, 'openvibe-wiki');
         const ready = await H.req(h, 'GET', '/api/ready');
