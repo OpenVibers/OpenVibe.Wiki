@@ -1,0 +1,21 @@
+{
+  "id": "wiki.review.ai_editor",
+  "version": "1.0",
+  "owner": "wiki",
+  "status": "active",
+  "visibility": "first-party",
+  "description": "Record the editorial queue's AI editor decision (approved or needs changes) on an existing revision, as the first-party service principal acting as itself (a svc: principal with no X-OV-Subject). This is never a person's review: an approval lets AI-written text publish and index, and the page says \"Checked by OpenVibe's AI editor\" with its date, never \"Reviewed by a person\". Granted only to the orchestrator's service principal.",
+  "permissions": [
+    "wiki:review:ai_editor"
+  ],
+  "resourceConstraints": [],
+  "quotaClass": "wiki-write",
+  "events": [
+    "wiki.page.updated",
+    "wiki.index_document.upserted",
+    "wiki.index_document.deleted"
+  ],
+  "implementedBy": [
+    "POST /api/v1/pages/:id/revisions/:n/review"
+  ]
+}

@@ -74,19 +74,29 @@ function authorshipGateFacts(rec, review) {
     return out;
 }
 
-/** "Reviewed by a person. Checked by OpenVibe's AI editor on 2026-11-06." — what actually happened. */
-function reviewSentence(kinds) {
-    const labels = reviewKind.labelsFor(kinds);
-    return labels.length ? `${labels.join('. ')}.` : 'Not yet reviewed by a person.';
-}
-
 /** The disclosure shown at the item, with the review of each kind (a person's, the AI editor's, both). */
 function disclosureFor(rec, kinds = { person: null, ai_editor: null }) {
     const d = authorship.disclosure(rec, null);
     if (!d) return null;
+    const labels = reviewKind.labelsFor(kinds);
+    const imported = aiAssistedImport(rec);
+    if (!labels.length) {
+        // Nobody approved it: the library's own sentence stays ("not yet reviewed by a person").
+        const out = { ...d, reviewed: false };
+        if (imported) out.long = `${d.long.replace(/\.\s*$/, '')}. Not yet reviewed by a person.`;
+        if (imported) out.short = 'Imported, written with AI assistance';
+        return out;
+    }
     const base = d.long.replace(/,\s*(?:not yet )?reviewed by a person\.?\s*$/, '').replace(/\.\s*$/, '');
-    const out = { ...d, long: `${base}. ${reviewSentence(kinds)}`, reviewed: reviewKind.approved(kinds.person) || reviewKind.approved(kinds.ai_editor) };
-    if (aiAssistedImport(rec)) out.short = 'Imported, written with AI assistance';
+    // An imported page has always said "Reviewed by a person." on its own; AI-generated text keeps the
+    // library's ", reviewed by a person." clause.
+    const person = reviewKind.isPersonReview(kinds.person);
+    const ai = reviewKind.aiEditorLabel(kinds.ai_editor);
+    let long = base;
+    if (person) long += imported ? '. Reviewed by a person.' : ', reviewed by a person.';
+    if (ai) long += `${long.endsWith('.') ? ' ' : '. '}${ai}.`;
+    const out = { ...d, long, reviewed: true };
+    if (imported) out.short = 'Imported, written with AI assistance';
     return out;
 }
 

@@ -27,6 +27,9 @@ assert.deepStrictEqual([...ids].sort(), [...PROPOSED].sort());
 // Every guard('…') in the API is a proposed capability, and every proposed capability is guarded.
 const api = fs.readFileSync(path.join(__dirname, '..', 'server', 'http', 'api.js'), 'utf8');
 const guarded = new Set([...api.matchAll(/guard\('([a-z.]+)'\)/g)].map((m) => m[1]));
+// The review route has its own guard: a service acting for a person keeps wiki.revision.publish;
+// the AI editor acting as itself needs wiki.review.ai_editor.
+if (/\/pages\/:id\/revisions\/:n\/review', guardReview/.test(api)) guarded.add('wiki.review.ai_editor');
 assert.deepStrictEqual([...guarded].sort(), [...PROPOSED].sort());
 
 const manifest = JSON.parse(fs.readFileSync(path.join(DOCS, 'service-manifest-proposal.json'), 'utf8'));

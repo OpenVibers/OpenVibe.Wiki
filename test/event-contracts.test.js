@@ -8,16 +8,22 @@
 const assert = require('assert');
 const H = require('./helpers');
 const contracts = require('openvibe-contracts');
-const { CAPS } = require('../server/auth/capabilities');
+const { CAPS, PROPOSED } = require('../server/auth/capabilities');
 
 (async () => {
     // The capabilities the routes enforce are the released ones, so capabilities.check() decides them.
+    // One id waits for a Contracts release — wiki.review.ai_editor — and is decided locally until then.
     for (const id of Object.values(CAPS)) {
         const cap = contracts.capabilities.get(id);
-        assert.ok(cap, `${id} is released by openvibe-contracts`);
+        if (!cap) {
+            assert.ok(PROPOSED.has(id), `${id} is not released yet, so it must be a local proposal`);
+            continue;
+        }
         assert.strictEqual(cap.owner, 'wiki', `${id} is owned by wiki`);
         assert.notStrictEqual(cap.status, 'retired', `${id} is not retired`);
     }
+    // The AI editor's id is the one proposal; when Contracts releases it, this line goes.
+    assert.strictEqual(contracts.capabilities.get('wiki.review.ai_editor'), undefined);
     assert.deepStrictEqual(
         contracts.capabilities.check({ cap: ['wiki.*'] }, CAPS.PAGE_READ),
         { allowed: true, code: null, reason: null },
