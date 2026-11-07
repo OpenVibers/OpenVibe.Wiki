@@ -19,6 +19,7 @@
     "wiki.page.read",
     "wiki.revision.propose",
     "wiki.revision.publish",
+    "wiki.review.ai_editor",
     "wiki.revision.revert",
     "wiki.citation.attach",
     "wiki.search.query"

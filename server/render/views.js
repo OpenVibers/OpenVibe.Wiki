@@ -10,6 +10,7 @@ const showcase = require('openvibe-shared/showcase');
 const { figureHtml } = require('openvibe-publishing/media');
 const { infoboxToText, mediaRefs } = require('../wiki/content');
 const { pickBlock, foldBlock } = require('./short');
+const reviewKind = require('../wiki/review-kind');
 
 const { html, raw } = ssr;
 const t = (v) => raw(ssr.timeTag(v));
@@ -401,12 +402,18 @@ function pageFacts(v, base) {
         v.isPublishedRevision ? html`this text accepted ${t(rev.createdAt)}` : html`revision ${String(rev.number)}, saved ${t(rev.createdAt)}`,
     ];
     if (v.offeredAt && v.isPublishedRevision) facts.push(html`<span class="wk-fact-wait">a newer edit, offered ${t(v.offeredAt)}, is waiting</span>`);
-    const r = v.review;
-    const reviewed = !!(r && /approv|accept/i.test(String(r.decision || '')));
+    const kinds = v.reviews || { person: v.review || null, ai_editor: null };
     const ai = !!(v.authorship && v.authorship.mode && v.authorship.mode !== 'human');
-    const badge = reviewed
-        ? html`<span class="wk-review wk-review--ok">Reviewed by a person${r.reviewed_at || r.reviewedAt ? html` ${t(r.reviewed_at || r.reviewedAt)}` : ''}</span>`
-        : ai ? html`<span class="wk-review wk-review--no">Not yet reviewed by a person</span>` : '';
+    const badges = [];
+    if (reviewKind.isPersonReview(kinds.person)) {
+        const r = kinds.person;
+        badges.push(html`<span class="wk-review wk-review--ok">Reviewed by a person${r.reviewedAt ? html` ${t(r.reviewedAt)}` : ''}</span>`);
+    }
+    if (reviewKind.isAiEditorReview(kinds.ai_editor)) {
+        badges.push(html`<span class="wk-review wk-review--ai">Checked by OpenVibe's AI editor ${t(kinds.ai_editor.reviewedAt)}</span>`);
+    }
+    if (!badges.length && ai) badges.push(html`<span class="wk-review wk-review--no">Not yet reviewed by a person</span>`);
+    const badge = badges.length ? html`<span class="wk-review-labels">${badges.map((b, i) => html`${i ? ' ' : ''}${b}`)}</span>` : '';
     return html`<p class="wk-facts">${facts.map((f, i) => html`${i ? html`<span aria-hidden="true"> · </span>` : ''}<span>${f}</span>`)}${badge ? html` ${badge}` : ''}</p>`;
 }
 
@@ -456,7 +463,7 @@ ${list.map((r, i) => html`<tr${r.published ? raw(' class="wk-live"') : ''}><td><
 <td>${t(r.createdAt)}</td><td>${r.author || ''}</td>
 <td>${r.kind}${r.meta && r.meta.authorship && r.meta.authorship.mode !== 'human' ? html` · ${r.meta.authorship.mode === 'ai' ? 'AI-generated' : r.meta.authorship.mode}` : ''}${r.proposal ? html` · proposal ${r.proposal.status}` : ''}</td>
 <td>${r.message || ''} <a class="wk-muted" href="${base}/sources?rev=${String(r.number)}">${String(r.citationCount)} source(s)</a>
-${r.aiAssisted ? html` <span class="wk-tag">${r.needsReview ? 'AI-assisted, not yet reviewed' : (r.review && r.review.decision === 'approved' ? 'reviewed by a person' : 'AI-assisted')}</span>` : ''}
+${r.aiAssisted ? html` <span class="wk-tag">${r.needsReview ? 'AI-assisted, not yet reviewed' : (r.labels && r.labels.length ? r.labels.map((l) => l.charAt(0).toLowerCase() + l.slice(1)).join(', ') : 'AI-assisted')}</span>` : ''}
 ${canEdit && !r.published ? html` <a href="${base}/revert?to=${String(r.number)}">revert to this</a>` : ''}
 ${canEdit && !r.published && (!r.proposal || r.proposal.status === 'approved') ? html` <a href="${base}/publish?rev=${String(r.number)}">publish this</a>` : ''}</td></tr>`)}
 </tbody></table>
@@ -464,7 +471,7 @@ ${list.length > 1 ? html`<p><button type="submit">Compare selected revisions</bu
 </form>
 ${canEdit && list.some((r) => r.needsReview) ? html`<h2>Waiting for a person's review</h2>
 <p class="wk-muted">These revisions were written with AI assistance. Search engines are told not to index them, and they stay out of sitemaps, feeds and search, until a person checks them against their sources.</p>
-<ul class="wk-review">${list.filter((r) => r.needsReview).map((r) => html`<li><a href="${base}?rev=${String(r.number)}">Revision ${String(r.number)}</a>${r.published ? ' (published)' : ''}${r.review ? html` · last review: ${r.review.decision === 'rejected' ? 'needs changes' : r.review.decision}` : ''}
+<ul class="wk-review">${list.filter((r) => r.needsReview).map((r) => html`<li><a href="${base}?rev=${String(r.number)}">Revision ${String(r.number)}</a>${r.published ? ' (published)' : ''}${r.review ? html` · last review: ${r.review.decision === 'rejected' ? 'needs changes' : r.review.decision}${r.review.reviewerKind === 'ai_editor' ? ' (AI editor)' : ' (a person)'}` : ''}
 <form method="post" action="${base}/review" class="wk-inline"><input type="hidden" name="revision" value="${String(r.number)}"><label class="wk-sr" for="wk-note-${String(r.number)}">Review note</label><input id="wk-note-${String(r.number)}" type="text" name="note" maxlength="2000" placeholder="Note (optional)"> <button type="submit" name="decision" value="approved">Reviewed — correct</button> <button type="submit" name="decision" value="rejected">Needs changes</button></form></li>`)}</ul>` : ''}
 </section>`;
 }
