@@ -17,6 +17,7 @@ const { AsyncLocalStorage } = require('node:async_hooks');
 const seo = require('openvibe-publishing/seo');
 const hooks = require('openvibe-publishing/index-hooks');
 const authorship = require('openvibe-publishing/authorship');
+const reviewKind = require('./review-kind');
 const ssr = require('openvibe-publishing/ssr');
 
 /** An infobox entry's text value by key (a revision's fields.infobox), or null. */
@@ -34,6 +35,7 @@ function firstSentence(text) {
 }
 const { isMediaId, figureHtml } = require('openvibe-publishing/media');
 const { ulid } = require('openvibe-contracts').ids;
+const { checkCapability, CAPS } = require('../auth/capabilities');
 const content = require('./content');
 const importer = require('./import');
 const { createAccess, VISIBILITIES } = require('./access');
@@ -67,21 +69,25 @@ function aiAssistedImport(rec) {
 
 /** Gate facts for a revision's authorship: AI-assisted imports count as AI output until reviewed. */
 function authorshipGateFacts(rec, review) {
-    if (aiAssistedImport(rec)) return { authorship: { mode: 'ai', reviewed: authorship.isReviewed(rec, review) } };
-    return authorship.gateFacts(rec, review);
+    const out = { authorship: { mode: aiAssistedImport(rec) ? 'ai' : rec.mode, reviewed: reviewKind.approved(review) } };
+    if (rec.stubProvider) out.stubProvider = true;
+    return out;
 }
 
-/** The disclosure shown at the item; AI-assisted imports say whether a person has reviewed them. */
-function disclosureFor(rec, review) {
-    const d = authorship.disclosure(rec, review);
-    if (!d || !aiAssistedImport(rec)) return d;
-    const reviewed = authorship.isReviewed(rec, review);
-    return {
-        ...d,
-        short: 'Imported, written with AI assistance',
-        long: `${d.long.replace(/\.\s*$/, '')}. ${reviewed ? 'Reviewed by a person.' : 'Not yet reviewed by a person.'}`,
-        reviewed,
-    };
+/** "Reviewed by a person. Checked by OpenVibe's AI editor on 2026-11-06." — what actually happened. */
+function reviewSentence(kinds) {
+    const labels = reviewKind.labelsFor(kinds);
+    return labels.length ? `${labels.join('. ')}.` : 'Not yet reviewed by a person.';
+}
+
+/** The disclosure shown at the item, with the review of each kind (a person's, the AI editor's, both). */
+function disclosureFor(rec, kinds = { person: null, ai_editor: null }) {
+    const d = authorship.disclosure(rec, null);
+    if (!d) return null;
+    const base = d.long.replace(/,\s*(?:not yet )?reviewed by a person\.?\s*$/, '').replace(/\.\s*$/, '');
+    const out = { ...d, long: `${base}. ${reviewSentence(kinds)}`, reviewed: reviewKind.approved(kinds.person) || reviewKind.approved(kinds.ai_editor) };
+    if (aiAssistedImport(rec)) out.short = 'Imported, written with AI assistance';
+    return out;
 }
 
 function createWikiService({ db, stores, outbox, config, community = null, vip = null, now = () => Date.now(), log = console, indexnow = null, sharing = null }) {
@@ -238,6 +244,15 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
     function requirePerson(actor) {
         if (!access.isPerson(actor)) fail(403, 'wiki.person_required', 'This action is taken by a signed-in person (a service must name one in X-OV-Subject)');
         return actor.subject;
+    }
+
+    /**
+     * The AI editor records a review as itself: a first-party service principal (svc:…) with no
+     * person named, holding wiki.review.ai_editor. A service acting for a person is that person.
+     */
+    function isAiEditorActor(actor) {
+        if (!actor || actor.kind !== 'service' || actor.subject || !/^svc:/.test(String(actor.service))) return false;
+        return checkCapability(actor.claims, CAPS.REVISION_REVIEW_AI_EDITOR).allowed;
     }
 
     async function spaceOrFail(idOrSlug) {
@@ -523,8 +538,10 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         if (!rev) fail(404, 'revision.not_found', `No revision ${revisionNumber}`);
         const rec = rev.meta.authorship;
         if (rec) {
-            const ok = authorship.canPublish(rec, await reviews.latest(page.id, revisionNumber));
-            if (!ok.ok) fail(409, ok.reason, 'AI-generated revisions are published only after a person approves them');
+            const review = await reviews.latest(page.id, revisionNumber);
+            if (authorship.needsReview(rec) && !reviewKind.approved(review)) {
+                fail(409, rec.mode === 'ai' ? 'ai_generated_unreviewed' : 'stub_provider', 'AI-generated revisions are published only after a person or the AI editor approves them');
+            }
         }
         const b = await before(page);
         await q.setPublished.run({ n: revisionNumber, title: rev.fields.title || page.title, t: now(), id: page.id });
@@ -557,12 +574,12 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         if (!pages.length) return [];
         const spaces = new Map((await q.spacesByIds.all([...new Set(pages.map((p) => p.space_id))])).map((s) => [s.id, s]));
         const refs = pages.map((p) => ({ entityId: p.id, revision: p.published_revision }));
-        const [revs, cites, revws] = await Promise.all([revisions.getMany(refs), citations.forRevisions(refs), reviews.latestMany(refs)]);
+        const [revs, cites, revws, kindws] = await Promise.all([revisions.getMany(refs), citations.forRevisions(refs), reviews.latestMany(refs), reviews.latestByKindMany(refs)]);
         const out = [];
         pages.forEach((page, i) => {
             const space = spaces.get(page.space_id);
             if (!space || !revs[i]) return;
-            out.push({ space, page, rev: revs[i], review: revws[i] || null, decision: decideWith(space, page, revs[i], cites[i] || [], revws[i]) });
+            out.push({ space, page, rev: revs[i], review: revws[i] || null, reviews: kindws[i], labels: reviewKind.labelsFor(kindws[i]), decision: decideWith(space, page, revs[i], cites[i] || [], revws[i]) });
         });
         return out;
     }
@@ -1048,8 +1065,8 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const rev = await revisions.get(page.id, n);
             if (!rev) fail(404, 'revision.not_found', 'No such revision');
             n = rev.number;
-            const [review, cites, infobox, links, atts, children, parentRow, backlinks, discussion, watching, proposals, jobs, headNumber] = await Promise.all([
-                reviews.latest(page.id, n),
+            const [kindws, cites, infobox, links, atts, children, parentRow, backlinks, discussion, watching, proposals, jobs, headNumber] = await Promise.all([
+                reviews.latestByKind(page.id, n),
                 citations.forRevision(page.id, n),
                 infoboxOf(page.id, n),
                 q.linksOf.all(page.id, n),
@@ -1066,6 +1083,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             ]);
             const offered = headNumber && headNumber > n ? await revisions.get(page.id, headNumber) : null;
             const rec = rev.meta.authorship || null;
+            const review = reviewKind.latestOf(kindws);
             const facts = gateFactsWith(space, page, rev, cites.length, review);
             const decision = page.state === 'published' && n === page.published_revision
                 ? seo.evaluate(facts, { policy, now: now() })
@@ -1073,8 +1091,9 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             return {
                 space, page, revision: rev, decision, canEdit, canManage: access.canManage(space, actor),
                 isPublishedRevision: n === page.published_revision && page.state === 'published',
-                authorship: rec, review, disclosure: rec ? disclosureFor(rec, review) : null,
-                needsReview: !!rec && aiAssistedImport(rec) && !authorship.isReviewed(rec, review),
+                authorship: rec, review, reviews: kindws, labels: reviewKind.labelsFor(kindws),
+                disclosure: rec ? disclosureFor(rec, kindws) : null,
+                needsReview: !!rec && aiAssistedImport(rec) && !reviewKind.isPersonReview(kindws.person),
                 proposal: proposal || null,
                 infobox,
                 citations: cites,
@@ -1152,12 +1171,14 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const visible = [];
             for (const r of list) if (await revisionVisible(space, page, r.number, actor, byRev.get(r.number) || null)) visible.push(r);
             const refs = visible.map((r) => ({ entityId: page.id, revision: r.number }));
-            const [revws, cites] = await Promise.all([reviews.latestMany(refs), citations.forRevisions(refs)]);
+            const [revws, kindws, cites] = await Promise.all([reviews.latestMany(refs), reviews.latestByKindMany(refs), citations.forRevisions(refs)]);
             return visible.map((r, i) => ({
                 ...r, proposal: byRev.get(r.number) || null, published: page.state === 'published' && r.number === page.published_revision,
                 review: revws[i],
+                reviews: kindws[i],
+                labels: reviewKind.labelsFor(kindws[i]),
                 aiAssisted: aiAssistedImport(r.meta && r.meta.authorship),
-                needsReview: aiAssistedImport(r.meta && r.meta.authorship) && !authorship.isReviewed(r.meta.authorship, revws[i]),
+                needsReview: aiAssistedImport(r.meta && r.meta.authorship) && !reviewKind.isPersonReview(kindws[i].person),
                 citationCount: (cites[i] || []).length,
             }));
         },
@@ -1202,6 +1223,10 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
          * Published, public pages whose text nobody has approved yet: AI-assisted imports and
          * AI-generated revisions held noindex by the gate. Only pages this actor may review.
          * Oldest first, with the gate's own reason codes and words for each.
+         *
+         * An ai_editor approval publishes the page, so it leaves the queue; an ai_editor rejection
+         * stays, with `reviewed` naming the kind, until a person decides (approve to publish, or
+         * reject to keep it hidden and clear the item).
          */
         async pendingReviews(actor) {
             await roles(actor);
@@ -1210,7 +1235,9 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 if (!access.canEdit(x.space, actor)) continue;
                 const rec = x.rev.meta && x.rev.meta.authorship;
                 if (!rec || !(aiAssistedImport(rec) || authorship.needsReview(rec))) continue;
-                if (x.review) continue;   // a decision, approved or rejected, has been made for this revision
+                if (x.reviews.person) continue;   // a person's decision, approved or rejected, has been made for this revision
+                const ai = x.reviews.ai_editor;
+                if (ai && ai.decision === 'approved') continue;   // the AI editor approved it: published and indexable
                 items.push({
                     site: 'wiki',
                     kind: 'wiki_page',
@@ -1220,6 +1247,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                     url: pageUrl(x.space, x.page),
                     createdAt: new Date(x.page.revision_published_at || x.page.published_at || x.rev.createdAt).toISOString(),
                     reasons: x.decision.reasons.map((r) => ({ ...r, text: (seo.REASON_BY_CODE[r.code] || {}).description || r.code })),
+                    reviewed: ai ? { kind: reviewKind.AI_EDITOR, decision: ai.decision, by: ai.reviewer, at: ai.reviewedAt, label: reviewKind.aiEditorVerdict(ai) } : null,
                     review: { method: 'POST', path: `/api/v1/pages/${encodeURIComponent(x.page.id)}/revisions/${x.page.published_revision}/review` },
                 });
             }
@@ -1420,9 +1448,11 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         },
 
         /**
-         * A person reviews an existing revision ("reviewed, correct" = approved / "needs changes" =
-         * rejected). Recorded in the append-only review log; when it is the published revision the
-         * gate is re-evaluated, and a changed Search document goes out with wiki.page.updated.
+         * A review of an existing revision ("reviewed, correct" = approved / "needs changes" =
+         * rejected), recorded in the append-only review log as a person's review or, when the actor
+         * is the AI editor principal acting as itself (a svc:… token holding wiki.review.ai_editor,
+         * checked by the route), as an ai_editor review. When it is the published revision the gate
+         * is re-evaluated, and a changed Search document goes out with wiki.page.updated.
          * Pending AI proposals are reviewed through reviewProposal instead.
          */
         async reviewRevision(spaceIdOrSlug, slug, revisionNumber, { decision, note = null } = {}, actor) {
@@ -1430,8 +1460,9 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             const space = await spaceOrFail(spaceIdOrSlug);
             const page = await q.pageBySlug.get(space.id, String(slug));
             if (!page || page.state === 'deleted') fail(404, 'page.not_found', 'No such page');
-            if (!access.canEdit(space, actor)) fail(403, 'review.forbidden', 'Only owners and editors of this space review revisions');
-            const who = requirePerson(actor);
+            const aiEditor = isAiEditorActor(actor);
+            if (!aiEditor && !access.canEdit(space, actor)) fail(403, 'review.forbidden', 'Only owners and editors of this space review revisions');
+            const who = aiEditor ? null : requirePerson(actor);
             if (decision !== 'approved' && decision !== 'rejected') fail(422, 'review.invalid_decision', 'decision is approved or rejected');
             const n = Number(revisionNumber);
             if (!Number.isInteger(n) || !await revisions.get(page.id, n)) fail(404, 'revision.not_found', `No revision ${revisionNumber}`);
@@ -1439,7 +1470,9 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (prop && prop.status === 'pending') fail(409, 'review.proposal_pending', 'This revision is a pending AI proposal: approve or reject the proposal', { proposal_id: prop.id });
             return await tx(async () => {
                 const b = await before(page);
-                const review = await wrapStore(() => reviews.record({ entityId: page.id, revision: n, reviewer: who, decision, note }));
+                const review = aiEditor
+                    ? await reviews.recordAiEditor({ entityId: page.id, revision: n, principal: actor.service, decision, note })
+                    : await wrapStore(() => reviews.record({ entityId: page.id, revision: n, reviewer: who, decision, note }));
                 const out = page.state === 'published' && page.published_revision === n
                     ? await sync(b, page.id, actor, { updatedIfIndexChanged: true })
                     : { action: null, indexRevision: b ? b.indexRevision : null };

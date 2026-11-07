@@ -34,6 +34,7 @@ const { createAttachmentStore } = require('openvibe-publishing/media');
 const { createDiscussionRefs } = require('openvibe-publishing/discussion');
 const { createScheduler } = require('openvibe-publishing/schedule');
 const { createReviewLog } = require('openvibe-publishing/authorship');
+const { createReviewKindLog } = require('./wiki/review-kind');
 const { createIndexSequencer } = require('openvibe-publishing/index-hooks');
 const seo = require('openvibe-publishing/seo');
 
@@ -66,7 +67,8 @@ function createStores(db, { now = () => Date.now(), scheduleLeaseMs = 60000 } = 
         revisions,
         citations: createCitationStore(db, { prefix: 'wiki', now, revisions }),
         redirects: seo.createRedirectStore(db, { prefix: 'wiki_page', now }),
-        reviews: createReviewLog(db, { prefix: 'wiki_page', now }),
+        // The shared log records a person's review; the product adds the ai_editor kind and keeps the kinds of both.
+        reviews: createReviewKindLog(createReviewLog(db, { prefix: 'wiki_page', now }), { db, prefix: 'wiki_page', now }),
         attachments: createAttachmentStore(db, { prefix: 'wiki_page', now }),
         discussions: createDiscussionRefs(db, { prefix: 'wiki', now }),
         scheduler: createScheduler(db, { prefix: 'wiki', now, leaseMs: scheduleLeaseMs }),

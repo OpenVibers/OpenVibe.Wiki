@@ -393,7 +393,15 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
             published_at: page.published_at ? new Date(page.published_at).toISOString() : null,
             revision_published_at: page.revision_published_at ? new Date(page.revision_published_at).toISOString() : null,
             revision_created_at: v.revision.createdAt,
-            authorship: v.authorship ? { mode: v.authorship.mode, workflow: v.authorship.workflow || null, reviewed: !!(v.review && v.review.decision === 'approved') } : null,
+            authorship: v.authorship ? {
+                mode: v.authorship.mode, workflow: v.authorship.workflow || null,
+                reviewed: Boolean(v.labels && v.labels.length),
+                labels: v.labels || [],
+                reviews: {
+                    person: v.reviews && v.reviews.person ? { decision: v.reviews.person.decision, at: v.reviews.person.reviewedAt } : null,
+                    ai_editor: v.reviews && v.reviews.ai_editor ? { decision: v.reviews.ai_editor.decision, at: v.reviews.ai_editor.reviewedAt } : null,
+                },
+            } : null,
             infobox: v.infobox,
             citations: v.citations.map((c) => ({ url: c.url, title: c.title, source_item_id: c.sourceItemId, retrieved_at: c.retrievedAt, quote: c.quote ? c.quote.text : null, license_note: c.licenseNote })),
             attachments: v.attachments.map((a) => ({ media_id: a.mediaId, state: a.state, broken_reason: a.brokenReason, alt: a.alt, caption: a.caption })),

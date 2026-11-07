@@ -42,7 +42,7 @@
  */
 const express = require('express');
 const contracts = require('openvibe-contracts');
-const { actorMiddleware, guard, run, resolveCitations, resolveBundleCitations } = require('./common');
+const { actorMiddleware, guard, guardReview, run, resolveCitations, resolveBundleCitations } = require('./common');
 const importer = require('../wiki/import');
 
 const { http } = contracts;
@@ -248,7 +248,7 @@ function createApi({ svc, viewers, platform, config, log = console, limits, vibe
         const cites = await resolveCitations((req.body || {}).citations, platform);
         return { citations: (await svc.attachCitations(req.params.id, int(req.params.n), cites, req.actor)).map(serializeCitation) };
     }, 201));
-    router.post('/pages/:id/revisions/:n/review', guard('wiki.revision.publish'), B('wiki.revision.publish'), R(async (req) => {
+    router.post('/pages/:id/revisions/:n/review', guardReview, B('wiki.revision.publish'), R(async (req) => {
         const { page, space } = await pageAndSpace(req.params.id);
         const b = req.body || {};
         const out = await svc.reviewRevision(space.id, page.slug, int(req.params.n), { decision: b.decision, note: b.note == null ? null : String(b.note) }, req.actor);

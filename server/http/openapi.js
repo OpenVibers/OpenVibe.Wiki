@@ -179,12 +179,12 @@ route('post', '/pages/{id}/revisions/{n}/citations', {
 });
 route('get', '/review-queue', {
     operationId: 'getReviewQueue', summary: 'The reviewer queue: published AI-assisted pages waiting for a person', tags: ['revisions'], security: PERSON,
-    description: 'Staff only. Oldest first, with the gate\'s reason codes and words and the review path for each page.',
+    description: 'Staff only. Oldest first, with the gate\'s reason codes and words and the review path for each page. An item the AI editor rejected carries `reviewed` (kind, decision, principal, time, label); the AI editor\'s approvals publish the page and leave the queue.',
     responses: { 200: json('The waiting pages', { type: 'object', properties: { items: arrayOf({ type: 'object' }) } }), ...errors([401, 403, 429]) },
 });
 route('post', '/pages/{id}/revisions/{n}/review', {
     operationId: 'reviewRevision', summary: 'Approve or reject a revision', tags: ['revisions'], security: PERSON, parameters: [PAGE, REVISION],
-    description: 'wiki.revision.publish. A person (owner or editor); an approved AI-assisted revision becomes indexable when it publishes.',
+    description: 'A person (owner or editor) with wiki.revision.publish; or the AI editor — a svc:… service principal acting as itself with wiki.review.ai_editor — whose review is recorded with kind `ai_editor` and labelled "Checked by OpenVibe\'s AI editor", never "Reviewed by a person". An approved AI-assisted revision becomes indexable when it publishes.',
     requestBody: body({ type: 'object', required: ['decision'], properties: { decision: { type: 'string', enum: ['approved', 'rejected'] }, note: nullable('string') } }),
     responses: { 201: json('The review and what it changed', { type: 'object', properties: { review: { type: 'object' }, page: ref('Page'), action: nullable('string'), indexable: { type: 'boolean' }, reasons: arrayOf(str()) } }), ...errors() },
 });

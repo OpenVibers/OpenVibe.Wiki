@@ -17,6 +17,7 @@ const CAPS = Object.freeze({
     PAGE_READ: 'wiki.page.read',
     REVISION_PROPOSE: 'wiki.revision.propose',
     REVISION_PUBLISH: 'wiki.revision.publish',
+    REVISION_REVIEW_AI_EDITOR: 'wiki.review.ai_editor',
     REVISION_REVERT: 'wiki.revision.revert',
     CITATION_ATTACH: 'wiki.citation.attach',
     SEARCH_QUERY: 'wiki.search.query',

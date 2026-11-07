@@ -37,6 +37,20 @@ function guard(capabilityId) {
 }
 
 /**
+ * The review route's guard. A person passes (the service judges their role); a service acting for
+ * a person keeps needing wiki.revision.publish; the AI editor, acting as itself, needs
+ * wiki.review.ai_editor — the capability granted only to the orchestrator's service principal.
+ */
+function guardReview(req, res, next) {
+    const a = req.actor;
+    if (!a || a.kind !== 'service') return next();
+    const capabilityId = a.subject ? 'wiki.revision.publish' : 'wiki.review.ai_editor';
+    const c = checkCapability(a.claims, capabilityId);
+    if (c.allowed) return next();
+    return http.sendProblem(res, 403, c.code, { detail: c.reason, ctx: req.ov });
+}
+
+/**
  * Service errors → problem+json (openvibe-sdk/service, plan T1): the kit's defaults are this module's —
  * the error's status/code/detail, `extra` spread into the body, 'internal.error'/'Internal error' at 500,
  * 'request.invalid' otherwise, and only 5xx (apart from 503) logged, under `[Wiki]`. Kept as a named export
@@ -120,4 +134,4 @@ function citationsFromForm(body) {
     return out;
 }
 
-module.exports = { actorMiddleware, guard, sendError, run, resolveCitations, resolveBundleCitations, citationsFromForm };
+module.exports = { actorMiddleware, guard, guardReview, sendError, run, resolveCitations, resolveBundleCitations, citationsFromForm };
