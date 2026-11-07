@@ -147,6 +147,12 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
     }));
     // GET /<key>.txt — the IndexNow key file, only when a key is configured (server/index.js).
     if (indexnow && indexnow.enabled) app.use(indexnow.keyFile);
+    // The menu's network card (frame.menu-cards@1): the same public recent changes the home page reads.
+    {
+        const { createMenuCard } = require('./menu-card');
+        const menuCard = createMenuCard({ load: async () => await svc.recentChanges(6) });
+        app.get('/.well-known/openvibe-menu.json', menuCard.handler);
+    }
     app.use(createMachine({ svc, config }));
 
     app.post(['/new-space', '/s/*', '/w/*', '/proposals/*'], limiter(10 * 60000, 120));
