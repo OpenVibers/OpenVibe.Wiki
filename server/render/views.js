@@ -678,18 +678,12 @@ function sharedGateBody({ id, signedInAs = null, signInUrl = '/auth/login' }) {
     return html`<section class="wk-message">
 <h1>A page on OpenVibe.Wiki</h1>
 <p>This is shared with specific people.</p>
-<div id="page-gate">
+<div id="share-gate" data-ov-share-gate data-kind="page" data-id="${String(id)}" data-signed-in-as="${signedInAs || ''}" data-sign-in-url="${signInUrl}">
 <p>This page is shared with specific people on OpenVibe.Wiki.</p>
 <p><a class="wk-button" href="${signInUrl}">Sign in</a></p>
 </div>
+<link rel="stylesheet" href="${ovServe.url('ov-share.css')}">
 <script src="${ovServe.url('ov-share.js')}" defer></script>
-<script>
-window.addEventListener('DOMContentLoaded', function () {
-  var el = document.getElementById('page-gate');
-  if (el && window.OVShare) OVShare.gate(el, { kind: 'page', id: ${JSON.stringify(id)},
-    signedInAs: ${JSON.stringify(signedInAs || '')}, signInUrl: ${JSON.stringify(signInUrl)} });
-});
-</script>
 </section>`;
 }
 

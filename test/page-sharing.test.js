@@ -76,7 +76,7 @@ async function check(name, fn) {
         const stranger = await H.req(h, 'GET', url, { token: tok(sam) });
         assert.strictEqual(stranger.status, 404);
         assert.ok(stranger.text.includes('shared with specific people'), 'OVShare.gate');
-        assert.ok(stranger.text.includes('ov-share.js') && stranger.text.includes('OVShare.gate'));
+        assert.ok(stranger.text.includes('ov-share.js') && stranger.text.includes('data-ov-share-gate'));
         assert.ok(!stranger.text.includes('Board pack'), 'no title');
         const anon = await H.req(h, 'GET', url);
         assert.strictEqual(anon.status, 404);

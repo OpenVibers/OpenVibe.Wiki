@@ -137,7 +137,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
             // A page shared with specific people answers with the gate, never its title, text or history.
             const s = sharing ? await sharing.shareOf(page.id).catch(() => null) : null;
             if (s && s.audience === 'people' && !vipGate(req, res, space, page)) {
-                send(req, res, 404, views.sharedGateBody({ id: page.id, signedInAs: req.actor && req.actor.subject ? req.actor.subject : null,
+                send(req, res, 404, views.sharedGateBody({ id: page.id, signedInAs: req.actor && req.actor.user && req.actor.user.username ? req.actor.user.username : null,
                     signInUrl: `/auth/login?next=${encodeURIComponent(req.originalUrl)}` }), { title: 'A page on OpenVibe.Wiki', robots: 'noindex, nofollow' });
                 return null;
             }
