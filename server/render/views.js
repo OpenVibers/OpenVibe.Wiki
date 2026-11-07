@@ -434,7 +434,7 @@ function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolv
     if (v.canEdit && v.decision && !v.decision.indexable && page.state === 'published') banners.push(html`<p class="wk-notice wk-info">Search engines are told not to index this page: ${v.decision.reasons.map((r) => r.code + (r.detail ? ` (${r.detail})` : '')).join(', ')}.</p>`);
     const actions = [html`<a href="${base}/history">History</a>`];
     if (v.canEdit) actions.unshift(html`<a href="${base}/edit">Edit</a>`), actions.push(html`<a href="${base}/settings">Page settings</a>`);
-    if (shareUrl) actions.unshift(html`${raw(kit.share({ title, url: shareUrl, text: shareText || '', image: shareImage || null, kind: 'page', id: page.id }))}`);
+    if (shareUrl) actions.unshift(html`${raw(kit.share({ title, url: shareUrl, text: shareText || '', image: shareImage || null, kind: 'page', id: page.id }))} ${raw(kit.askAgent({ text: `About the wiki page “${title}” (${shareUrl}): ` }))}`);
     return html`${crumbs(trail)}
 <article class="wk-article" data-page-id="${page.id}" data-revision="${String(rev.number)}">
 <header><h1>${title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav>${pageFacts(v, base)}</header>
