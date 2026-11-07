@@ -65,6 +65,7 @@ const INTERNAL = [
                 'server/integrations/platform.js': 'Community, Sources, Media, VIP, AI (configured)',
                 'server/integrations/projects-module.js': 'Network user modules (configured)',
                 'server/integrations/image-fetch.js': 'pictures a generated wiki uses (research results): https only, openvibe-shared/egress safeLookup on every hop, a byte cap, magic bytes checked',
+                'server/sharing.js': 'OpenVibe.Network (configured) for identity lookups and the notification push; never a URL a user chose',
             };
             const root = path.join(__dirname, '..');
             const found = [];

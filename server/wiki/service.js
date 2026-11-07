@@ -84,13 +84,13 @@ function disclosureFor(rec, review) {
     };
 }
 
-function createWikiService({ db, stores, outbox, config, community = null, vip = null, now = () => Date.now(), log = console, indexnow = null }) {
+function createWikiService({ db, stores, outbox, config, community = null, vip = null, now = () => Date.now(), log = console, indexnow = null, sharing = null }) {
     const { revisions, citations, redirects, reviews, attachments, discussions, scheduler, sequencer } = stores;
     const access = createAccess(db, { vip });
     const origin = config.baseUrl;
     const policy = config.gate;
     // Every entry point reads the actor's roles again (one indexed query): a role granted a moment ago counts.
-    const roles = (actor, opts = { fresh: true }) => access.loadRoles(actor, opts);
+    const roles = async (actor, opts = { fresh: true }) => { await access.loadRoles(actor, opts); await access.loadShares(actor); return actor; };
 
     // ── Queries (PostgreSQL; async prepared statements via openvibe-sdk/db prepare) ──
     const q = {
@@ -510,6 +510,8 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             await writeRevisionExtras(space, page, revision, box);
             await attachCitationList(page, revision.number, cites, actor);
             await revisionEvent(space, page, revision, actor);
+            // A new page is a draft: Only me until its author shares it or publishes it.
+            if (sharing) await sharing.register(actor, id, 'private');
             if (/^usr_/.test(actorId(actor))) await q.watch.run(id, actorId(actor), t);
             return { page, revision };
         });
@@ -526,6 +528,8 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         }
         const b = await before(page);
         await q.setPublished.run({ n: revisionNumber, title: rev.fields.title || page.title, t: now(), id: page.id });
+        // Publishing widens a draft to the visibility its author chose (the Share sheet keeps the column in step).
+        if (sharing) await sharing.syncAudience(page.id, page.visibility);
         return await sync(b, page.id, actor);
     }
 
@@ -536,6 +540,13 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
      */
     async function revisionVisible(space, page, n, actor, proposal) {
         if (access.canEdit(space, actor)) return true;
+        // A shared *draft* opens at its head revision. A published page still shows only its published revision
+        // to a reader who is not an editor, however it was shared.
+        if (page.state !== 'published' && actor && actor.wikiShares && actor.wikiShares.has(page.id)) return true;
+        if (sharing && page.state !== 'published') {
+            const row = await sharing.shareOf(page.id).catch(() => null);
+            if (row && (row.audience === 'public' || row.audience === 'link')) return true;
+        }
         if (page.state !== 'published' || !page.published_revision || n > page.published_revision) return false;
         const p = proposal === undefined ? await q.proposalByRev.get(page.id, n) : proposal;
         return !p || p.status === 'approved';
@@ -1000,8 +1011,10 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             if (!access.canManage(space, actor)) fail(403, 'page.forbidden', 'Only an owner of this space changes page visibility');
             return await tx(async () => {
                 const b = await before(page);
+                const nextVisibility = checkVisibility(visibility, page.visibility, space);
                 await db.prepare('UPDATE wiki_pages SET visibility = ?, noindex = ?, updated_at = ? WHERE id = ?')
-                    .run(checkVisibility(visibility, page.visibility, space), noindex == null ? page.noindex : (noindex ? 1 : 0), now(), page.id);
+                    .run(nextVisibility, noindex == null ? page.noindex : (noindex ? 1 : 0), now(), page.id);
+                if (sharing) await sharing.syncAudience(page.id, nextVisibility);
                 const out = await sync(b, page.id, actor);
                 return { page: await q.pageById.get(page.id), ...out };
             });
@@ -1516,6 +1529,16 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             });
         },
     };
+
+    /** The Share sheet moved a page's audience: send Search what it should hold (a tombstone when it leaves Everyone). */
+    async function reindex(pageId) {
+        await tx(async () => {
+            const page = await q.pageById.get(pageId);
+            if (!page) return;
+            await sync(await before(page), pageId, null);
+        });
+    }
+    if (sharing) sharing.attach(reindex);
 
     return svc;
 }

@@ -46,7 +46,7 @@ const { createFrameGroups } = require('./frame-groups');
 // What the home says in search results and share cards (≤ 160 characters).
 const HOME_DESCRIPTION = 'Read the OpenVibe wiki or start your own: every page keeps its full revision history, lists the sources behind it and has a discussion thread.';
 
-function createPages({ svc, viewers, platform, config, log = console, limits, vibes = null, frameGroups = createFrameGroups({ url: config.frameUrl }) }) {
+function createPages({ svc, viewers, platform, config, log = console, limits, vibes = null, sharing = null, frameGroups = createFrameGroups({ url: config.frameUrl }) }) {
     const router = express.Router();
     const form = express.urlencoded({ extended: false, limit: '600kb' });
     router.use(actorMiddleware(viewers, { services: false }));
@@ -114,7 +114,36 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
             notFound(req, res);
             return null;
         }
-        if (!svc.access.canReadPage(space, page, req.actor)) { if (page.state !== 'published' || !vipGate(req, res, space, page)) notFound(req, res); return null; }
+        if (!svc.access.canReadPage(space, page, req.actor)) {
+            // A share row can open this one page for a signed-in person: a member of its people list, or the
+            // link when the space itself is public. A public row never widens a private space.
+            const row = sharing ? await sharing.shareOf(page.id).catch(() => null) : null;
+            // An Everyone draft opens by its address in a public space; a link or people draft needs a signed-in
+            // person; a public row never widens a private space.
+            const publicDraft = Boolean(row && (row.audience === 'public' || row.audience === 'link') && page.state !== 'published' && svc.access.canReadSpace(space, req.actor));
+            const narrowed = Boolean(row && req.actor && req.actor.subject && (row.audience === 'people'
+                || (row.audience === 'link' && svc.access.canReadSpace(space, req.actor))));
+            const allowed = Boolean((publicDraft || narrowed) && await sharing.canView(req.actor, page.id).catch(() => false));
+            if (allowed) {
+                try {
+                    if (!req.actor.wikiShares) Object.defineProperty(req.actor, 'wikiShares', { value: new Set(), writable: true, configurable: true });
+                    req.actor.wikiShares.add(page.id);
+                } catch {
+                    // The anonymous actor is frozen: a copy carries the grant for the rest of this request.
+                    req.actor = { ...req.actor, wikiShares: new Set([page.id]) };
+                }
+                return { space, page };
+            }
+            // A page shared with specific people answers with the gate, never its title, text or history.
+            const s = sharing ? await sharing.shareOf(page.id).catch(() => null) : null;
+            if (s && s.audience === 'people' && !vipGate(req, res, space, page)) {
+                send(req, res, 404, views.sharedGateBody({ id: page.id, signedInAs: req.actor && req.actor.user && req.actor.user.username ? req.actor.user.username : null,
+                    signInUrl: `/auth/login?next=${encodeURIComponent(req.originalUrl)}` }), { title: 'A page on OpenVibe.Wiki', robots: 'noindex, nofollow' });
+                return null;
+            }
+            if (page.state !== 'published' || !vipGate(req, res, space, page)) notFound(req, res);
+            return null;
+        }
         return { space, page };
     }
 
@@ -558,7 +587,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
     async function renderPageSettings(req, res, space, page, status, extra = {}) {
         const [view, list, parents] = await Promise.all([svc.view(space, page, req.actor, {}), svc.history(page, { limit: 1 }), parentsOf(space, req.actor)]);
         const headNumber = list[0].number;
-        send(req, res, status, views.pageSettingsPage({ space, page, v: { ...view, headNumber }, parents, canManage: svc.access.canManage(space, req.actor), ...extra }), { title: `Settings of ${page.title}`, robots: 'noindex, nofollow' });
+        send(req, res, status, views.pageSettingsPage({ space, page, v: { ...view, headNumber }, parents, canManage: svc.access.canManage(space, req.actor), shareUrl: svc.pageUrl(space, page), ...extra }), { title: `Settings of ${page.title}`, robots: 'noindex, nofollow' });
     }
 
     router.post('/w/:space/:slug/settings', B('wiki.page.update'), form, wrap(async (req, res) => {

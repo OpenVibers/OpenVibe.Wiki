@@ -5,6 +5,7 @@
  */
 const ssr = require('openvibe-publishing/ssr');
 const kit = require('openvibe-shared/kit');
+const ovServe = require('openvibe-shared/serve');
 const showcase = require('openvibe-shared/showcase');
 const { figureHtml } = require('openvibe-publishing/media');
 const { infoboxToText, mediaRefs } = require('../wiki/content');
@@ -426,7 +427,7 @@ function articlePage(v, { html: contentHtml, discussion, actor, mediaUrl, resolv
     if (v.canEdit && v.decision && !v.decision.indexable && page.state === 'published') banners.push(html`<p class="wk-notice wk-info">Search engines are told not to index this page: ${v.decision.reasons.map((r) => r.code + (r.detail ? ` (${r.detail})` : '')).join(', ')}.</p>`);
     const actions = [html`<a href="${base}/history">History</a>`];
     if (v.canEdit) actions.unshift(html`<a href="${base}/edit">Edit</a>`), actions.push(html`<a href="${base}/settings">Page settings</a>`);
-    if (shareUrl) actions.unshift(html`${raw(kit.share({ title, url: shareUrl, text: shareText || '', image: shareImage || null }))}`);
+    if (shareUrl) actions.unshift(html`${raw(kit.share({ title, url: shareUrl, text: shareText || '', image: shareImage || null, kind: 'page', id: page.id }))}`);
     return html`${crumbs(trail)}
 <article class="wk-article" data-page-id="${page.id}" data-revision="${String(rev.number)}">
 <header><h1>${title}</h1><nav class="wk-actions" aria-label="Page actions">${actions.map((a, i) => html`${i ? ' · ' : ''}${a}`)}</nav>${pageFacts(v, base)}</header>
@@ -578,11 +579,12 @@ ${roles.map((r) => html`<tr><td><code>${r.subject}</code></td><td>${r.role}</td>
 </section>`;
 }
 
-function pageSettingsPage({ space, page, v, parents, error = null, flash = null, canManage }) {
+function pageSettingsPage({ space, page, v, parents, error = null, flash = null, canManage, shareUrl = '' }) {
     const base = wpath(space, page);
     return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name, url: `/s/${e(space.slug)}` }, { name: page.title, url: base }, { name: 'Settings' }])}
 <section><h1>Settings of ${page.title}</h1>${error ? notice('error', error) : ''}${flash ? notice('ok', flash) : ''}
 <p>State: <strong>${page.state}</strong>${page.published_revision ? html` · published revision ${String(page.published_revision)}` : ''} · visibility ${page.visibility} (wiki: ${space.visibility})</p>
+<p class="wk-share">${raw(kit.share({ title: page.title, url: shareUrl, kind: 'page', id: page.id }))}</p>
 <h2>Publish</h2>
 <form method="post" action="${base}/settings" class="wk-form"><input type="hidden" name="op" value="publish">
 <label>Revision <input type="number" name="revision" min="1" value="${String(v.headNumber)}"></label>
@@ -608,8 +610,9 @@ ${v.attachments.length ? html`<ul>${v.attachments.map((a) => html`<li><code>${a.
 <label>Caption <input type="text" name="caption" maxlength="2000"></label>
 <p><button type="submit">Attach</button> <button type="submit" name="op" value="verify" formnovalidate>Check attachments against Media</button></p></form>
 ${canManage ? html`<h2>Visibility</h2><form method="post" action="${base}/settings" class="wk-form"><input type="hidden" name="op" value="visibility">
-<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((x) => html`<option value="${x}"${page.visibility === x ? raw(' selected') : ''}>${VIS_LABEL[x]}</option>`)}</select></label>
+<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((x) => html`<option value="${x}"${page.visibility === x ? raw(' selected') : ''}>${x === 'public' ? 'Everyone' : x === 'private' ? 'Only me' : VIS_LABEL[x]}</option>`)}</select></label>
 <label class="wk-check"><input type="checkbox" name="noindex" value="1"${page.noindex ? raw(' checked') : ''}> Ask search engines not to index this page</label>
+<p class="wk-muted">The Share button above offers the same four choices for this one page, and can name specific people (“look at this before I publish it”).</p>
 <p><button type="submit">Save</button></p></form>
 <h2>Delete</h2><form method="post" action="${base}/settings" class="wk-form"><input type="hidden" name="op" value="delete"><label class="wk-check"><input type="checkbox" name="confirm" value="yes" required> Delete this page (its address answers 410 Gone; history is kept)</label><p><button type="submit">Delete page</button></p></form>` : ''}
 </section>`;
@@ -667,13 +670,30 @@ ${items.length ? html`<ol class="wk-recent">${items.map((r) => html`<li><a href=
 </section>`;
 }
 
+/**
+ * The page a person who is not on the list sees (design 2026-11-06): the audience, never the title,
+ * the text, the pictures or the history. OVShare.gate offers "Ask for access" when signed in.
+ */
+function sharedGateBody({ id, signedInAs = null, signInUrl = '/auth/login' }) {
+    return html`<section class="wk-message">
+<h1>A page on OpenVibe.Wiki</h1>
+<p>This is shared with specific people.</p>
+<div id="share-gate" data-ov-share-gate data-kind="page" data-id="${String(id)}" data-signed-in-as="${signedInAs || ''}" data-sign-in-url="${signInUrl}">
+<p>This page is shared with specific people on OpenVibe.Wiki.</p>
+<p><a class="wk-button" href="${signInUrl}">Sign in</a></p>
+</div>
+<link rel="stylesheet" href="${ovServe.url('ov-share.css')}">
+<script src="${ovServe.url('ov-share.js')}" defer></script>
+</section>`;
+}
+
 function signInPage({ next, message }) {
     return html`<section><h1>Sign in</h1><p>${message}</p><p><a class="wk-button" href="/auth/login?next=${e(next || '/')}">Sign in with OpenVibe</a></p></section>`;
 }
 
 module.exports = {
     vibePage, vibeProgress, vibeForm,
-    vipGateBody,
+    vipGateBody, sharedGateBody,
     home, homeJsonLd, spacePage, articlePage, historyPage, sourcesPage, diffPage, editPage, formValuesFromRevision, newSpacePage,
     spaceSettingsPage, importPage, pageSettingsPage, revertPage, confirmPublishPage, proposalsPage, searchPage, recentPage,
     signInPage, errorBody, wpath, VIS_LABEL,
