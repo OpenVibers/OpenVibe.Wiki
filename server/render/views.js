@@ -40,7 +40,7 @@ function vipGateBody({ title, spaceName, joinUrl, signedIn, signInUrl }) {
 
 // A product page's ring icon on the shelf: its slug names the product (openvibe-live → live); the rest are the network's
 // libraries and runtimes. Anything else gets the wiki's own.
-const SHELF_ICON = { openrestream: 'stream', 'openvibe-mediahub': 'video', 'openvibe-node': 'plug', 'openvibe-sources': 'feeds', 'openvibe-play': 'games',
+const SHELF_ICON = { openrestream: 'stream', 'openvibe-mediahub': 'video', 'openvibe-link': 'plug', 'openvibe-sources': 'feeds', 'openvibe-play': 'games',
     'openvibe-publishing': 'docs', 'openvibe-contracts': 'code', 'openvibe-sdk': 'code', 'openvibe-shared': 'code', 'openvibe-extensions': 'plug', 'openvibe-examples': 'code' };
 const RING = new Set(['ov', 'network', 'live', 'tools', 'media', 'games', 'community', 'chat', 'codes', 'bot', 'blog', 'wiki', 'news', 'reviews', 'tips', 'vip', 'trade', 'host', 'deals', 'coupons',
     'video', 'search', 'food', 'work', 'rent', 'help', 'quest', 'inventory', 'services', 'space', 'watch', 'actor', 'events', 'ai', 'run', 'billing', 'pics', 'zone', 'download']);
