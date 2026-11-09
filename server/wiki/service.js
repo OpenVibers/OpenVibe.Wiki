@@ -449,7 +449,8 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             await emit(hooks.publicationEvent({
                 product: 'wiki', type: 'page', action, id: page.id, revision: page.published_revision || 0,
                 actor: hooks.subjectRef(actorId(actor)), document: evDoc, decision, now: now(),
-                extra: { space: space.slug, slug: page.slug, visibility: eff },
+                // The page's title rides along (contracts 0.366.0): the network's Feed names the page by it.
+                extra: { space: space.slug, slug: page.slug, visibility: eff, ...(page.title && (action === 'published' || action === 'updated') ? { title: String(page.title).slice(0, 200) } : {}) },
             }));
             await notifyWatchers(space, page, action, page.published_revision, actor);
         }
