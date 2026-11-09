@@ -2,6 +2,9 @@
 
 > Wikis with page trees, revisions, citations, media and discussion — editable together, source-backed.
 
+**Live site:** https://openvibe.wiki · **API docs:** https://openvibe.services · **For AI:** https://openvibe.wiki/llms.txt
+**Run it:** `npm ci && npm run dev` (Node 22 or newer) · **Tests:** `npm test`
+
 **Status:** alpha (roadmap Wave 16, Wiki half). **Public at https://openvibe.wiki since 2026-09-23**
 (the launch release also removed the domain from [OpenVibe.Sites](https://github.com/OpenVibers/OpenVibe.Sites)).
 The only content is the official space's 42 AI-assisted seed pages, one for each network repository; no person has reviewed them yet,
