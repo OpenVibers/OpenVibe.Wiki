@@ -8,6 +8,7 @@ const assert = require('assert');
 const H = require('./helpers');
 require('../server/http/pages'); // the article route this test fetches (the blocks are rendered there)
 const { aboutPerson } = require('../server/wiki/images');
+const { composeBody } = require('../server/wiki/writer');
 
 const run = (output, extra = {}) => ({ run: { id: 'run_ai_1', status: 'succeeded', output, model: 'stub-model', provider: 'stub', ...extra } });
 
@@ -28,7 +29,7 @@ const run = (output, extra = {}) => ({ run: { id: 'run_ai_1', status: 'succeeded
                     return new Response(JSON.stringify({
                         ...run({
                             title: 'Machines', summary: 'A page about machines.',
-                            lead: [{ text: `Machines do work. ${H.LONG}`, citations: [0] }],
+                            lead: [{ text: `# Machines\n\nMachines do work. ${H.LONG}`, citations: [0] }],
                             sections: [{ heading: 'History', sentences: [{ text: 'They began with simple tools and grew from there.', citations: [1] }] }],
                             infobox: [{ label: 'Maker', type: 'text', value: 'OpenVibe' }],
                             citations: [0, 1], gaps: [],
@@ -70,6 +71,16 @@ const run = (output, extra = {}) => ({ run: { id: 'run_ai_1', status: 'succeeded
         assert.strictEqual(page.status, 200, page.text.slice(0, 300));
         assert.ok(page.text.includes('class="ov-infobox"'), 'the page renders the infobox block');
         assert.ok(page.text.includes('class="ov-stat"'), 'the page renders the stat block');
+        const blocksLink = page.text.match(/<link rel="stylesheet" href="(\/css\/blocks\.css\?v=[0-9a-f]{10})">/);
+        assert.ok(blocksLink, 'the article links the hashed blocks sheet');
+        assert.ok(page.text.indexOf(blocksLink[0]) < page.text.indexOf('<link rel="stylesheet" href="/css/wiki.css?'), 'blocks CSS loads before wiki placement rules');
+        const sheet = await fetch(`${h.base}${blocksLink[1]}`);
+        assert.strictEqual(sheet.status, 200);
+        assert.match(sheet.headers.get('content-type'), /^text\/css/);
+        assert.strictEqual(sheet.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+        assert.ok((await sheet.text()).includes('.ov-infobox'), 'the served sheet comes from the library');
+        assert.ok(page.text.includes('This revision cites no sources.'));
+        assert.ok(!page.text.includes('Inspect these sources'), 'an empty list has no inspect link');
         const pageJson = await H.req(h, 'GET', `/w/${space.slug}/${made.page.slug}.json`, { cookie });
         assert.strictEqual(pageJson.status, 200);
         assert.strictEqual(pageJson.json.blocks.type, 'root');
@@ -110,6 +121,8 @@ const run = (output, extra = {}) => ({ run: { id: 'run_ai_1', status: 'succeeded
         assert.strictEqual(drafted.json.model, 'stub-model');
         assert.ok(drafted.json.revision.body.startsWith('Machines do work.'), drafted.json.revision.body);
         assert.ok(drafted.json.revision.body.includes('## History'));
+        assert.ok(!drafted.json.revision.body.startsWith('# Machines'), 'the writer drops a repeated leading title');
+        assert.strictEqual(composeBody({ sections: [{ heading: 'Machines', sentences: [{ text: 'A cited sentence.', citations: [0] }] }] }, 'Machines'), 'A cited sentence.');
         assert.deepStrictEqual(drafted.json.revision.infobox.map((r) => [r.label, r.value]), [['Maker', 'OpenVibe']]);
         assert.deepStrictEqual(drafted.json.sources.map((s) => s.url), ['https://sources.test/a', 'https://sources.test/b']);
 

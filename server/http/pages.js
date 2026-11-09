@@ -286,7 +286,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         const b = req.body || {};
         const values = { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, parent_id: b.parent_id, visibility: b.visibility, message: b.message };
         const parents = await parentsOf(space, req.actor);
-        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
+        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow', blocksCss: !!preview });
         try {
             const infobox = content.parseInfoboxText(b.infobox);
             if (b.op === 'preview') return again(200, null, await svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
@@ -455,7 +455,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         ].filter(Boolean) : null;
         const shareMedia = v.attachments.find((a) => a.mediaId && !a.brokenReason);
         send(req, res, 200, views.articlePage(v, { html: bodyHtml, discussion, actor: req.actor, mediaUrl: (id) => platform.media.publicUrl(id), resolve: (title) => infoboxLinks.get(title) || { href: null, exists: false }, flash: req.query.saved ? 'Saved.' : null, shareUrl: url, shareText: description, shareImage: shareMedia ? platform.media.publicUrl(shareMedia.mediaId) : null }), {
-            decision, title: v.revision.fields.title, description, ogType: 'article', jsonLd, path: svc.pagePath(space, page), cache: publicCache, styles: ['kit.css'],
+            decision, title: v.revision.fields.title, description, ogType: 'article', jsonLd, path: svc.pagePath(space, page), cache: publicCache, styles: ['kit.css'], blocksCss: true,
         });
     }));
 
@@ -540,7 +540,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         let baseView = null;
         try { baseView = Number.isInteger(base) && base > 0 ? await svc.view(space, page, req.actor, { revision: base }) : null; } catch { baseView = null; }
         const values = { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, message: b.message, keep };
-        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, page, values, error, preview, citations: baseView ? baseView.citations : [], baseRevision: base, expectedRevision: expected }), { title: `Editing ${page.title}`, robots: 'noindex, nofollow' });
+        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, page, values, error, preview, citations: baseView ? baseView.citations : [], baseRevision: base, expectedRevision: expected }), { title: `Editing ${page.title}`, robots: 'noindex, nofollow', blocksCss: !!preview });
         try {
             const infobox = content.parseInfoboxText(b.infobox);
             if (b.op === 'preview') return again(200, null, await svc.renderRevision(space, { content: String(b.body || '') }, req.actor));

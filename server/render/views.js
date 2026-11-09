@@ -333,7 +333,7 @@ function infoboxHtml(entries, resolve, rel = 'nofollow ugc noopener', { media = 
 
 function citationsHtml(cites, inspectHref, rel = 'nofollow ugc noopener') {
     const inspect = inspectHref ? html`<p class="wk-muted"><a href="${inspectHref}">Inspect these sources</a> (retrieval times, where each was first cited, what changed between revisions)</p>` : '';
-    if (!cites.length) return html`<section class="wk-sources"><h2>Sources</h2><p class="wk-muted">This revision cites no sources.</p>${inspect}</section>`;
+    if (!cites.length) return html`<section class="wk-sources"><h2>Sources</h2><p class="wk-muted">This revision cites no sources.</p></section>`;
     return html`<section class="wk-sources"><h2>Sources</h2><ol>${cites.map((c) => html`<li id="cite-${String(c.id)}">${c.url ? html`<a href="${c.url}" rel="${rel}">${c.title || c.url}</a>` : html`${c.title || 'Sources item'}`}${c.sourceItemId ? html` <span class="wk-muted">(OpenVibe.Sources item <code>${c.sourceItemId}</code>)</span>` : ''}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : html`, <span class="wk-muted">retrieval time unknown</span>`}${c.licenseNote ? html` (${c.licenseNote})` : ''}${c.quote && c.quote.text ? html`<blockquote>${c.quote.text}</blockquote>` : ''}</li>`)}</ol>${inspect}</section>`;
 }
 

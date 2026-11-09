@@ -19,7 +19,7 @@ Media attachments and Community discussion. AI proposes revisions; a person appr
 publishes. Search indexes only published, public state.
 
 It is the first full consumer of the shared publishing packages
-([openvibe-publishing](https://github.com/OpenVibers/OpenVibe.Publishing) v1.6.1, ADR-019): revisions,
+([openvibe-publishing](https://github.com/OpenVibers/OpenVibe.Publishing) v1.7.0, ADR-019): revisions,
 citations, redirects, the indexability gate, feeds, sitemaps, JSON-LD, authorship, scheduling,
 media references, discussion references and the Search index hooks all come from there. Wiki owns
 its publication state; the packages supply the mechanics.
@@ -315,7 +315,7 @@ Production: `/opt/openvibe.wiki`, env `/etc/openvibe/wiki.env`, unit
 
 - PostgreSQL 18 and Valkey 9 (OpenVibe.Host `roles/data/`, ADR-035): every read and write is async through
   `openvibe-sdk/db`; Valkey holds the per-actor limit counters (optional: without `VALKEY_URL` they count per process).
-- `openvibe-publishing` v1.6.1 (async PostgreSQL stores, ingest and publication chassis), `openvibe-contracts`
+- `openvibe-publishing` v1.7.0 (async PostgreSQL stores, ingest and publication chassis), `openvibe-contracts`
   v0.379.0, `openvibe-shared` v4.179.0
   (Frame, release, metrics, readiness, SEO helpers, legal pages), `openvibe-sdk` v0.132.0 (db, auth, PostgreSQL
   events outbox, per-actor limits, account export and deletion, testing) — pinned release tarballs.
@@ -447,5 +447,5 @@ Part of the [OpenVibe network](https://openvibe.network). Built in the open by [
 - openvibe-contracts: v0.379.0
 - openvibe-sdk: v0.132.0
 - openvibe-shared: v4.179.0
-- openvibe-publishing: v1.6.1
+- openvibe-publishing: v1.7.0
 <!-- versions:end -->

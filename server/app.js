@@ -136,6 +136,11 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
 
     // This site's own pinned copy of the OpenVibe Frame's browser files (openvibe-shared/serve).
     app.use('/shared', require('openvibe-shared/serve').handler());
+    app.get('/css/blocks.css', (req, res) => {
+        const v = req.query.v;
+        res.type('css').set('Cache-Control', cache.assetHeaders('css/blocks.css', { hashed: !!v && v === require('./render/layout').assetVersion('css/blocks.css') }))
+            .sendFile(require.resolve('openvibe-publishing/blocks.css'));
+    });
     app.use(express.static(PUBLIC_DIR, {
         index: false, redirect: false,
         // Immutable only when ?v= is the hash of the bytes served: an older page's URL after a deploy (or a

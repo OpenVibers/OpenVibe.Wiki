@@ -31,14 +31,20 @@ function citedSentences(list, where) {
 }
 
 /** The Markdown of the writer's answer: the lead, then each section's cited sentences as one paragraph. */
-function composeBody(out) {
+function composeBody(out, title = '') {
     const parts = [];
-    const lead = citedSentences(out.lead, 'lead').map((s) => s.text).join(' ');
+    const leadRows = Array.isArray(out.lead) ? out.lead.slice() : [];
+    if (leadRows.length && leadRows[0] && typeof leadRows[0].text === 'string') {
+        const first = leadRows[0].text.replace(/^\s*#{1,6}[ \t]+([^\r\n]+)\r?\n+/, (match, heading) =>
+            oneLine(heading, 160).toLowerCase() === oneLine(title, 160).toLowerCase() ? '' : match);
+        leadRows[0] = { ...leadRows[0], text: first };
+    }
+    const lead = citedSentences(leadRows, 'lead').map((s) => s.text).join(' ');
     if (lead) parts.push(lead);
     for (const section of Array.isArray(out.sections) ? out.sections : []) {
         const heading = oneLine(section && section.heading, 160).replace(/^#+\s*/, '');
         const sentences = citedSentences(section && section.sentences, `section "${heading}"`).map((s) => s.text).join(' ');
-        if (heading && sentences) parts.push(`## ${heading}\n\n${sentences}`);
+        if (heading && sentences) parts.push(parts.length === 0 && heading.toLowerCase() === oneLine(title, 160).toLowerCase() ? sentences : `## ${heading}\n\n${sentences}`);
     }
     return parts.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
 }
@@ -109,7 +115,7 @@ async function draft(ctx, pageId, body = {}, actor) {
     });
     const key = crypto.createHash('sha256').update(JSON.stringify({ page: page.id, head: v.revision.number, instruction })).digest('hex').slice(0, 24);
     const run = await ctx.platform.ai.run(WORKFLOW, {
-        title, topic: title, space: space.name, instruction, sources,
+        title, topic: title, space: space.name, instruction: `${instruction} The page title is already shown above the body. Do not start the body with a heading that repeats the title.`, sources,
         query: title, outline: [], pages: [], lang: 'en',
     }, {
         subject: actor && actor.subject,
@@ -118,7 +124,7 @@ async function draft(ctx, pageId, body = {}, actor) {
         totalMs: 300000,
     });
     const out = run.output || {};
-    const text = composeBody(out);
+    const text = composeBody(out, title);
     if (text.length < 200) throw Object.assign(new Error('The sources did not say enough to write this article'), { status: 422, code: 'wiki.page_too_thin' });
     if (text.length > MAX_BODY) throw Object.assign(new Error('The draft is too long'), { status: 422, code: 'wiki.page_too_long' });
     const citations = citedSources(out, run.citations);
