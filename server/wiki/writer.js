@@ -100,10 +100,13 @@ async function draft(ctx, pageId, body = {}, actor) {
     const title = v.revision.fields.title || page.title;
     const instruction = oneLine(body.instruction, 4000) || 'Write or improve this article from its sources.';
     // The sources the article already cites go in with the research, so nothing it says before is lost.
-    const sources = v.citations.filter((c) => c.url).slice(0, 40).map((c) => ({
-        source_type: 'wiki', url: c.url, title: c.title || c.url,
-        retrieved_at: c.retrievedAt || null, content: c.quote && c.quote.text ? c.quote.text : null,
-    }));
+    const sources = v.citations.filter((c) => c.url).slice(0, 40).map((c) => {
+        // The AI source schema takes strings, never null: leave an unknown field out.
+        const source = { source_type: 'wiki', url: c.url, title: c.title || c.url };
+        if (c.retrievedAt) source.retrieved_at = c.retrievedAt;
+        if (c.quote && c.quote.text) source.content = c.quote.text;
+        return source;
+    });
     const key = crypto.createHash('sha256').update(JSON.stringify({ page: page.id, head: v.revision.number, instruction })).digest('hex').slice(0, 24);
     const run = await ctx.platform.ai.run(WORKFLOW, {
         title, topic: title, space: space.name, instruction, sources,
