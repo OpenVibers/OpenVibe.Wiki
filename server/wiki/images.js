@@ -12,7 +12,7 @@ const { IntegrationError } = require('../integrations/platform');
 
 const TASK = 'wiki.article.images';
 const PROVIDERS = ['commons', 'openverse'];
-const PERSON_KEYS = /^(born|died|death|birth|birth_?(date|place|name)|occupation|nationality|citizenship|spouse|partner|children|parents|mother|father|alma_mater|education|known_for|height|position|office|party|voiced_by|portrayed_by|author|director|actor|actress|singer|musician|writer|artist|politician|person)$/;
+const PERSON_KEYS = /^(born|died|death|birth|date_of_birth|place_of_birth|birth_?(date|place|name)|occupation|nationality|citizenship|spouse|partner|children|parents|mother|father|alma_mater|education|known_for|height|position|office|party|voiced_by|portrayed_by|author|director|actor|actress|singer|musician|writer|artist|politician|person)$/;
 const PERSON_TEXT = /\b(was born|is an? (actor|actress|singer|musician|writer|politician|artist|director|author|person|human)|birth name|date of birth|grew up in)\b/i;
 
 const oneLine = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
