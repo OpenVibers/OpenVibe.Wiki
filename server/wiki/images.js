@@ -78,7 +78,11 @@ function fromAttachments(v, mediaUrl) {
 /** One run of the image task; an AI without the task yet answers 404 and the research workflow is used instead. */
 async function runTask(ctx, query, { choice = null, subject = null, limit = 8, provider = null } = {}) {
     const input = { query, images: true, max_images: Math.max(4, limit), content_chars: 800 };
-    if (provider) input.providers = [provider];
+    if (provider) {
+        // The task's choice names one engine; the plan asks Commons and Openverse, so each call names its own.
+        input.providers = [provider];
+        choice = { model: `search/${provider}`, source: 'openvibe' };
+    }
     try {
         return { ...(await ctx.platform.ai.runTask(TASK, input, { subject, choice })), task: TASK };
     } catch (err) {
