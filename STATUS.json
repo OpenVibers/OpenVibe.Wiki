@@ -11,7 +11,7 @@
   "sdk": "openvibe-sdk v0.125.0",
   "shared": "openvibe-shared v4.173.0",
   "packages": [
-    "openvibe-publishing v1.3.0",
+    "openvibe-publishing v1.6.1",
     "openvibe-shared v4.173.0",
     "openvibe-sdk v0.125.0"
   ],

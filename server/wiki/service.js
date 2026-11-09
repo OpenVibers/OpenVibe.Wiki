@@ -33,10 +33,11 @@ function firstSentence(text) {
     if (m) return m[1];
     return t.length <= 160 ? t : `${t.slice(0, 160).replace(/\s+\S*$/, '')}…`;
 }
-const { isMediaId, figureHtml } = require('openvibe-publishing/media');
+const { isMediaId } = require('openvibe-publishing/media');
 const { ulid } = require('openvibe-contracts').ids;
 const { checkCapability, CAPS } = require('../auth/capabilities');
 const content = require('./content');
+const blockRender = require('../render/blocks');
 const importer = require('./import');
 const { createAccess, VISIBILITIES } = require('./access');
 
@@ -1164,13 +1165,16 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             // in series made /w/:space/:slug wait on every link before it rendered.
             const unique = new Map(targets.map((t) => [`${t.space}\u0000${t.slug}`, t]));
             const resolved = new Map(await Promise.all([...unique].map(async ([key, t]) => [key, await svc.resolveLink(t, actor)])));
-            const byMedia = new Map((attachments || []).map((a) => [a.mediaId, a]));
-            const media = mediaUrl ? (id, caption) => {
-                const a = byMedia.get(id);
-                if (!a) return null;
-                return figureHtml({ ...a, caption: caption || a.caption }, { urlFor: mediaUrl, unavailableText: 'This picture is no longer available.' });
-            } : null;
-            return content.renderContent(rev.content, { currentSpace: space.slug, resolve: (t) => resolved.get(`${t.space}\u0000${t.slug}`) || { href: null, exists: false }, rel: svc.linkRel(space), media });
+            // Markdown plus blocks (openvibe-publishing/blocks): a body with no blocks renders as it always did.
+            // A preview has no revision row (and so no page): it has no attachments to resolve.
+            const pageId = rev.entityId || rev.entity_id || rev.pageId || rev.page_id || null;
+            return blockRender.renderBody(rev.content, {
+                currentSpace: space.slug,
+                resolve: (t) => resolved.get(`${t.space}\u0000${t.slug}`) || { href: null, exists: false },
+                rel: svc.linkRel(space),
+                mediaUrl,
+                attachments: attachments || (pageId ? await svc.attachmentsOf(pageId) : []),
+            }).html;
         },
 
         linkRel(space) { return space && space.kind === 'official' ? 'noopener' : 'nofollow ugc noopener'; },

@@ -110,8 +110,9 @@ route('put', '/spaces/{space}/roles/{subject}', {
 route('post', '/spaces/{space}/pages', {
     operationId: 'createPage', summary: 'Create a draft page in a space', tags: ['pages'], security: PERSON, parameters: [SPACE],
     description: 'wiki.page.create.',
-    requestBody: body({ type: 'object', required: ['title', 'body'], properties: {
-        title: str({ maxLength: 200 }), body: str({ maxLength: 200000, description: 'Markdown' }), summary: str({ maxLength: 300 }),
+    requestBody: body({ type: 'object', required: ['title'], properties: {
+        title: str({ maxLength: 200 }), body: str({ maxLength: 200000, description: 'Markdown' }), blocks: ref('Block'),
+        summary: str({ maxLength: 300 }),
         infobox, parent_id: nullable('string'), visibility: { type: 'string', enum: ['public', 'members', 'vip', 'private'] },
         citations: arrayOf(citation), message: nullable('string'),
     } }),
@@ -151,7 +152,7 @@ route('post', '/pages/{id}/revisions', {
     operationId: 'editPage', summary: 'Write a new revision of a page', tags: ['revisions'], security: PERSON, parameters: [PAGE],
     description: 'wiki.page.create. expected_revision makes the write conditional: a stale number answers 409.',
     requestBody: body({ type: 'object', required: ['expected_revision'], properties: {
-        expected_revision: { type: 'integer', minimum: 0 }, title: str({ maxLength: 200 }), body: str({ maxLength: 200000 }),
+        expected_revision: { type: 'integer', minimum: 0 }, title: str({ maxLength: 200 }), body: str({ maxLength: 200000 }), blocks: ref('Block'),
         summary: str({ maxLength: 300 }), infobox, citations: arrayOf(citation),
         keep_citations: { type: 'string', description: 'all (default), none, or the numbers to carry' }, message: nullable('string'),
     } }),
@@ -223,6 +224,29 @@ route('post', '/pages/{id}/media/verify', {
     operationId: 'verifyMedia', summary: 'Re-check every attachment against Media', tags: ['media'], security: PERSON, parameters: [PAGE],
     description: 'wiki.page.create. Editors only.',
     responses: { 200: json('One result per attachment', { type: 'object', properties: { results: arrayOf({ type: 'object' }) } }), ...errors() },
+});
+route('post', '/pages/{id}/images/suggest', {
+    operationId: 'suggestImages', summary: 'Pictures for an article, from the wiki.article.images task', tags: ['media'], security: PERSON, parameters: [PAGE],
+    description: 'wiki.page.create. Wiki editors only. Commons and Openverse first, with licence and author; OpenVibe.Pics and the page\'s Media next; an AI illustration only when nothing real exists and the article is not about a real person.',
+    requestBody: body({ type: 'object', properties: {
+        query: nullable('string', { maxLength: 300 }), section: nullable('string', { maxLength: 200 }),
+        count: { type: 'integer', minimum: 1, maximum: 12 }, allow_ai: { type: 'boolean', default: true },
+        choice: { type: 'object', properties: { model: str(), source: { type: 'string', enum: ['openvibe', 'keys', 'machines'] }, machine: str() } },
+    } }, false),
+    responses: { 200: json('Picture suggestions', { type: 'object', properties: {
+        article_id: str(), task: str(), query: str(), subject_is_person: { type: 'boolean' }, run_id: nullable('string'), note: nullable('string'), suggestions: arrayOf({ type: 'object' }),
+    } }), ...errors() },
+});
+route('post', '/pages/{id}/draft', {
+    operationId: 'draftArticle', summary: 'Run the wiki writer and file a pending proposal', tags: ['proposals'], security: PERSON, parameters: [PAGE],
+    description: 'wiki.page.create. Runs OpenVibe.AI\'s content.wiki workflow (web search plus the sources the article cites, a citation on every sentence, an infobox from facts) and files the revision as a pending proposal. Never publishes.',
+    requestBody: body({ type: 'object', properties: {
+        instruction: nullable('string', { maxLength: 4000 }),
+        choice: { type: 'object', properties: { model: str(), source: { type: 'string', enum: ['openvibe', 'keys', 'machines'] }, machine: str() } },
+    } }, false),
+    responses: { 201: json('The pending proposal and its revision', { type: 'object', properties: {
+        proposal: { type: 'object' }, revision: ref('Revision'), run_id: nullable('string'), model: nullable('string'), provider: nullable('string'), sources: arrayOf({ type: 'object' }),
+    } }), ...errors() },
 });
 route('put', '/pages/{id}/watch', {
     operationId: 'watchPage', summary: 'Watch (or stop watching) a page', tags: ['pages'], security: PERSON, parameters: [PAGE],
@@ -319,6 +343,9 @@ function openapi() {
                     body: { type: 'null', description: 'Never sent in a history listing' }, published: { type: 'boolean' },
                     citation_count: { type: 'integer' }, proposal: nullable('object', { description: '{ id, status } when the revision came from a proposal' }),
                 } }] },
+                Block: { type: 'object', description: 'A publishing.block@1 tree (type: root, with text and the block children); the Markdown is what the revision keeps', required: ['type'], properties: {
+                    type: str(), attrs: { type: 'object' }, value: str(), children: arrayOf({ type: 'object' }),
+                } },
                 Citation: { type: 'object', properties: {
                     id: str(), revision: { type: 'integer' }, url: nullable('string'), title: nullable('string'),
                     source_item_id: nullable('string'), retrieved_at: nullable('string', { format: 'date-time' }),
@@ -331,10 +358,10 @@ function openapi() {
                     checked_at: nullable('string', { format: 'date-time' }), attached_by: nullable('string'),
                 } },
                 Role: { type: 'object', properties: { subject: str(), role: { type: 'string', enum: ['owner', 'editor', 'viewer'] }, granted_by: nullable('string'), granted_at: str({ format: 'date-time' }) } },
-                CreatedPage: { type: 'object', properties: { page: ref('Page'), revision: ref('Revision'), created: { type: 'boolean' }, citations: arrayOf(ref('Citation')) } },
-                RevisionView: { type: 'object', properties: { revision: ref('Revision'), citations: arrayOf(ref('Citation')), infobox } },
+                CreatedPage: { type: 'object', properties: { page: ref('Page'), revision: ref('Revision'), blocks: ref('Block'), created: { type: 'boolean' }, citations: arrayOf(ref('Citation')) } },
+                RevisionView: { type: 'object', properties: { revision: ref('Revision'), blocks: ref('Block'), citations: arrayOf(ref('Citation')), infobox } },
                 PageView: { type: 'object', properties: {
-                    page: ref('Page'), revision: ref('Revision'), citations: arrayOf(ref('Citation')), infobox,
+                    page: ref('Page'), revision: ref('Revision'), blocks: ref('Block'), citations: arrayOf(ref('Citation')), infobox,
                     attachments: arrayOf(ref('Attachment')),
                     links: arrayOf({ type: 'object', properties: { space: str(), slug: str(), label: nullable('string') } }),
                     indexability: { type: 'object', properties: { indexable: { type: 'boolean' }, reasons: arrayOf(str()) } },

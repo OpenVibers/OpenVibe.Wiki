@@ -35,6 +35,7 @@ const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const { renderPage, AI_SUMMARY, asset } = require('../render/layout');
 const views = require('../render/views');
+const blockRender = require('../render/blocks');
 const { foldBlock } = require('../render/short');
 const frame = require('openvibe-shared/frame');
 const showcase = require('openvibe-shared/showcase');
@@ -389,7 +390,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
     function articleData(v, space, page) {
         return {
             id: page.id, space: space.slug, slug: page.slug, url: svc.pageUrl(space, page), state: page.state, visibility: svc.access.effectiveVisibility(space, page),
-            revision: v.revision.number, title: v.revision.fields.title, summary: v.revision.fields.summary || null, body_markdown: v.revision.content,
+            revision: v.revision.number, title: v.revision.fields.title, summary: v.revision.fields.summary || null, body_markdown: v.revision.content, blocks: blockRender.bodyBlocks(v.revision.content),
             published_at: page.published_at ? new Date(page.published_at).toISOString() : null,
             revision_published_at: page.revision_published_at ? new Date(page.revision_published_at).toISOString() : null,
             revision_created_at: v.revision.createdAt,
@@ -443,12 +444,12 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         const crumbsLd = [{ name: 'Wiki', url: `${config.baseUrl}/` }, { name: space.name, url: `${config.baseUrl}${svc.spacePath(space)}` }, { name: v.revision.fields.title, url }];
         // The gate decides robots for the published revision; any other revision is noindex.
         const decision = v.isPublishedRevision ? v.decision : { ...v.decision, indexable: false, robots: 'noindex, nofollow', canonical: url };
-        const description = v.revision.fields.summary || ssr.markdownToText(v.revision.content, 160);
+        const description = v.revision.fields.summary || blockRender.bodyText(v.revision.content).slice(0, 160);
         const jsonLd = open && v.isPublishedRevision ? [
             seo.structuredData.article({
                 headline: v.revision.fields.title, url, description,
                 datePublished: page.published_at, dateModified: page.revision_published_at,
-                citations: v.citations, wordCount: ssr.wordCount(ssr.markdownToText(v.revision.content)),
+                citations: v.citations, wordCount: ssr.wordCount(blockRender.bodyText(v.revision.content)),
             }),
             seo.structuredData.breadcrumbs(crumbsLd),
         ].filter(Boolean) : null;
