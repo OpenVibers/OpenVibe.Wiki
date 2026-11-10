@@ -115,7 +115,9 @@ function renderPage(o) {
         styles: o.blocksCss ? [] : o.styles,
         release: RELEASE,
         mainClass: 'wk-main',
-        header: `<header class="wk-bar"><a class="wk-brand" href="/">${SITE_NAME}</a><form class="wk-search" action="/search" method="get" role="search"><label for="wk-q" class="wk-sr">Search the wiki</label><input id="wk-q" name="q" type="search" placeholder="Search the wiki" value="${esc(o.query || '')}"><button type="submit">Search</button></form><noscript><span class="wk-account">${who}</span></noscript></header>`,
+        // The site's name is in the navbar above; this row is the wiki's search, and says the name only where there is no
+        // navbar (without JavaScript).
+        header: `<header class="wk-bar"><noscript><a class="wk-brand" href="/">${SITE_NAME}</a></noscript><form class="wk-search" action="/search" method="get" role="search"><label for="wk-q" class="wk-sr">Search the wiki</label><input id="wk-q" name="q" type="search" placeholder="Search the wiki" value="${esc(o.query || '')}"><button type="submit">Search</button></form><noscript><span class="wk-account">${who}</span></noscript></header>`,
         body: o.body,
         // The page names its Markdown twin (openvibe-shared/agent-layer) and the site's llms.txt.
         head: [o.blocksCss ? `<link rel="stylesheet" href="${asset('css/blocks.css')}">\n<link rel="stylesheet" href="${asset('css/wiki.css')}">` : '', ...(o.blocksCss ? (o.styles || []).map((name) => `<link rel="stylesheet" href="${esc(serve.url(name))}">`) : []), hasTwin ? seo.linkHeaderTags(canonical, `${config.baseUrl}/llms.txt`).head : '', o.head].filter(Boolean).join('\n'),
