@@ -86,7 +86,6 @@ table { border-collapse: collapse; }
   .wk-infobox { float: none; margin: 0 0 16px; width: 100%; }
   h1 { font-size: 1.5rem; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 /* The home's showcase sections (openvibe-shared/showcase.css) inside the page column, which has its own gutter. */
 .wk-main .sc-hero, .wk-main .sc-sec, main .sc-hero, main .sc-sec { padding-left: 0; padding-right: 0; }
