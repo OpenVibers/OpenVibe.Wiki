@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use OpenVibe.Wiki in research or a product, cite it as below."
+title: openvibe-wiki
+type: software
+authors:
+  - name: OpenVibe
+    alias: OpenVibers
+    website: https://openvibe.network
+repository-code: https://github.com/OpenVibers/OpenVibe.Wiki
+url: https://openvibe.wiki
+license: AGPL-3.0-only
+abstract: "Wiki spaces with page trees, revisions, citations, media and discussion, at openvibe.wiki."
+keywords:
+  - openvibe
+  - citations
+  - collaboration
+  - knowledge-base
+  - markdown
