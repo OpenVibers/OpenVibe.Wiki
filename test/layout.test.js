@@ -3,7 +3,7 @@
  * The page shell (server/render/layout.js): every page is openvibe-publishing/layout's document
  * (openvibe-shared/shell page()): one title, the canonical, robots exactly as the page passed it (the
  * gate's decision for an article, noindex for editing surfaces), JSON-LD, the feed links, the
- * stylesheets, the network app icon, the Frame (navbar mount, noscript navigation, the
+ * stylesheets, the network app icon, the Frame (server navbar mount, the
  * server-rendered footer and its init) and the boost marker.
  */
 const assert = require('assert');
@@ -25,8 +25,9 @@ function frameOf(html, where) {
     assert.ok(/<link rel="[^"]*icon[^"]*"/.test(head), `${where}: the app icon tags`);
     assert.ok(/<meta name="ov-boost" content="wiki@[^"]+">/.test(head), `${where}: the boost marker`);
     assert.ok(/<script src="\/shared\/boost\.js\?v=[0-9a-f]+" data-main="#main" defer><\/script>/.test(head), `${where}: the boost script`);
-    assert.ok(body.includes('<div id="navbar-mount"></div>'), `${where}: the navbar mount`);
-    assert.ok(body.includes('<noscript><nav'), `${where}: the noscript navigation`);
+    assert.ok(body.includes('<div id="navbar-mount"><nav class="openvibe-navbar" aria-label="Site"'), `${where}: the server navbar mount`);
+    assert.ok(body.includes('data-ov-nav-link="true" href="/">Wikis</a>'), `${where}: the home link is in server HTML`);
+    assert.ok(body.includes('data-ov-nav-link="true" href="/recent">Recent changes</a>'), `${where}: recent changes is in server HTML`);
     assert.ok(body.includes('id="ov-footer"'), `${where}: the server-rendered footer`);
     assert.ok(body.includes('OpenVibeFooter.init(window.__OV_PAGE.footer)'), `${where}: the footer is initialised`);
     assert.ok(body.includes('<header class="wk-bar">'), `${where}: the site header`);
