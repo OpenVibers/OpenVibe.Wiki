@@ -18,7 +18,7 @@ const stripScripts = (html) => html.replace(/<script[\s\S]*?<\/script>/g, '');
         let r = await H.req(h, 'GET', '/');
         assert.strictEqual(r.status, 200);
         assert.ok(r.text.includes('Sign in with OpenVibe'));
-        assert.ok(r.text.includes('<noscript><nav'), 'a navigation exists without the JavaScript navbar');
+        assert.ok(r.text.includes('<div id="navbar-mount"><nav class="openvibe-navbar" aria-label="Site"'), 'a navigation exists in server HTML without JavaScript');
         r = await H.req(h, 'GET', '/new-space');
         assert.strictEqual(r.status, 401);
         assert.ok(r.text.includes('/auth/login?next=%2Fnew-space'));
