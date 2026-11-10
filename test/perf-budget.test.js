@@ -12,11 +12,11 @@ const { spawn } = require('child_process');
 const { measure, check, format } = require('openvibe-shared/perf-budget');
 
 const BUDGETS = {
-    htmlRawKB: 48.2, // 48.2: measured 46.2 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
-    htmlBrotliKB: 11, // 11: measured 10.5 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
+    htmlRawKB: 50, // 50: measured 49.6 with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 48.2: measured 46.2 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
+    htmlBrotliKB: 11.5, // 11.5: measured 11.0-11.1 with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 11: measured 10.5 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
     jsFiles: 5,   // 5 (theme-loader, web-runtime, navbar, footer, boost: openvibe-shared/shell adds web-runtime, 2026-10-04)
-    jsRawKB: 376.7, // 376.7: measured 368.7 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
-    jsBrotliKB: 89.8, // 89.8: measured 89.7 KB brotli with openvibe-shared 4.186.0 (2026-11-10: the mark's Working and Thinking states, the Dock and the menu as one sheet, bare controls styled by the loader); 89.5: measured 87.5 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
+    jsRawKB: 393, // 393: measured 392.5 with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 376.7: measured 368.7 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
+    jsBrotliKB: 94, // 94: measured 93.7 KB brotli with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 89.8: measured 89.7 KB brotli with openvibe-shared 4.186.0 (2026-11-10: the mark's Working and Thinking states, the Dock and the menu as one sheet, bare controls styled by the loader); 89.5: measured 87.5 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
     cssFiles: 2,   // 1
     cssRawKB: 53.6, // 53.6: measured 48.6 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
     cssBrotliKB: 11.3, // 11.3: measured 10.1 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
