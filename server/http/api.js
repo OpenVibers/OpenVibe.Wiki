@@ -11,14 +11,16 @@
  *   PATCH  /spaces/:space                  wiki.space.create     { name?, description?, visibility?, slug? }   owner
  *   GET    /spaces/:space/roles                      owner
  *   PUT    /spaces/:space/roles/:subject   wiki.space.create     { role: owner|editor|viewer|null }  owner
- *   POST   /spaces/:space/pages            wiki.page.create      { title, body, summary?, infobox?, parent_id?, visibility?, citations?, message? }
+ *   POST   /spaces/:space/pages            wiki.page.create      { title, body?, blocks?, summary?, infobox?, parent_id?, visibility?, citations?, message? }
  *   POST   /spaces/:space/import           wiki.page.create      { pages: [...], publish?, on_existing?, source?, original_author?, ai_assisted? }  owner; all or nothing (server/wiki/import.js)
  *   GET    /pages/:id                      wiki.page.read        page + the revision the caller may read (?revision=)
  *   PATCH  /pages/:id                      wiki.page.create      { slug?, parent_id?, visibility?, noindex? }
  *   DELETE /pages/:id                      wiki.page.create      owner
  *   GET    /pages/:id/revisions            wiki.page.read        history (?before=&limit=)
- *   POST   /pages/:id/revisions            wiki.page.create      { expected_revision, body?, title?, summary?, infobox?, citations?, keep_citations?, message? }
+ *   POST   /pages/:id/revisions            wiki.page.create      { expected_revision, body?, blocks?, title?, summary?, infobox?, citations?, keep_citations?, message? }
  *   GET    /pages/:id/revisions/:n         wiki.page.read
+ *   POST   /pages/:id/images/suggest       wiki.page.create      { query?, section?, count?, allow_ai?, choice? }  the wiki.article.images task
+ *   POST   /pages/:id/draft                wiki.page.create      { instruction?, choice? }  content.wiki → a pending proposal
  *   GET    /pages/:id/diff?from=&to=&mode= wiki.page.read
  *   GET    /pages/:id/revisions/:n/citations  wiki.page.read
  *   POST   /pages/:id/revisions/:n/citations  wiki.citation.attach  { citations: [...] }  (unpublished head only)
@@ -44,6 +46,10 @@ const express = require('express');
 const contracts = require('openvibe-contracts');
 const { actorMiddleware, guard, guardReview, run, resolveCitations, resolveBundleCitations } = require('./common');
 const importer = require('../wiki/import');
+const blocks = require('openvibe-publishing/blocks');
+const blockRender = require('../render/blocks');
+const images = require('../wiki/images');
+const writer = require('../wiki/writer');
 
 const { http } = contracts;
 
@@ -82,6 +88,23 @@ function serializeTree(nodes, svc, space) {
 }
 
 function int(v) { const n = Number(v); return Number.isInteger(n) ? n : undefined; }
+
+/**
+ * The body of a write: the Markdown given, or the Markdown a block tree serializes to. Blocks are the
+ * additive form — the revision still keeps (and diffs) Markdown, so body and blocks are alternatives.
+ */
+function bodyOf(b = {}) {
+    if (b.blocks == null) return b.body;
+    const tree = Array.isArray(b.blocks) ? { type: 'root', children: b.blocks } : b.blocks;
+    const check = blocks.validate(tree);
+    if (!check.ok) {
+        throw Object.assign(new Error(`The blocks are not valid: ${check.errors.slice(0, 3).map((e) => `${e.path} ${e.message}`).join('; ')}`), { status: 422, code: 'page.invalid_blocks' });
+    }
+    return blocks.serialize(tree);
+}
+
+/** A revision's blocks, next to the Markdown the revision keeps. */
+function blocksOf(rev) { return rev ? blockRender.bodyBlocks(rev.content || rev.body || '') : { type: 'root', children: [] }; }
 
 function createApi({ svc, viewers, platform, config, log = console, limits, vibes = null }) {
     const router = express.Router();
@@ -173,9 +196,9 @@ function createApi({ svc, viewers, platform, config, log = console, limits, vibe
     router.post('/spaces/:space/pages', guard('wiki.page.create'), B('wiki.page.create'), R(async (req) => {
         const b = req.body || {};
         const cites = await resolveCitations(b.citations, platform);
-        const out = await svc.createPage(req.params.space, { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, parentId: b.parent_id || null, visibility: b.visibility, citations: cites, message: b.message }, req.actor);
+        const out = await svc.createPage(req.params.space, { title: b.title, body: bodyOf(b), summary: b.summary, infobox: b.infobox, parentId: b.parent_id || null, visibility: b.visibility, citations: cites, message: b.message }, req.actor);
         const space = await svc.spaceById(out.page.space_id);
-        return { page: serializePage(out.page, svc, space), revision: serializeRevision(out.revision), citations: (await svc.citationsOf(out.page, out.revision.number)).map(serializeCitation) };
+        return { page: serializePage(out.page, svc, space), revision: serializeRevision(out.revision), blocks: blocksOf(out.revision), citations: (await svc.citationsOf(out.page, out.revision.number)).map(serializeCitation) };
     }, 201));
 
     router.post('/spaces/:space/import', guard('wiki.page.create'), B('wiki.page.import'), R(async (req) => {
@@ -192,8 +215,11 @@ function createApi({ svc, viewers, platform, config, log = console, limits, vibe
     router.get('/pages/:id', guard('wiki.page.read'), R(async (req) => {
         const { page, space } = await readable(req, req.params.id);
         const v = await svc.view(space, page, req.actor, { revision: int(req.query.revision) });
+        const tree = blocksOf(v.revision);
+        // ?format=blocks: the body as blocks alone, the Markdown staying the source of truth.
+        if (String(req.query.format || '').toLowerCase() === 'blocks') return { blocks: tree };
         return {
-            page: serializePage(page, svc, space), revision: serializeRevision(v.revision),
+            page: serializePage(page, svc, space), revision: serializeRevision(v.revision), blocks: tree,
             citations: v.citations.map(serializeCitation), infobox: v.infobox,
             attachments: v.attachments.map(serializeAttachment),
             links: v.links.map((l) => ({ space: l.target_space, slug: l.target_slug, label: l.label })),
@@ -223,16 +249,16 @@ function createApi({ svc, viewers, platform, config, log = console, limits, vibe
         const b = req.body || {};
         const cites = await resolveCitations(b.citations, platform);
         const out = await svc.editPage(req.params.id, {
-            expectedRevision: int(b.expected_revision), title: b.title, body: b.body, summary: b.summary, infobox: b.infobox,
+            expectedRevision: int(b.expected_revision), title: b.title, body: bodyOf(b), summary: b.summary, infobox: b.infobox,
             citations: cites, keepCitations: b.keep_citations === undefined ? 'all' : b.keep_citations, message: b.message,
         }, req.actor);
         const space = await svc.spaceById(out.page.space_id);
-        return { page: serializePage(out.page, svc, space), revision: serializeRevision(out.revision), created: out.created, citations: (await svc.citationsOf(out.page, out.revision.number)).map(serializeCitation) };
+        return { page: serializePage(out.page, svc, space), revision: serializeRevision(out.revision), blocks: blocksOf(out.revision), created: out.created, citations: (await svc.citationsOf(out.page, out.revision.number)).map(serializeCitation) };
     }, (out) => (out.created ? 201 : 200)));
     router.get('/pages/:id/revisions/:n', guard('wiki.page.read'), R(async (req) => {
         const { page, space } = await readable(req, req.params.id);
         const v = await svc.view(space, page, req.actor, { revision: int(req.params.n) });
-        return { revision: serializeRevision(v.revision), citations: v.citations.map(serializeCitation), infobox: v.infobox };
+        return { revision: serializeRevision(v.revision), blocks: blocksOf(v.revision), citations: v.citations.map(serializeCitation), infobox: v.infobox };
     }));
     router.get('/pages/:id/diff', guard('wiki.page.read'), B('wiki.page.diff'), R(async (req) => {
         const { page, space } = await readable(req, req.params.id);
@@ -283,6 +309,15 @@ function createApi({ svc, viewers, platform, config, log = console, limits, vibe
         return { results: await svc.verifyMedia(req.params.id, platform.media.resolve) };
     }));
     router.put('/pages/:id/watch', B('wiki.page.watch'), R((req) => svc.watch(req.params.id, req.actor, (req.body || {}).watching !== false)));
+
+    // Pictures and the writer (the AI choices task and the content.wiki workflow)
+    router.post('/pages/:id/images/suggest', guard('wiki.page.create'), B('wiki.page.edit'), R(async (req) => (
+        images.suggest({ svc, platform, config, log }, req.params.id, req.body || {}, req.actor)
+    )));
+    router.post('/pages/:id/draft', guard('wiki.page.create'), B('wiki.revision.propose'), R(async (req) => {
+        const out = await writer.draft({ svc, platform, config, log }, req.params.id, req.body || {}, req.actor);
+        return { ...out, revision: serializeRevision(out.revision) };
+    }, 201));
 
     // AI proposals
     router.post('/proposals', guard('wiki.revision.propose'), B('wiki.revision.propose'), R(async (req) => {

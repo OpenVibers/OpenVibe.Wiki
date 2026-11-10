@@ -71,6 +71,8 @@ function load(env = process.env) {
         mediaPublicUrl: trim(env.OV_MEDIA_URL || 'https://openvibe.media'),
         // Media namespace (app) Wiki's attachments live in, checked with media.object.read.
         mediaApp: env.WIKI_MEDIA_APP || 'wiki',
+        // OpenVibe.Pics' public gallery: the licensed pictures the wiki's image task tries after Commons and Openverse.
+        picsUrl: trim(env.OV_PICS_URL || 'https://openvibe.pics'),
         // "Vibe a wiki" (server/wiki/vibe.js): OpenVibe.AI researches and writes; these bound how many and how big.
         aiInternalUrl: trim(env.OV_AI_INTERNAL_URL || ''),
         vibe: {

@@ -238,3 +238,14 @@ main .wk-h-group h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap
 .wk-review--ok { color: var(--success-text, var(--success, #22c55e)); background: color-mix(in srgb, var(--success, #22c55e) 12%, transparent); }
 .wk-review--no { color: var(--warning-text, var(--warning, #f59e0b)); background: color-mix(in srgb, var(--warning, #f59e0b) 12%, transparent); }
 @media (max-width: 600px) { .wk-review { margin-left: 0; margin-top: 4px; } }
+
+/* ── Blocks in an article. openvibe-publishing/blocks.css draws them (one look on every site); these rules only place
+   them in a wiki's text: the facts beside the lead where there is room, everything else the full width of the text,
+   and a picture inside a gallery or a compare in its grid, not floated like a picture in running text. ── */
+.wk-content .ov-timeline, .wk-content .ov-callout, .wk-content .ov-stat, .wk-content .ov-quote, .wk-content .ov-gallery, .wk-content .ov-compare, .wk-content .ov-clip, .wk-content .ov-video, .wk-content .ov-embed, .wk-content .ov-patchnotes { clear: both; }
+.wk-content .ov-gallery .ov-media, .wk-content .ov-compare .ov-media { float: none; width: auto; margin: 0; }
+.wk-content .ov-infobox { margin-top: 4px; }
+.wk-content .ov-infobox-title, .wk-content .ov-timeline-title { border-bottom: 0; padding-bottom: 0; }
+@media (min-width: 760px) {
+    .wk-content .ov-infobox { float: right; clear: right; width: min(320px, 42%); margin: 4px 0 16px 24px; }
+}

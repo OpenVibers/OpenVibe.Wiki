@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rich wiki articles (rich-content plan W1): a body is Markdown plus `openvibe-publishing/blocks` (infobox, figure, gallery, timeline, quote, callout, stat, …), rendered server-side by `server/render/blocks.js` in the article, the editor's preview, the `.json` body and the Markdown twin; a body with no blocks renders as before. The API takes `blocks` on create and revision writes, serializes them to the Markdown a revision keeps, and returns `blocks` next to `body_markdown` (`?format=blocks` for the tree alone). Pins `openvibe-publishing` v1.6.1. `test/wiki-rich.test.js`.
+- The image task: `POST /api/v1/pages/:id/images/suggest` asks `wiki.article.images` for the lead picture and figures — Commons and Openverse first with the licence and author kept, then OpenVibe.Pics and the page's Media; an AI illustration only when nothing real exists and never for an article about a real person ("Illustration made with <model>"). `server/wiki/images.js`.
+- The wiki writer: `POST /api/v1/pages/:id/draft` runs OpenVibe.AI's `content.wiki` workflow (web search plus the article's own sources, a citation on every sentence, the infobox from structured facts) and files the revision as a pending proposal. It never publishes. `server/wiki/writer.js`.
 - Share: every article carries the network's one Share button (`data-ov-share-sheet`) in its page actions, with the article's canonical address, title and summary; `openvibe-shared`'s navbar loads the sheet on the first press. `test/share-sheet.test.js`.
 - Account export and deletion (ADR-033): `POST /internal/events` (loopback, `WIKI_EVENTS_SECRET`) answers network.account.export_requested and network.account.deleted through `server/wiki/account-data.js` over `openvibe-sdk/account-data` (SDK v0.37.0, was v0.35.0).
   - **Deleted:** the person's own user spaces (through `deleteSpace`), roles, watches and drafts.

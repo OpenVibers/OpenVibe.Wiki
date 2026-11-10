@@ -223,9 +223,10 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
          * Run a workflow and wait for it: → the run's output. Long runs are polled. Throws IntegrationError with the run's
          * own code when it failed, 429 with retryAfter (seconds) when AI's quota or queue is full.
          */
-        async run(workflow, input, { subject = null, idempotencyKey = null, waitMs = 55000, totalMs = 300000, signal = null } = {}) {
+        async run(workflow, input, { subject = null, idempotencyKey = null, waitMs = 55000, totalMs = 300000, signal = null, task = null, choice = null } = {}) {
             if (!ai.configured) throw new IntegrationError(503, 'ai.unavailable', 'OpenVibe.AI is not configured (OV_AI_INTERNAL_URL)');
             const headers = async () => ({ ...(await forAudience('openvibe.ai').authHeaders()), 'Content-Type': 'application/json', Accept: 'application/json', ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) });
+            let citations = [];
             const call = async (url, init) => {
                 let res;
                 try { res = await fetchImpl(url, { ...init, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(waitMs + 15000)]) : AbortSignal.timeout(waitMs + 15000) }); } catch (err) {
@@ -235,22 +236,50 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
                 if (res.status === 401) forAudience('openvibe.ai').invalidate();
                 if (res.status === 429) throw Object.assign(new IntegrationError(429, (body && body.code) || 'ai.busy', (body && (body.detail || body.title)) || 'OpenVibe.AI is busy'), { retryAfter: Number(res.headers.get('retry-after')) || 60 });
                 if (res.status >= 400) throw new IntegrationError(res.status >= 500 ? 503 : res.status, (body && body.code) || 'ai.refused', (body && (body.detail || body.title)) || `OpenVibe.AI answered ${res.status}`);
+                if (body && Array.isArray(body.citations)) citations = body.citations;
                 return body && body.run;
             };
-            const body = { workflow, input, ...(subject ? { on_behalf_of: { type: 'user', id: subject }, attribution: { service: 'wiki', type: 'user', id: subject } } : {}) };
+            const subjectFields = subject ? { on_behalf_of: { type: 'user', id: subject }, attribution: { service: 'wiki', type: 'user', id: subject } } : {};
+            const body = task
+                ? { task, input, ...(choice ? { choice } : {}), ...subjectFields }
+                : { workflow, input, ...(choice ? { choice } : {}), ...subjectFields };
             let run = await call(`${config.aiInternalUrl}/api/v1/runs?wait=${waitMs}`, { method: 'POST', headers: await headers(), body: JSON.stringify(body) });
             const until = Date.now() + totalMs;
             while (run && !['succeeded', 'cached', 'failed', 'cancelled'].includes(run.status)) {
-                if (Date.now() > until) throw new IntegrationError(504, 'ai.timeout', `${workflow} did not finish in ${Math.round(totalMs / 1000)} s`);
+                if (Date.now() > until) throw new IntegrationError(504, 'ai.timeout', `${task || workflow} did not finish in ${Math.round(totalMs / 1000)} s`);
                 await new Promise((r) => setTimeout(r, 3000));
                 run = await call(`${config.aiInternalUrl}/api/v1/runs/${encodeURIComponent(run.id)}`, { method: 'GET', headers: await headers() });
             }
             if (!run) throw new IntegrationError(503, 'ai.unavailable', 'OpenVibe.AI answered without a run');
             if (run.status === 'failed' || run.status === 'cancelled') {
                 const e = run.error || {};
-                throw new IntegrationError(e.code === 'quota.exceeded' || e.code === 'govern.exceeded' ? 429 : 502, e.code || 'ai.run_failed', e.detail || e.message || `${workflow} ${run.status}`);
+                throw new IntegrationError(e.code === 'quota.exceeded' || e.code === 'govern.exceeded' ? 429 : 502, e.code || 'ai.run_failed', e.detail || e.message || `${task || workflow} ${run.status}`);
             }
-            return { output: run.output, runId: run.id, synthetic: Boolean(run.synthetic), provenance: run.provenance || null };
+            return {
+                output: run.output, runId: run.id, citations, model: run.model || null, provider: run.provider || null,
+                choice: run.choice || null, synthetic: Boolean(run.synthetic), provenance: run.provenance || null,
+            };
+        },
+        /** Run a registered AI task by name; the task's own workflow and choice resolve inside OpenVibe.AI. */
+        runTask(task, input, opts = {}) { return ai.run(task, input, { ...opts, task }); },
+    };
+
+    // ── Pics: the public gallery's pictures (licence and author come from OpenVibe.Pics) ──
+    const pics = {
+        configured: !!config.picsUrl,
+        /** Pictures matching q in the public gallery → [{ id, slug, title, description, alt, width, height, author, links }]. */
+        async search(q, { limit = 8, signal = null } = {}) {
+            if (!pics.configured) return [];
+            const u = new URL('/api/v1/gallery', config.picsUrl);
+            u.searchParams.set('q', String(q || '').slice(0, 120));
+            u.searchParams.set('limit', String(Math.max(1, Math.min(30, limit))));
+            let res;
+            try { res = await fetchImpl(u.toString(), { headers: { Accept: 'application/json' }, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000) }); } catch (err) {
+                throw new IntegrationError(503, 'pics.unavailable', `OpenVibe.Pics did not answer: ${err && err.name === 'TimeoutError' ? 'timeout' : err && err.message}`);
+            }
+            if (res.status !== 200) throw new IntegrationError(503, 'pics.unavailable', `OpenVibe.Pics answered ${res.status}`);
+            const body = await res.json().catch(() => null);
+            return (body && Array.isArray(body.pictures) ? body.pictures : []).slice(0, limit);
         },
     };
 
@@ -258,7 +287,7 @@ function createPlatform({ config, db, fetchImpl = globalThis.fetch, tokens = nul
     const vip = require('./vip').createVip({ config, tokenClient, fetchImpl, now, log });
 
     return {
-        tokenClient, sdk, events, outbox, community, sources, media, ai, vip,
+        tokenClient, sdk, events, outbox, community, sources, media, pics, ai, vip,
         eventsConfigured: !!(tokenClient && config.eventsUrl),
     };
 }

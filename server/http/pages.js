@@ -35,6 +35,7 @@ const seo = require('openvibe-publishing/seo');
 const ssr = require('openvibe-publishing/ssr');
 const { renderPage, AI_SUMMARY, asset } = require('../render/layout');
 const views = require('../render/views');
+const blockRender = require('../render/blocks');
 const { foldBlock } = require('../render/short');
 const frame = require('openvibe-shared/frame');
 const showcase = require('openvibe-shared/showcase');
@@ -285,7 +286,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         const b = req.body || {};
         const values = { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, parent_id: b.parent_id, visibility: b.visibility, message: b.message };
         const parents = await parentsOf(space, req.actor);
-        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
+        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow', blocksCss: !!preview });
         try {
             const infobox = content.parseInfoboxText(b.infobox);
             if (b.op === 'preview') return again(200, null, await svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
@@ -389,7 +390,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
     function articleData(v, space, page) {
         return {
             id: page.id, space: space.slug, slug: page.slug, url: svc.pageUrl(space, page), state: page.state, visibility: svc.access.effectiveVisibility(space, page),
-            revision: v.revision.number, title: v.revision.fields.title, summary: v.revision.fields.summary || null, body_markdown: v.revision.content,
+            revision: v.revision.number, title: v.revision.fields.title, summary: v.revision.fields.summary || null, body_markdown: v.revision.content, blocks: blockRender.bodyBlocks(v.revision.content),
             published_at: page.published_at ? new Date(page.published_at).toISOString() : null,
             revision_published_at: page.revision_published_at ? new Date(page.revision_published_at).toISOString() : null,
             revision_created_at: v.revision.createdAt,
@@ -443,18 +444,18 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         const crumbsLd = [{ name: 'Wiki', url: `${config.baseUrl}/` }, { name: space.name, url: `${config.baseUrl}${svc.spacePath(space)}` }, { name: v.revision.fields.title, url }];
         // The gate decides robots for the published revision; any other revision is noindex.
         const decision = v.isPublishedRevision ? v.decision : { ...v.decision, indexable: false, robots: 'noindex, nofollow', canonical: url };
-        const description = v.revision.fields.summary || ssr.markdownToText(v.revision.content, 160);
+        const description = v.revision.fields.summary || blockRender.bodyText(v.revision.content).slice(0, 160);
         const jsonLd = open && v.isPublishedRevision ? [
             seo.structuredData.article({
                 headline: v.revision.fields.title, url, description,
                 datePublished: page.published_at, dateModified: page.revision_published_at,
-                citations: v.citations, wordCount: ssr.wordCount(ssr.markdownToText(v.revision.content)),
+                citations: v.citations, wordCount: ssr.wordCount(blockRender.bodyText(v.revision.content)),
             }),
             seo.structuredData.breadcrumbs(crumbsLd),
         ].filter(Boolean) : null;
         const shareMedia = v.attachments.find((a) => a.mediaId && !a.brokenReason);
         send(req, res, 200, views.articlePage(v, { html: bodyHtml, discussion, actor: req.actor, mediaUrl: (id) => platform.media.publicUrl(id), resolve: (title) => infoboxLinks.get(title) || { href: null, exists: false }, flash: req.query.saved ? 'Saved.' : null, shareUrl: url, shareText: description, shareImage: shareMedia ? platform.media.publicUrl(shareMedia.mediaId) : null }), {
-            decision, title: v.revision.fields.title, description, ogType: 'article', jsonLd, path: svc.pagePath(space, page), cache: publicCache, styles: ['kit.css'],
+            decision, title: v.revision.fields.title, description, ogType: 'article', jsonLd, path: svc.pagePath(space, page), cache: publicCache, styles: ['kit.css'], blocksCss: true,
         });
     }));
 
@@ -539,7 +540,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         let baseView = null;
         try { baseView = Number.isInteger(base) && base > 0 ? await svc.view(space, page, req.actor, { revision: base }) : null; } catch { baseView = null; }
         const values = { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, message: b.message, keep };
-        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, page, values, error, preview, citations: baseView ? baseView.citations : [], baseRevision: base, expectedRevision: expected }), { title: `Editing ${page.title}`, robots: 'noindex, nofollow' });
+        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, page, values, error, preview, citations: baseView ? baseView.citations : [], baseRevision: base, expectedRevision: expected }), { title: `Editing ${page.title}`, robots: 'noindex, nofollow', blocksCss: !!preview });
         try {
             const infobox = content.parseInfoboxText(b.infobox);
             if (b.op === 'preview') return again(200, null, await svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
