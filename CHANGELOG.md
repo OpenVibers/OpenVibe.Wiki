@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Pictures come from OpenVibe.AI's one shared image task (`image.picture`): `POST /api/v1/pages/:id/images/suggest`
+  asks its find mode once (Commons/Openverse, licence and author kept) and gets Media references in the wiki tenant
+  rather than external URLs; its make mode draws an illustration only when nothing real exists, never for a real
+  person, and labels it "Illustration made with <model>". The "Vibe a wiki" writer uses the same find mode instead of
+  fetching and uploading pictures itself. `server/wiki/images.js`, `server/wiki/vibe.js`; tests `wiki-rich`, `vibe`.
+
 - Rich wiki articles (rich-content plan W1): a body is Markdown plus `openvibe-publishing/blocks` (infobox, figure, gallery, timeline, quote, callout, stat, …), rendered server-side by `server/render/blocks.js` in the article, the editor's preview, the `.json` body and the Markdown twin; a body with no blocks renders as before. The API takes `blocks` on create and revision writes, serializes them to the Markdown a revision keeps, and returns `blocks` next to `body_markdown` (`?format=blocks` for the tree alone). Pins `openvibe-publishing` v1.6.1. `test/wiki-rich.test.js`.
 - The image task: `POST /api/v1/pages/:id/images/suggest` asks `wiki.article.images` for the lead picture and figures — Commons and Openverse first with the licence and author kept, then OpenVibe.Pics and the page's Media; an AI illustration only when nothing real exists and never for an article about a real person ("Illustration made with <model>"). `server/wiki/images.js`.
 - The wiki writer: `POST /api/v1/pages/:id/draft` runs OpenVibe.AI's `content.wiki` workflow (web search plus the article's own sources, a citation on every sentence, the infobox from structured facts) and files the revision as a pending proposal. It never publishes. `server/wiki/writer.js`.
