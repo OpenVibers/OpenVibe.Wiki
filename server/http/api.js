@@ -19,7 +19,7 @@
  *   GET    /pages/:id/revisions            wiki.page.read        history (?before=&limit=)
  *   POST   /pages/:id/revisions            wiki.page.create      { expected_revision, body?, blocks?, title?, summary?, infobox?, citations?, keep_citations?, message? }
  *   GET    /pages/:id/revisions/:n         wiki.page.read
- *   POST   /pages/:id/images/suggest       wiki.page.create      { query?, section?, count?, allow_ai?, choice? }  the wiki.article.images task
+ *   POST   /pages/:id/images/suggest       wiki.page.create      { query?, section?, count?, allow_ai?, choice? }  the shared image.picture task
  *   POST   /pages/:id/draft                wiki.page.create      { instruction?, choice? }  content.wiki → a pending proposal
  *   GET    /pages/:id/diff?from=&to=&mode= wiki.page.read
  *   GET    /pages/:id/revisions/:n/citations  wiki.page.read

@@ -7,9 +7,9 @@
  *                 search, Commons, Openverse) for the topic as a whole
  *   2. plan       wiki.generate_space: the wiki's name, summary and pages (main page first), from that research
  *   3. write      for each page, its own research (the page's subject inside the topic) and wiki.generate_page; the
- *                 pictures it picks are fetched safely (integrations/image-fetch.js), stored in OpenVibe.Media for the
- *                 person (public, with where they came from), placed in the text and attached; the page is imported
- *                 like any AI-assisted page (published with the disclosure, noindex until a person reviews it)
+ *                 pictures come from the shared image task (image.picture), already in OpenVibe.Media with their
+ *                 licence and credit, and are placed in the text and attached; the page is imported like any
+ *                 AI-assisted page (published with the disclosure, noindex until a person reviews it)
  *
  * The wiki's pages say the text was written with AI and cite every source they rest on, pictures included (licence and
  * credit). Nothing is invented: a page the sources cannot support is not written (it stays a red link to create).
@@ -22,7 +22,6 @@ const crypto = require('crypto');
 const { ulid } = require('openvibe-contracts').ids;
 const content = require('./content');
 const importer = require('./import');
-const { fetchImage } = require('../integrations/image-fetch');
 
 const SIZES = ['quick', 'standard', 'big'];
 const ACTIVE = ['queued', 'researching', 'planning', 'writing'];
@@ -146,7 +145,7 @@ function contentsOf(plan) {
     return `## In this wiki\n\n${blocks.join('\n\n')}`;
 }
 
-function createVibes({ db, svc, platform, config, now = () => Date.now(), log = console, fetchImg = fetchImage }) {
+function createVibes({ db, svc, platform, config, now = () => Date.now(), log = console }) {
     const cfg = config.vibe || {};
     const pagesFor = (size) => (cfg.pages && cfg.pages[size]) || { quick: 6, standard: 12, big: 24 }[size] || 12;
     const owner = `wiki-${process.pid}-${crypto.randomBytes(3).toString('hex')}`;
@@ -213,7 +212,7 @@ function createVibes({ db, svc, platform, config, now = () => Date.now(), log = 
         return {
             id: v.id, topic: v.topic, size: v.size, status: v.status,
             space: { slug: space.slug, name: space.name, url: `/s/${encodeURIComponent(space.slug)}`, visibility: space.visibility },
-            research: progress.research ? { sources: progress.research.sources.length, images: progress.research.images.length, from: sourceNames(progress.research.from), topic_wiki: progress.research.topic_wiki || null } : null,
+            research: progress.research ? { sources: progress.research.sources.length, images: Object.values(progress.pictures || {}).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0), from: sourceNames(progress.research.from), topic_wiki: progress.research.topic_wiki || null } : null,
             pages: list,
             done: list.filter((p) => p.status === 'done').length,
             total: list.length,
@@ -296,11 +295,11 @@ function createVibes({ db, svc, platform, config, now = () => Date.now(), log = 
             // 1. Research the topic.
             if (!v.progress.research) {
                 await save(v, { status: 'researching', error: null });
-                const r = await ai('research.gather', { query: v.topic, topic: v.topic, lang: v.lang, max_sources: 14, max_images: 16, content_chars: 4500 }, 'research');
+                const r = await ai('research.gather', { query: v.topic, topic: v.topic, lang: v.lang, max_sources: 14, images: false, content_chars: 4500 }, 'research');
                 const out = r.output || {};
                 if (!out.sources || !out.sources.length) throw new VibeError(422, 'vibe.nothing_found', `Nothing could be found about "${v.topic}". Try its full name or another spelling.`);
                 v.progress.research = {
-                    sources: out.sources, images: out.images || [], facts: out.facts || [], topic_wiki: out.topic_wiki || null, run: r.runId,
+                    sources: out.sources, facts: out.facts || [], topic_wiki: out.topic_wiki || null, run: r.runId,
                     from: Object.entries(out.providers || {}).filter(([, p]) => p && p.ok && p.count).map(([k]) => k),
                 };
                 await save(v);
@@ -366,42 +365,42 @@ function createVibes({ db, svc, platform, config, now = () => Date.now(), log = 
             // The page's own research (the main page reuses the topic's).
             let research = v.progress.research;
             if (!isMain) {
-                const r = await ai('research.gather', { query: p.query || `${p.title} ${v.topic}`, topic: v.topic, focus: p.title, lang: v.lang, max_sources: 8, max_images: 10, content_chars: 4000 }, `research:${p.slug}`);
-                research = r.output || { sources: [], images: [] };
+                const r = await ai('research.gather', { query: p.query || `${p.title} ${v.topic}`, topic: v.topic, focus: p.title, lang: v.lang, max_sources: 8, images: false, content_chars: 4000 }, `research:${p.slug}`);
+                research = r.output || { sources: [] };
                 // The topic's best source helps every page: its facts and names.
                 const lead = v.progress.research.sources[0];
                 if (lead && !research.sources.some((s) => s.url === lead.url) && research.sources.length < 10) research = { ...research, sources: [...research.sources, lead] };
             }
             const sources = (research.sources || []).slice(0, 10).map((s) => sourceForAi(s, isMain ? 4000 : 3500));
             if (!sources.length) throw new VibeError(422, 'vibe.page_no_sources', 'nothing was found about it');
-            const pictures = (research.images || []).slice(0, 12);
+            // Pictures: the shared image task finds licensed Commons/Openverse pictures and stores them in Media
+            // (the wiki tenant), so the page names a Media object directly. Cached per page for a resumed job.
+            v.progress.pictures = v.progress.pictures || {};
+            let pictures = v.progress.pictures[p.slug];
+            if (!pictures) {
+                const found = await ai('image.picture', { mode: 'find', media_app: 'wiki', query: p.query || `${p.title} ${v.topic}`, count: 12 }, `pictures:${p.slug}`);
+                pictures = (found.output && found.output.media) || [];
+                v.progress.pictures[p.slug] = pictures;
+                await save(v);
+            }
+            pictures = pictures.slice(0, 12);
             const r = await ai('wiki.generate_page', {
                 title: p.title, topic: v.plan.title || v.topic, space: v.plan.title || v.topic, outline: p.outline, pages: titles,
-                images: pictures.map((im) => ({ title: oneLine(im.title, 300) || 'Picture', description: oneLine([im.description, im.license ? `(${im.license})` : ''].filter(Boolean).join(' '), 400) })),
+                images: pictures.map((im) => ({ title: oneLine(im.title || im.alt, 300) || 'Picture', description: oneLine([im.caption || im.alt, im.license ? `(${im.license})` : ''].filter(Boolean).join(' '), 400) })),
                 sources,
             }, `page:${p.slug}`);
             const out = r.output || {};
-            // Pictures: fetched, stored in Media for the person, placed by heading.
+            // Pictures: already Media references, placed by heading with their licence and credit.
             const placed = new Map();
             const usedPictures = [];
             for (const pick of (Array.isArray(out.images) ? out.images : []).slice(0, MAX_IMAGES_PER_PAGE)) {
                 const img = Number.isInteger(pick.index) ? pictures[pick.index] : null;
-                if (!img || usedPictures.includes(img)) continue;
+                if (!img || !img.media_id || usedPictures.includes(img.media_id)) continue;
                 const key = /^lead$/i.test(String(pick.section || '').trim()) || !pick.section ? 'lead' : oneLine(pick.section, 120).replace(/^#+\s*/, '').toLowerCase();
                 if (placed.has(key)) continue;
-                try {
-                    const got = await fetchImg(img.url, { timeoutMs: 15000 });
-                    const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' }[got.mime];
-                    const mediaId = await platform.media.upload({
-                        bytes: got.bytes, mime: got.mime, filename: `${content.pageSlug(img.title || p.title).slice(0, 60) || 'picture'}.${ext}`, owner: v.requested_by,
-                        metadata: { title: oneLine(img.title, 200), source_url: img.source_url || img.url, license: img.license || null, license_url: img.license_url || null, author: img.author || null, free: Boolean(img.free), origin: 'wiki.vibe', vibe: v.id },
-                    });
-                    const caption = clip(`${oneLine(pick.caption, 220) || oneLine(img.title, 120)} (${creditOf(img)})`, 300);
-                    placed.set(key, { mediaId, caption, alt: oneLine(pick.caption || img.title, 200), img });
-                    usedPictures.push(img);
-                } catch (err) {
-                    log.warn(`[Vibe] ${v.id} picture for "${p.title}" skipped: ${err && err.message}`);
-                }
+                const caption = clip(`${oneLine(pick.caption, 220) || oneLine(img.caption || img.alt || img.title, 120)}${img.credit ? ` (${oneLine(img.credit, 160)})` : ''}`, 300);
+                placed.set(key, { mediaId: img.media_id, caption, alt: oneLine(pick.caption || img.alt || img.title, 200), img });
+                usedPictures.push(img.media_id);
             }
             const lead = placed.get('lead');
             const body = composeBody(out, { placed: new Map([...placed].filter(([k]) => k !== 'lead')), contents: isMain ? contentsOf(v.plan) : null });

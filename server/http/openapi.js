@@ -226,8 +226,8 @@ route('post', '/pages/{id}/media/verify', {
     responses: { 200: json('One result per attachment', { type: 'object', properties: { results: arrayOf({ type: 'object' }) } }), ...errors() },
 });
 route('post', '/pages/{id}/images/suggest', {
-    operationId: 'suggestImages', summary: 'Pictures for an article, from the wiki.article.images task', tags: ['media'], security: PERSON, parameters: [PAGE],
-    description: 'wiki.page.create. Wiki editors only. Commons and Openverse first, with licence and author; OpenVibe.Pics and the page\'s Media next; an AI illustration only when nothing real exists and the article is not about a real person.',
+    operationId: 'suggestImages', summary: 'Pictures for an article, from the shared image.picture task', tags: ['media'], security: PERSON, parameters: [PAGE],
+    description: 'wiki.page.create. Wiki editors only. Commons and Openverse first, through OpenVibe.AI\'s image.picture task and stored in OpenVibe.Media with licence and author; OpenVibe.Pics and the page\'s Media next; an AI illustration only when nothing real exists, only after the owner configures an image model, and never for an article about a real person.',
     requestBody: body({ type: 'object', properties: {
         query: nullable('string', { maxLength: 300 }), section: nullable('string', { maxLength: 200 }),
         count: { type: 'integer', minimum: 1, maximum: 12 }, allow_ai: { type: 'boolean', default: true },

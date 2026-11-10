@@ -69,6 +69,13 @@ const LONG = 'Kim Possible is a teenager who saves the world between classes, wi
             assert.deepStrictEqual(b.on_behalf_of, { type: 'user', id: A }, 'AI runs on behalf of the person');
             const id = `run_${calls.length}`;
             if (b.workflow === 'research.gather') return json(201, { run: { id, status: 'succeeded', output: research(b.input.focus) } });
+            if (b.workflow === 'image.picture') {
+                assert.strictEqual(b.input.mode, 'find');
+                assert.strictEqual(b.input.media_app, 'wiki');
+                return json(201, { run: { id, status: 'succeeded', output: { mode: 'find', task: 'image.picture', media: [
+                    { media_id: MED(1), url: `https://media.internal/o/${MED(1)}`, width: 800, height: 600, title: b.input.query || 'Kim Possible', alt: 'from the show', caption: 'from the show', credit: 'Picture: Jane Doe, CC BY-SA 4.0', author: 'Jane Doe', license: 'CC BY-SA 4.0', source_url: 'https://commons.wikimedia.org/wiki/File:Kim.png', provider: 'commons', ai: false, model: null },
+                ], count: 1, gaps: [], note: null } } });
+            }
             if (b.workflow === 'wiki.generate_space') {
                 assert.ok(b.input.sources.length >= 1 && b.input.max_pages === 6);
                 return json(201, { run: { id, status: 'succeeded', output: { title: 'Kim Possible', summary: 'An animated series about a teen hero.', pages: [
@@ -147,7 +154,7 @@ const LONG = 'Kim Possible is a teenager who saves the world between classes, wi
         assert.strictEqual(v.done, 2);
         assert.strictEqual(v.main_page, '/w/kim-possible/kim-possible');
         assert.deepStrictEqual(v.research.from.sort(), ['Fandom', 'Wikipedia']);
-        assert.strictEqual(fetched.length, 2, 'one picture per page; an index out of range is ignored');
+        assert.strictEqual(calls.filter((c) => c.host === 'ai.internal' && c.path === '/api/v1/runs' && /"workflow":"image.picture"/.test(c.body || '')).length, 2, 'one picture search per page');
 
         // The wiki: named and described by the plan, the person owns it.
         r = await H.req(h, 'GET', '/api/v1/spaces/kim-possible', { token: tok });

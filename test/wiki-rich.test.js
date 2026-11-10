@@ -19,11 +19,19 @@ const run = (output, extra = {}) => ({ run: { id: 'run_ai_1', status: 'succeeded
             const u = new URL(String(url));
             if (u.host === 'ai.test' && u.pathname === '/api/v1/runs') {
                 const body = JSON.parse(init.body || '{}');
-                if (body.task === 'wiki.article.images') {
-                    const provider = (body.input && body.input.providers && body.input.providers[0]) || 'commons';
+                if (body.task === 'image.picture' && body.input && body.input.mode === 'find') {
+                    if (String(body.input.query || '').includes('No picture')) return new Response(JSON.stringify(run({ mode: 'find', task: 'image.picture', query: body.input.query, media: [], count: 0, gaps: [], note: 'No licensed picture was found for this search.' })), { status: 200, headers: { 'Content-Type': 'application/json' } });
                     return new Response(JSON.stringify(run({
-                        images: [{ url: `https://pictures.test/${provider}.jpg`, source_url: `https://${provider}.test/File:Machine`, title: 'A machine', description: 'A machine in a workshop', author: 'Ada Example', license: 'CC BY-SA 4.0', license_url: 'https://creativecommons.org/licenses/by-sa/4.0/', free: true, provider, width: 800, height: 600 }],
+                        mode: 'find', task: 'image.picture', query: body.input.query, media: [
+                            { media_id: 'med_01JAB2C3D4E5F6G7H8J9K0MNPQ', url: 'https://media.test/o/med_01JAB2C3D4E5F6G7H8J9K0MNPQ', source_url: 'https://commons.test/File:Machine', title: 'A machine', alt: 'A machine in a workshop', caption: 'A machine in a workshop', credit: 'Ada Example, CC BY-SA 4.0', author: 'Ada Example', license: 'CC BY-SA 4.0', license_url: 'https://creativecommons.org/licenses/by-sa/4.0/', width: 800, height: 600, provider: 'commons', ai: false, model: null },
+                            { media_id: 'med_01JAB2C3D4E5F6G7H8J9K0MNPR', url: 'https://media.test/o/med_01JAB2C3D4E5F6G7H8J9K0MNPR', source_url: 'https://openverse.test/File:Machine', title: 'A second machine', alt: 'A second machine', caption: 'A second machine', credit: 'Bo, CC BY 4.0', author: 'Bo', license: 'CC BY 4.0', license_url: 'https://creativecommons.org/licenses/by/4.0/', width: 900, height: 700, provider: 'openverse/flickr', ai: false, model: null },
+                        ], count: 2, gaps: [], note: null,
                     })), { status: 200, headers: { 'Content-Type': 'application/json' } });
+                }
+                if (body.task === 'image.picture' && body.input && body.input.mode === 'make') {
+                    return new Response(JSON.stringify(run({ mode: 'make', task: 'image.picture', prompt: body.input.prompt, dry_run: false, estimate: null, media: [
+                        { media_id: 'med_01JAB2C3D4E5F6G7H8J9K0MNPS', url: 'https://media.test/o/med_01JAB2C3D4E5F6G7H8J9K0MNPS', width: 1024, height: 1024, title: 'An illustration', alt: 'An illustration for Machines', caption: 'An illustration for Machines (Made with AI (gpt-image-1))', credit: 'Made with AI (gpt-image-1)', author: null, license: null, license_url: null, source_url: null, provider: 'image', ai: true, model: 'gpt-image-1' },
+                    ], count: 1, gaps: [], note: null })), { status: 200, headers: { 'Content-Type': 'application/json' } });
                 }
                 if (body.workflow === 'content.wiki') {
                     return new Response(JSON.stringify({
@@ -42,6 +50,7 @@ const run = (output, extra = {}) => ({ run: { id: 'run_ai_1', status: 'succeeded
                 }
             }
             if (u.host === 'pics.test' && u.pathname === '/api/v1/gallery') {
+                if (String(u.searchParams.get('q') || '').includes('No picture')) return new Response(JSON.stringify({ pictures: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
                 return new Response(JSON.stringify({ pictures: [{ id: 'pic_1', slug: 'lathe', title: 'A lathe', description: 'A lathe in use', alt: 'A lathe', width: 1200, height: 800, author: 'Bo', links: { page: 'https://pics.test/i/lathe', direct: 'https://pics.test/i/lathe.jpg' } }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
             }
             throw new Error(`unexpected outbound fetch ${url}`);
@@ -103,16 +112,28 @@ const run = (output, extra = {}) => ({ run: { id: 'run_ai_1', status: 'succeeded
         assert.strictEqual(aboutPerson({ infobox: [{ key: 'born', label: 'Born', type: 'text', value: '1970' }], revision: { fields: { title: 'Ada' }, content: '' } }), true);
         assert.strictEqual(aboutPerson({ infobox: [], revision: { fields: { title: 'A lathe' }, content: 'A lathe turns wood.' } }), false);
 
-        // wiki.article.images: Commons and Openverse first, keeping licence and author; then Pics.
+        // image.picture: Commons and Openverse first, keeping licence and author and naming the Media object; then Pics.
         const suggested = await H.req(h, 'POST', `/api/v1/pages/${made.page.id}/images/suggest`, { cookie, body: { count: 8 } });
         assert.strictEqual(suggested.status, 200, suggested.text);
-        assert.strictEqual(suggested.json.task, 'wiki.article.images');
+        assert.strictEqual(suggested.json.task, 'image.picture');
         assert.strictEqual(suggested.json.subject_is_person, false);
         assert.deepStrictEqual([...new Set(suggested.json.suggestions.map((s) => s.provider))].sort(), ['commons', 'openverse', 'pics']);
         const lead = suggested.json.suggestions.find((s) => s.role === 'lead');
+        assert.strictEqual(lead.media_id, 'med_01JAB2C3D4E5F6G7H8J9K0MNPQ');
         assert.strictEqual(lead.license, 'CC BY-SA 4.0');
         assert.strictEqual(lead.author, 'Ada Example');
         assert.ok(lead.credit.includes('CC BY-SA 4.0'));
+
+        // image.picture make: nothing real exists, the owner has a model, so one illustration comes back as a
+        // Media reference and its credit says which model made it. A real person is still never drawn.
+        const drawn = await H.req(h, 'POST', `/api/v1/pages/${made.page.id}/images/suggest`, { cookie, body: { query: 'No picture of machines', allow_ai: true, count: 2 } });
+        assert.strictEqual(drawn.status, 200, drawn.text);
+        assert.strictEqual(drawn.json.suggestions.length, 1);
+        assert.strictEqual(drawn.json.suggestions[0].provider, 'ai');
+        assert.strictEqual(drawn.json.suggestions[0].ai, true);
+        assert.strictEqual(drawn.json.suggestions[0].media_id, 'med_01JAB2C3D4E5F6G7H8J9K0MNPS');
+        assert.strictEqual(drawn.json.suggestions[0].model, 'gpt-image-1');
+        assert.ok(drawn.json.suggestions[0].credit.includes('Illustration made with gpt-image-1'));
 
         // content.wiki: a draft proposal, pending, with a citation per sentence and the infobox filled.
         const drafted = await H.req(h, 'POST', `/api/v1/pages/${made.page.id}/draft`, { cookie, body: { instruction: 'Add the history' } });
