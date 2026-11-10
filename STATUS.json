@@ -8,12 +8,12 @@
   "port": 4800,
   "domain": "openvibe.wiki",
   "contracts": "openvibe-contracts v0.384.0",
-  "sdk": "openvibe-sdk v0.132.0",
+  "sdk": "openvibe-sdk v0.146.0",
   "shared": "openvibe-shared v4.199.0",
   "packages": [
     "openvibe-publishing v1.7.0",
     "openvibe-shared v4.199.0",
-    "openvibe-sdk v0.132.0"
+    "openvibe-sdk v0.146.0"
   ],
   "capabilities": [
     "wiki.space.create",
