@@ -520,7 +520,7 @@ ${isNew ? html`<label>Parent page <select name="parent_id"><option value="">(top
 ${citations.length ? html`<fieldset><legend>Sources of revision ${String(baseRevision)} (untick to drop from the new revision; they stay on the old one)</legend>${citations.map((c) => html`<label class="wk-check"><input type="checkbox" name="keep_citation" value="${String(c.id)}"${values.keep && !values.keep.includes(String(c.id)) ? '' : raw(' checked')}> ${c.title || c.url || c.sourceItemId}${c.retrievedAt ? html`, retrieved ${t(c.retrievedAt)}` : ''}</label>`)}</fieldset>` : ''}
 ${citationRows(2)}
 <label>Edit note <input type="text" name="message" maxlength="300" value="${values.message || ''}"></label>
-<p class="wk-buttons"><button type="submit" name="op" value="preview">Preview</button> <button type="submit" name="op" value="save">Save revision</button> <button type="submit" name="op" value="publish">Save and publish</button></p>
+<p class="wk-buttons"><button type="submit" name="op" value="preview">Preview</button> <button type="submit" name="op" value="save" data-ov-guide="wiki.revision">Save revision</button> <button type="submit" name="op" value="publish">Save and publish</button></p>
 </form></section>`;
 }
 
