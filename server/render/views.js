@@ -304,9 +304,9 @@ function spacePage({ space, tree, canEdit, canManage, proposals }) {
 <section><h1>${space.name}</h1>
 <p class="wk-muted">${space.kind === 'official' ? 'Official wiki' : 'Community wiki'} · ${VIS_LABEL[space.visibility]}</p>
 ${space.description ? html`<p>${space.description}</p>` : ''}
-${canEdit ? html`<p><a class="wk-button" href="/s/${e(space.slug)}/new">New page</a>${canManage ? html` <a href="/s/${e(space.slug)}/import">Import pages</a> <a href="/s/${e(space.slug)}/settings">Wiki settings</a>` : ''}</p>` : ''}
+${canEdit ? html`<p class="wk-actions">${raw(kit.button({ href: `/s/${e(space.slug)}/new`, label: 'New page', icon: 'plus' }))}${canManage ? html` ${raw(kit.button({ href: `/s/${e(space.slug)}/import`, label: 'Import pages', icon: 'upload', kind: 'quiet' }))} ${raw(kit.button({ href: `/s/${e(space.slug)}/settings`, label: 'Wiki settings', icon: 'gear', kind: 'quiet' }))}` : ''}</p>` : ''}
 ${proposals && proposals.length ? html`<p>${notice('info', `${proposals.length} AI proposal(s) wait for review.`)} <a href="/s/${e(space.slug)}/proposals">Review them</a></p>` : ''}
-<h2>Pages</h2>${tree.length ? raw(treeHtml(tree, space)) : html`<p class="wk-muted">No pages yet.</p>`}
+<h2>Pages</h2>${tree.length ? raw(treeHtml(tree, space)) : raw(kit.empty({ icon: 'book', title: 'No pages yet', text: canEdit ? 'Write the first page: a title, a few lines, and the wiki starts.' : 'The first page appears here once someone writes it.', action: canEdit ? { href: `/s/${e(space.slug)}/new`, label: 'Write the first page', icon: 'plus' } : null }))}
 ${space.visibility === 'public' ? html`<p class="wk-muted">Follow this wiki: <a href="/s/${e(space.slug)}/feed.atom" type="application/atom+xml">Atom</a> · <a href="/s/${e(space.slug)}/feed.json" type="application/feed+json">JSON Feed</a></p>` : ''}
 </section>`;
 }
@@ -384,7 +384,7 @@ function discussionHtml(d, { space, page, actor }) {
         ? html`<form method="post" action="${wpath(space, page)}/discuss" class="wk-form"><label for="wk-comment">Add a comment (posted to OpenVibe.Community as you)</label><textarea id="wk-comment" name="message" rows="3" maxlength="5000" required></textarea><button type="submit">Comment</button></form>`
         : html`<p><a href="/auth/login?next=${e(wpath(space, page))}">Sign in</a> to comment.</p>`;
     return html`<section class="wk-discussion" id="discussion">${head}
-${comments.length ? html`<ul class="wk-comments">${comments.map((c) => html`<li><strong>${c.display_name || 'Someone'}</strong> <span class="wk-muted">${t(c.created_at)}${c.origin === 'ai' ? ' · AI' : ''}</span><p>${c.message}</p></li>`)}</ul>` : html`<p class="wk-muted">No comments yet.</p>`}
+${comments.length ? html`<ul class="wk-comments">${comments.map((c) => html`<li><strong>${c.display_name || 'Someone'}</strong> <span class="wk-muted">${t(c.created_at)}${c.origin === 'ai' ? ' · AI' : ''}</span><p>${c.message}</p></li>`)}</ul>` : raw(kit.empty({ icon: 'chat', title: 'No comments yet', text: 'Start the discussion about this page.', action: actor && actor.subject ? { href: '#wk-comment', label: 'Write the first comment', icon: 'plus' } : { href: `/auth/login?next=${e(wpath(space, page))}`, label: 'Sign in to comment', icon: 'user' } }))}
 ${form}</section>`;
 }
 
