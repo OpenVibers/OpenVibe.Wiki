@@ -90,6 +90,7 @@ const stripScripts = (html) => html.replace(/<script[\s\S]*?<\/script>/g, '');
 
         // Edit form: prefilled, keeps sources by default, publishes a new revision.
         r = await H.req(h, 'GET', '/w/board-games/chess/edit', { cookie });
+        assert.ok(r.text.includes('data-ov-guide="wiki.revision"'), 'the revision Save control is addressable');
         assert.strictEqual(r.status, 200);
         assert.ok(r.text.includes('name="expected_revision" value="1"'));
         assert.ok(r.text.includes('name="keep_citation"'));
