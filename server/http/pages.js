@@ -257,6 +257,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
             title: space.name, description: space.description || `${space.name}: a wiki on OpenVibe.Wiki.`, path: svc.spacePath(space),
             robots: open ? 'index, follow' : 'noindex, nofollow', cache: open ? 'public' : null,
             jsonLd: open ? seo.structuredData.breadcrumbs([{ name: 'Wiki', url: `${config.baseUrl}/` }, { name: space.name, url: `${config.baseUrl}${svc.spacePath(space)}` }]) : null,
+            styles: ['kit.css'],
         });
     }));
 
