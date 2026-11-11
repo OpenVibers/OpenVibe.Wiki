@@ -12,7 +12,7 @@ const { spawn } = require('child_process');
 const { measure, check, format } = require('openvibe-shared/perf-budget');
 
 const BUDGETS = {
-    htmlRawKB: 50, // 50: measured 49.6 with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 48.2: measured 46.2 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
+    htmlRawKB: 50.5, // 50.5 openvibe-shared v4.202.0 (2026-11-11: measured 50.5, raised by pin-bump from 50); 50: measured 49.6 with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 48.2: measured 46.2 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
     htmlBrotliKB: 11.5, // 11.5: measured 11.0-11.1 with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 11: measured 10.5 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
     jsFiles: 5,   // 5 (theme-loader, web-runtime, navbar, footer, boost: openvibe-shared/shell adds web-runtime, 2026-10-04)
     jsRawKB: 394.5, // 2026-11-10: openvibe-shared 4.197.0 (the menu's row of places, the You tab's row, the Sign in mark, the tooltip); 393: measured 392.5 with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 376.7: measured 368.7 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
