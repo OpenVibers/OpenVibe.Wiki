@@ -500,7 +500,7 @@ function citationRows(n) {
     return rows;
 }
 
-function editPage({ space, page = null, values, error = null, preview = null, citations = [], parents = [], baseRevision = 0, expectedRevision = null }) {
+function editPage({ space, page = null, values, error = null, preview = null, citations = [], parents = [], baseRevision = 0, expectedRevision = null, defaultVisibility = null }) {
     const isNew = !page;
     const action = isNew ? `/s/${e(space.slug)}/new` : `${wpath(space, page)}/edit`;
     const title = isNew ? `New page in ${space.name}` : `Editing ${page.title}`;
@@ -513,7 +513,7 @@ ${preview ? html`<section class="wk-preview" aria-label="Preview"><h2>Preview (n
 <input type="hidden" name="base_revision" value="${String(baseRevision)}">
 <label>Title <input type="text" name="title" required maxlength="200" value="${values.title || ''}"></label>
 ${isNew ? html`<label>Parent page <select name="parent_id"><option value="">(top level)</option>${parents.map((p) => html`<option value="${p.id}"${values.parent_id === p.id ? raw(' selected') : ''}>${p.title}</option>`)}</select></label>
-<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${(values.visibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>` : ''}
+<label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${(values.visibility || defaultVisibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>` : ''}
 <label>Summary (one sentence, optional) <input type="text" name="summary" maxlength="300" value="${values.summary || ''}"></label>
 <label>Text (Markdown; link pages with [[Page title]] or [[space:Page title|label]]) <textarea name="body" rows="22">${values.body || ''}</textarea></label>
 <label>Infobox (one row per line: <code>Label | type | value</code>; types: text, number, date, url, boolean, page, media) <textarea name="infobox" rows="5">${values.infobox || ''}</textarea></label>
@@ -573,6 +573,12 @@ function spaceSettingsPage({ space, roles, error = null, flash = null }) {
 <label>Visibility <select name="visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${space.visibility === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
 <p class="wk-muted">Making a wiki members-only or private removes its pages from sitemaps, feeds and OpenVibe.Search.</p>
 <p><button type="submit" name="op" value="settings">Save settings</button></p></form>
+<h2>New pages</h2>
+<form method="post" action="/s/${e(space.slug)}/settings" class="wk-form"><input type="hidden" name="op" value="sharing">
+<label>Who can read a new page <select name="default_visibility">${['public', 'members', 'vip', 'private'].map((v) => html`<option value="${v}"${(space.default_visibility || 'public') === v ? raw(' selected') : ''}>${VIS_LABEL[v]}</option>`)}</select></label>
+<p class="wk-muted">This is only the starting choice; each page can differ in its own Share sheet.</p>
+<label class="wk-check"><input type="checkbox" name="apply" value="1"> Apply it to all existing pages in this wiki too</label>
+<p><button type="submit">Save the default</button></p></form>
 <h2>Roles</h2>
 <table><thead><tr><th scope="col">Person</th><th scope="col">Role</th><th scope="col">Since</th><th scope="col"></th></tr></thead><tbody>
 ${roles.map((r) => html`<tr><td><code>${r.subject}</code></td><td>${r.role}</td><td>${t(r.granted_at)}</td><td><form method="post" action="/s/${e(space.slug)}/settings" class="wk-inline"><input type="hidden" name="op" value="role"><input type="hidden" name="subject" value="${r.subject}"><input type="hidden" name="role" value=""><button type="submit">Remove</button></form></td></tr>`)}

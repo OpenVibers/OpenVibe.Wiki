@@ -277,7 +277,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
     router.get('/s/:space/new', wrap(async (req, res) => {
         const space = await locateSpace(req, res);
         if (!space || !editorsOnly(req, res, space)) return;
-        send(req, res, 200, views.editPage({ space, values: { title: String(req.query.title || '').slice(0, 200) }, parents: await parentsOf(space, req.actor) }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
+        send(req, res, 200, views.editPage({ space, values: { title: String(req.query.title || '').slice(0, 200) }, parents: await parentsOf(space, req.actor), defaultVisibility: space.default_visibility }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow' });
     }));
 
     router.post('/s/:space/new', B('wiki.page.create'), form, wrap(async (req, res) => {
@@ -286,7 +286,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         const b = req.body || {};
         const values = { title: b.title, body: b.body, summary: b.summary, infobox: b.infobox, parent_id: b.parent_id, visibility: b.visibility, message: b.message };
         const parents = await parentsOf(space, req.actor);
-        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow', blocksCss: !!preview });
+        const again = (status, error, preview = null) => send(req, res, status, views.editPage({ space, values, error, preview, parents, defaultVisibility: space.default_visibility }), { title: `New page in ${space.name}`, robots: 'noindex, nofollow', blocksCss: !!preview });
         try {
             const infobox = content.parseInfoboxText(b.infobox);
             if (b.op === 'preview') return again(200, null, await svc.renderRevision(space, { content: String(b.body || '') }, req.actor));
@@ -312,6 +312,7 @@ function createPages({ svc, viewers, platform, config, log = console, limits, vi
         if (!space) return;
         const b = req.body || {};
         try {
+            if (b.op === 'sharing') { const out = await svc.setSpaceDefault(space.id, { defaultVisibility: b.default_visibility, apply: b.apply === '1' }, req.actor); return res.redirect(303, `/s/${encodeURIComponent(space.slug)}/settings?saved=${encodeURIComponent(out.changed ? `New pages: ${out.visibility}. Applied to ${out.changed} page${out.changed === 1 ? '' : 's'}.` : `New pages: ${out.visibility}.`)}`); }
             if (b.op === 'role') await svc.setRole(space.id, String(b.subject || ''), b.role ? String(b.role) : null, req.actor);
             else if (b.op === 'delete') { if (b.confirm !== 'yes') throw new svc.WikiError(422, 'space.confirm', 'Tick the box to confirm'); await svc.deleteSpace(space.id, req.actor); return res.redirect(303, '/'); }
             else { const s = await svc.updateSpace(space.id, { name: b.name, description: b.description, visibility: b.visibility }, req.actor); return res.redirect(303, `/s/${encodeURIComponent(s.slug)}/settings?saved=1`); }
