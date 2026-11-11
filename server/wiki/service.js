@@ -520,7 +520,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
         const cleanSummary = checkSummary(summary);
         const text = checkBody(body == null ? '' : body);
         const box = wrapContentError(() => content.normalizeInfobox(infobox));
-        const vis = checkVisibility(visibility, 'public', space);
+        const vis = checkVisibility(visibility == null || visibility === '' ? space.default_visibility : visibility, 'public', space);
         return await tx(async () => {
             const existing = await q.pageBySlug.get(space.id, slug);
             if (existing) fail(409, existing.state === 'deleted' ? 'page.slug_deleted' : 'page.slug_taken', existing.state === 'deleted' ? `A deleted page held "${slug}"; its address stays gone (410)` : `A page "${slug}" already exists in this space`, { page_id: existing.id });
@@ -770,7 +770,7 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
             return build(null, 0);
         },
 
-        async createPage(spaceIdOrSlug, { title, body, infobox = [], parentId = null, visibility = 'public', citations: cites = [], message = null, summary = null, authorship: importRecord = null } = {}, actor) {
+        async createPage(spaceIdOrSlug, { title, body, infobox = [], parentId = null, visibility = null, citations: cites = [], message = null, summary = null, authorship: importRecord = null } = {}, actor) {
             await roles(actor);
             const space = await spaceOrFail(spaceIdOrSlug);
             if (!access.canEdit(space, actor)) fail(403, 'page.forbidden', 'Only editors of this space can create pages');
@@ -1031,6 +1031,31 @@ function createWikiService({ db, stores, outbox, config, community = null, vip =
                 await sync(b, page.id, actor);
                 return await q.pageById.get(page.id);
             });
+        },
+
+        /**
+         * VISIBILITY-EVERYWHERE rules 1-2 for Wiki: the wiki's default audience for new pages, and
+         * "apply to all my existing pages". Only the space owner may set it. A published page moves
+         * through setPageVisibility (column, share row and search index together); a draft keeps its
+         * share row Only me and only its intended-publish column moves, so applying Everyone never
+         * makes an unpublished page readable by link.
+         */
+        async setSpaceDefault(spaceIdOrSlug, { defaultVisibility, apply = false } = {}, actor) {
+            await roles(actor);
+            const space = await spaceOrFail(spaceIdOrSlug);
+            if (!access.canManage(space, actor)) fail(403, 'space.forbidden', 'Only an owner changes the wiki’s default');
+            const next = checkVisibility(defaultVisibility, space.default_visibility || 'public', space);
+            await db.prepare('UPDATE wiki_spaces SET default_visibility = ?, updated_at = ? WHERE id = ?').run(next, now(), space.id);
+            let changed = 0;
+            if (apply) {
+                const pages = await db.prepare("SELECT id, state FROM wiki_pages WHERE space_id = ? AND state <> 'deleted' ORDER BY created_at").all(space.id);
+                for (const page of pages) {
+                    if (page.state === 'published') await svc.setPageVisibility(page.id, { visibility: next }, actor);
+                    else await db.prepare('UPDATE wiki_pages SET visibility = ?, updated_at = ? WHERE id = ?').run(next, now(), page.id);
+                    changed++;
+                }
+            }
+            return { visibility: next, changed };
         },
 
         async setPageVisibility(pageId, { visibility, noindex } = {}, actor) {
