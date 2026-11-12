@@ -40,10 +40,10 @@ const data = {
         const text = r.text;
 
         assert.ok(text.includes('<div class="pick" id="pick-read">'), 'the pages to start with are one pick block');
-        assert.match(text, /<nav class="pick-row" aria-label="Pages to start with">/);
-        const chips = [...text.matchAll(/<a class="pick-chip" href="#(?:pp-read-)?([a-z]+)">()([^<]+)<\/a>/g)];
+        assert.match(text, /<div class=\"ov-parts ov-parts--front\" data-parts=\"\d+\">/, 'its parts are tabs on a phone');
+        const chips = [...text.matchAll(/<label for="ovp-[a-z0-9]+-(?:pp-read-)?([a-z]+)">()([^<]+)(?: <span class="ov-parts-n">[^<]*<\/span>)?<\/label>/g)];
         assert.deepStrictEqual(chips.map((m) => m[1]), ['linked', 'recent'], 'a chip per list');
-        assert.ok(!/type="radio"/.test(text), 'no chip is a radio: nothing is picked, every pane shows');
+        assert.ok(/<input type=\"radio\" class=\"ov-parts-r\"[^>]* checked>/.test(text), 'the first part is open on a phone (Shared pick(): tabs, 11-12)');
         assert.strictEqual((text.match(/class="pick-pane"/g) || []).length, chips.length, 'one pane per chip');
         // Every list stays in the page for the crawlers.
         assert.ok(text.includes('Most linked pages') && text.includes('Recently revised'), 'both lists are in the page');
@@ -66,9 +66,9 @@ const data = {
         const rules = [];
         const grouped = String(views.home({ spaces, recent: [], shelves: new Map([[spaces[0].id, shelf]]), groups, actor: { kind: 'anonymous' }, rules }));
         assert.ok(grouped.includes('<div class="pick" id="pick-shelf-openvibe">'), 'the groups are one pick block');
-        const groupChips = [...grouped.matchAll(/<a class="pick-chip" href="#(?:pp-shelf-openvibe-)?([a-z-]+)">()([^<]+)<\/a>/g)];
+        const groupChips = [...grouped.matchAll(/<label for="ovp-shelf-openvibe-(?:pp-shelf-openvibe-)?([a-z-]+)">()([^<]+)(?: <span class="ov-parts-n">[^<]*<\/span>)?<\/label>/g)];
         assert.deepStrictEqual(groupChips.map((m) => m[1]), ['watch-stream', 'your-openvibe', 'platform-and-libraries'], 'a chip per group');
-        assert.ok(!/type="radio"/.test(grouped), 'no chip is a radio: nothing is picked, every pane shows');
+        assert.ok(/<input type=\"radio\" class=\"ov-parts-r\"[^>]* checked>/.test(grouped), 'the first part is open on a phone (Shared pick(): tabs, 11-12)');
         // Every page stays in the page.
         assert.strictEqual((grouped.match(/class="sc-card wk-h-card"/g) || []).length, 3, 'every page card is in the page');
 
