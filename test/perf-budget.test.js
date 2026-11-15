@@ -19,7 +19,7 @@ const BUDGETS = {
     jsBrotliKB: 94, // 94: measured 93.7 KB brotli with openvibe-shared 4.190.0 (2026-11-10: the site name's dropdown, the footer's online strip, the balances pill); 89.8: measured 89.7 KB brotli with openvibe-shared 4.186.0 (2026-11-10: the mark's Working and Thinking states, the Dock and the menu as one sheet, bare controls styled by the loader); 89.5: measured 87.5 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
     cssFiles: 2,   // 1
     cssRawKB: 62.5, // 62.5 openvibe-shared v4.256.0 (2026-11-14: measured 62.2, raised by pin-bump from 61); 61 openvibe-shared v4.248.0 (2026-11-14: measured 60.9, raised by pin-bump from 58.5); 58.5 openvibe-shared v4.228.0 (2026-11-12: measured 58.4, raised by pin-bump from 53.6); 53.6: measured 48.6 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
-    cssBrotliKB: 11.3, // 11.3: measured 10.1 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
+    cssBrotliKB: 11.5, // 11.5 openvibe-shared v4.259.0 (2026-11-15: measured 11.4, raised by pin-bump from 11.3); 11.3: measured 10.1 with openvibe-shared 4.163.0, plus room for 4.162.0–4.163.0, 2026-11-09
     externalFiles: 1,   // 0
 };
 
