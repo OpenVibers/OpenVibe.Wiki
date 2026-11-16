@@ -16,7 +16,9 @@ const status = JSON.parse(fs.readFileSync(path.join(root, 'STATUS.json'), 'utf8'
 function pinnedTag(name) {
     const url = pkg.dependencies[name];
     assert.ok(url, `package.json does not depend on ${name}`);
-    const m = /\/tags\/v(\d+\.\d+\.\d+)$/.exec(url);
+    // GitHub's tag tarball (…/tags/vX.Y.Z) or our own forge's (…/archive/vX.Y.Z.tar.gz, the pin bot's default since 4.284.0).
+    const t = /\/tags\/v(\d+\.\d+\.\d+)$|\/archive\/v(\d+\.\d+\.\d+)\.tar\.gz$/.exec(url);
+    const m = t && [t[0], t[1] || t[2]];
     assert.ok(m, `${name} is not pinned to a release tag: ${url}`);
     return m[1];
 }
