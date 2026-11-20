@@ -54,6 +54,7 @@ function createApp({ config, telemetry = null, svc, viewers: baseViewers, platfo
             "style-src 'self' 'unsafe-inline' https://openvibe.network https://fonts.googleapis.com https://cdnjs.cloudflare.com",
             "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: https:",
+            "media-src 'self' blob: https:",
             // openvibe.events: release notifications (release-watch's EventSource, openvibe-shared 1.17).
             // The navbar's Messages count asks Chat (openvibe-shared 4.130.0).
             "connect-src 'self' https://openvibe.chat https://openvibe.network https://openvibe.quest https://cloudflareinsights.com https://openvibe.events",
