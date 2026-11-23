@@ -478,8 +478,8 @@ ${canEdit && list.some((r) => r.needsReview) ? html`<h2>Waiting for a person's r
 
 function diffPage({ space, page, diff }) {
     const base = wpath(space, page);
-    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name, url: `/s/${e(space.slug)}` }, { name: page.title, url: base }, { name: 'History', url: `${base}/history` }, { name: `Revision ${diff.from} → ${diff.to}` }])}
-<section><h1>Changes to ${page.title}: revision ${String(diff.from)} → ${String(diff.to)}</h1>
+    return html`${crumbs([{ name: 'Wiki', url: '/' }, { name: space.name, url: `/s/${e(space.slug)}` }, { name: page.title, url: base }, { name: 'History', url: `${base}/history` }, { name: `Revision ${diff.from} to ${diff.to}` }])}
+<section><h1>Changes to ${page.title}: revision ${String(diff.from)} to ${String(diff.to)}</h1>
 <p><a href="${base}?rev=${String(diff.from)}">View revision ${String(diff.from)}</a> · <a href="${base}?rev=${String(diff.to)}">View revision ${String(diff.to)}</a> · <a href="${base}/diff/${String(diff.from)}/${String(diff.to)}?mode=line">line diff</a> · <a href="${base}/diff/${String(diff.from)}/${String(diff.to)}">word diff</a></p>
 ${diff.fields.length ? html`<h2>Fields</h2><table class="wk-fields"><thead><tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr></thead><tbody>${diff.fields.map((f) => html`<tr><th scope="row">${f.field}</th><td><pre>${JSON.stringify(f.from, null, 1)}</pre></td><td><pre>${JSON.stringify(f.to, null, 1)}</pre></td></tr>`)}</tbody></table>` : ''}
 <h2>Text</h2><p class="wk-muted">Removed text is struck through, added text is underlined.</p>

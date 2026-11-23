@@ -86,7 +86,7 @@ async function revisePage(svc, page, def, { publish, log }) {
     }, SYSTEM);
     if (!out.created) return false;
     if (publish) await svc.publish(page.id, { revision: out.revision.number }, SYSTEM);
-    log.log(`[seed] revised ${def.title} → revision ${out.revision.number}`);
+    log.log(`[seed] revised ${def.title} to revision ${out.revision.number}`);
     return true;
 }
 
