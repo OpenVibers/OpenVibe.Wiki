@@ -127,7 +127,7 @@ async function start({ config, db: givenDb = null, now = () => Date.now(), fetch
         const socketActivated = process.env.LISTEN_FDS === '1' && Number(process.env.LISTEN_PID) === process.pid;
         await new Promise((resolve) => { server = app.listen(...(socketActivated ? [{ fd: 3 }] : [config.port, config.host]), resolve); });
         server.keepAliveTimeout = 65000;
-        log.log(`[Wiki] ${config.nodeEnv} on http://${config.host}:${config.port} → ${config.baseUrl}`);
+        log.log(`[Wiki] ${config.nodeEnv} on http://${config.host}:${config.port} (public ${config.baseUrl})`);
         // The two account subscriptions at OpenVibe.Events, created when missing; off without EVENTS_URL,
         // WIKI_EVENTS_SECRET or the client secret.
         subscriptions = startSubscriptions({
